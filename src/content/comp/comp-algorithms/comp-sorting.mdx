@@ -143,5 +143,14 @@ private void heapify(int[] arr, int n, int i) {
 
 ### Sorting Algorithm Comparison
 
-AlgorithmTime ComplexitySpace ComplexityStableIn-PlaceQuick SortO(n log n) avg, O(n²) worstO(log n)NoYesMerge SortO(n log n)O(n)YesNoHeap SortO(n log n)O(1)NoYesBubble SortO(n²)O(1)YesYesInsertion SortO(n²)O(1)YesYes
+<ContentTable
+  headers={["Algorithm", "Time Complexity", "Space Complexity", "Stable", "In-Place"]}
+  rows={[
+    ["Quick Sort", "O(n log n) average, O(n<sup>2</sup>) worst", "O(log n)", "No", "Yes"],
+    ["Merge Sort", "O(n log n)", "O(n)", "Yes", "No"],
+    ["Heap Sort", "O(n log n)", "O(1)", "No", "Yes"],
+    ["Bubble Sort", "O(n<sup>2</sup>)", "O(1)", "Yes", "Yes"],
+    ["Insertion Sort", "O(n<sup>2</sup>)", "O(1)", "Yes", "Yes"]
+  ]}
+/>
 

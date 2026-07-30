@@ -1,0 +1,157 @@
+---
+title: Setting Up Java Locally
+lessonId: cp-java-setup
+section: comp
+group: comp-foundation
+groupLabel: "Foundation Concepts"
+groupOrder: 1
+order: 5
+difficulty: beginner
+duration: 20 min
+description: Installing a JDK, compiling from the command line, and setting up a contest workflow that lets you test against sample input quickly.
+---
+
+### Why work locally
+
+You can write contest code in an online editor, and for your first contest that is fine. But local setup pays off quickly: you can test against sample input without retyping it, run a program repeatedly with different inputs, and use a debugger. During a four-hour contest, saved minutes accumulate.
+
+If you cannot install software on the computer you use — a school machine with locked-down permissions is common — the online option is a genuine fallback, not a compromise. Skip to the end of this lesson.
+
+### Installing a JDK
+
+You need a Java Development Kit, version 17 or newer. Most online judges run a recent long-term-support release, and anything from 17 up behaves the same for contest purposes.
+
+<StepsBox title="Install steps">
+
+1. Download a JDK build. Eclipse Temurin and Oracle's JDK both work; Temurin has no license prompts.
+2. Run the installer. On Windows, accept the option to add Java to `PATH` if offered.
+3. Open a new terminal and confirm the install:
+
+```
+javac --version
+java --version
+```
+
+Both commands should print a version number of 17 or higher. If `javac` is missing but `java` works, you installed a runtime (JRE) instead of a development kit (JDK).
+
+</StepsBox>
+
+### Compiling and running
+
+A contest submission is a single file. Keep the class name and the file name matching.
+
+```java
+// File: Main.java
+import java.io.*;
+
+public class Main {
+    public static void main(String[] args) throws IOException {
+        BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+        int n = Integer.parseInt(in.readLine().trim());
+        System.out.println(n * 2);
+    }
+}
+```
+
+Compile and run:
+
+```
+javac Main.java
+java Main
+```
+
+Newer JDKs also let you skip the compile step for single-file programs, which is convenient while iterating:
+
+```
+java Main.java
+```
+
+### Testing against sample input
+
+This is the part that saves real time. Put the sample input in a file instead of typing it every run.
+
+Save the problem's sample input as `in.txt`, then redirect it into your program:
+
+```
+java Main < in.txt
+```
+
+To compare your output against the expected output, save that as `expected.txt` and diff them:
+
+<CodeTabs>
+<CodeTab label="Windows (PowerShell)">
+
+```
+java Main < in.txt > out.txt
+Compare-Object (Get-Content out.txt) (Get-Content expected.txt)
+```
+
+No output from `Compare-Object` means the files match.
+
+</CodeTab>
+<CodeTab label="macOS / Linux">
+
+```
+java Main < in.txt > out.txt
+diff out.txt expected.txt
+```
+
+No output from `diff` means the files match.
+
+</CodeTab>
+</CodeTabs>
+
+<RulesBox title="A workflow that holds up under time pressure">
+
+- Keep one folder per contest, one subfolder per problem.
+- In each problem folder: `Main.java`, `in.txt`, `expected.txt`.
+- Name the class `Main` every time. You never have to think about it, and it matches what most judges expect.
+- Before submitting, run the sample once more. It catches the case where you fixed one thing and broke another.
+
+</RulesBox>
+
+### Using an IDE
+
+An IDE is optional but helpful, mainly for the debugger and for catching typos as you write. IntelliJ IDEA Community Edition and VS Code with the Java extension pack are both free and both let you configure sample input redirection in the run settings.
+
+If you already use Android Studio for FTC, you already have IntelliJ's editor — the same shortcuts apply.
+
+<RulesBox title="One IDE setting worth changing">
+
+Configure your run action to read standard input from a file. In IntelliJ this is **Run → Edit Configurations → Modify options → Redirect input from**. Point it at `in.txt`. Now a single keystroke compiles, runs, and feeds in the sample.
+
+</RulesBox>
+
+### If you cannot install anything
+
+Online judges and editors let you compile and run Java in a browser. Paste the sample input into the input pane and run. It is slower than a local setup and you lose the debugger, but every problem in this curriculum can be solved this way.
+
+<ExerciseBox title="Verify your setup" description="Confirm the whole loop works before you need it under time pressure:">
+
+1. Create a folder with `Main.java` containing the program above.
+2. Create `in.txt` containing a single line with the number `21`.
+3. Run the program with input redirected. Confirm it prints `42`.
+4. Change `in.txt` to `-5` and run again without editing the Java file. Confirm it prints `-10`.
+
+Step 4 is the point of the exercise — you changed the test case without touching code or retyping input.
+
+</ExerciseBox>
+
+<LinkGrid
+  title="Next"
+  section="comp"
+  links={[
+    {"label":"Reading Input Fast","id":"cp-fast-io"},
+    {"label":"Data Types and Overflow","id":"cp-data-types"}
+  ]}
+/>
+
+<LinkGrid
+  title="Downloads"
+  section="comp"
+  links={[
+    {"label":"Eclipse Temurin JDK","url":"https://adoptium.net/"},
+    {"label":"IntelliJ IDEA Community","url":"https://www.jetbrains.com/idea/download/"},
+    {"label":"VS Code Java Pack","url":"https://marketplace.visualstudio.com/items?itemName=vscjava.vscode-java-pack"}
+  ]}
+/>

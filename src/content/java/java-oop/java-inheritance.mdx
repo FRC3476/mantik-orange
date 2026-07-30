@@ -1,0 +1,281 @@
+---
+title: Inheritance
+lessonId: java-inheritance
+section: java
+group: java-oop
+groupLabel: "Object-Oriented Programming"
+groupOrder: 4
+order: 5
+difficulty: intermediate
+duration: 30 min
+description: Building a class on top of another so shared behaviour is written once, plus constructors, super, and when inheritance is the wrong tool.
+---
+
+### Sharing what is common
+
+Suppose you write two subsystem classes and notice they are largely identical:
+
+```java
+class Intake {
+    private String name;
+    private boolean enabled;
+
+    void enable()  { enabled = true; }
+    void disable() { enabled = false; }
+    String getName() { return name; }
+}
+
+class Shooter {
+    private String name;
+    private boolean enabled;
+
+    void enable()  { enabled = true; }
+    void disable() { enabled = false; }
+    String getName() { return name; }
+}
+```
+
+Every line is duplicated. Fix a bug in one and you must remember the other.
+
+Inheritance lets you write the shared part once and build on it:
+
+```java
+class Subsystem {
+    protected String name;
+    protected boolean enabled;
+
+    Subsystem(String name) {
+        this.name = name;
+    }
+
+    void enable()  { enabled = true; }
+    void disable() { enabled = false; }
+    String getName() { return name; }
+}
+
+class Intake extends Subsystem {
+    Intake() {
+        super("intake");
+    }
+
+    void collect() {
+        System.out.println("collecting");
+    }
+}
+```
+
+`Intake` gets `enable`, `disable`, and `getName` without restating them, and adds `collect` of its own.
+
+<ContentTable
+  title="Vocabulary"
+  headers={["Term", "Meaning"]}
+  rows={[
+    ["Superclass / parent", "The class being extended (<code>Subsystem</code>)"],
+    ["Subclass / child", "The class doing the extending (<code>Intake</code>)"],
+    ["<code>extends</code>", "Declares the relationship"],
+    ["<code>super</code>", "Refers to the parent &mdash; its constructor or its methods"],
+    ["Override", "Replace an inherited method with your own version"],
+    ["Inherit", "Receive a member from the parent without rewriting it"]
+  ]}
+/>
+
+### Constructors and super
+
+Constructors are **not** inherited. Each subclass declares its own, and its first job is to construct the parent portion of the object.
+
+```java
+class Intake extends Subsystem {
+    private int port;
+
+    Intake(int port) {
+        super("intake");          // must be the first statement
+        this.port = port;
+    }
+}
+```
+
+<RulesBox title="Rules that trip people up">
+
+**`super(...)` must be the first statement** in the constructor. Java has to finish building the parent part before the subclass touches anything.
+
+**If you omit it, Java inserts `super()`** — a call to the parent's no-argument constructor. If the parent has no no-argument constructor, that is a compile error, and the message ("constructor Subsystem in class Subsystem cannot be applied to given types") is confusing until you know this rule.
+
+**A class with no `extends` implicitly extends `Object`**, which is where `toString`, `equals`, and `hashCode` come from.
+
+</RulesBox>
+
+### Overriding
+
+A subclass can replace an inherited method:
+
+```java
+class Subsystem {
+    void describe() {
+        System.out.println("subsystem: " + name);
+    }
+}
+
+class Intake extends Subsystem {
+    @Override
+    void describe() {
+        System.out.println("intake on port " + port);
+    }
+}
+```
+
+Always write `@Override`. It is optional to the compiler but it verifies you really are overriding something — misspell the name and you have silently created a new method that nothing calls.
+
+To extend the parent's behaviour rather than replace it, call `super`:
+
+```java
+@Override
+void describe() {
+    super.describe();                    // do the parent's version first
+    System.out.println("  port: " + port);
+}
+```
+
+Which version actually runs is decided at runtime by the real object, not the declared type. That is [runtime polymorphism](/java/java-runtime-polymorphism), and it is the reason inheritance is useful rather than merely tidy.
+
+### Access levels
+
+What a subclass can see depends on the modifier:
+
+<ContentTable
+  headers={["Modifier", "Same class", "Subclass", "Everywhere"]}
+  rows={[
+    ["<code>private</code>", "Yes", "No", "No"],
+    ["(no modifier)", "Yes", "Same package only", "No"],
+    ["<code>protected</code>", "Yes", "Yes", "No"],
+    ["<code>public</code>", "Yes", "Yes", "Yes"]
+  ]}
+/>
+
+`protected` exists specifically for inheritance — visible to subclasses, hidden from unrelated code.
+
+That said, `private` fields with `protected` or `public` accessor methods is usually the better design. A `protected` field becomes part of the contract with every subclass, and changing it later breaks all of them.
+
+### What is not inherited
+
+Three things behave differently from what you might expect:
+
+**Constructors** are not inherited, as above.
+
+**Fields are hidden, not overridden.** Declaring a field with the same name in a subclass does not replace the parent's — both exist, and which one you see depends on the *declared* type:
+
+```java
+class Parent { String label = "parent"; }
+class Child extends Parent { String label = "child"; }
+
+Parent p = new Child();
+System.out.println(p.label);         // "parent", not "child"
+```
+
+This is field hiding and it is almost always a mistake. Keep fields private and use methods, which do override properly.
+
+**Static methods are hidden, not overridden**, and are resolved by declared type at compile time.
+
+### Java has single inheritance
+
+A class may extend exactly one class:
+
+```java
+class Intake extends Subsystem, Loggable { }   // does not compile
+```
+
+This avoids the ambiguity that arises when two parents define the same method differently. When you need a class to fill several roles, use [interfaces](/java/java-interfaces) — a class can implement any number of those.
+
+### When inheritance is the wrong tool
+
+Inheritance is often reached for too quickly. The test is whether the subclass genuinely **is a** kind of the parent, in every context where the parent is used.
+
+```java
+class Drivetrain extends Subsystem { }     // a drivetrain IS a subsystem — fine
+class Robot extends Drivetrain { }         // a robot is not a drivetrain — wrong
+```
+
+The second should be composition — a `Robot` **has a** `Drivetrain`:
+
+```java
+class Robot {
+    private final Drivetrain drivetrain;   // has-a, not is-a
+
+    Robot(Drivetrain drivetrain) {
+        this.drivetrain = drivetrain;
+    }
+}
+```
+
+<RulesBox title="Prefer composition when you are unsure">
+
+Inheritance permanently couples the subclass to the parent's implementation. A change in the parent can break every subclass, sometimes subtly.
+
+Composition — holding an object as a field — is looser, easier to test, and easier to change. Reach for inheritance when there is a genuine is-a relationship *and* real behaviour to share. Reach for composition otherwise. See [Dependency Injection](/java/java-dp-dependency-injection).
+
+</RulesBox>
+
+### Preventing inheritance
+
+`final` on a class stops anyone extending it; on a method it stops overriding:
+
+```java
+final class Constants { }               // cannot be extended
+
+class Base {
+    final void criticalStep() { }       // cannot be overridden
+}
+```
+
+Useful when a class's correctness depends on behaviour that a subclass must not change.
+
+<RulesBox title="Common mistakes">
+
+- **Omitting `@Override`** and silently creating a new method.
+- **`super(...)` not first** in the constructor.
+- **Expecting a parent's no-argument constructor to exist** when it defines only a parameterised one.
+- **Hiding a field** and expecting it to override.
+- **Deep hierarchies.** More than two or three levels becomes hard to follow; prefer composition.
+- **Inheriting for code reuse alone**, with no is-a relationship.
+- **Calling an overridable method from a constructor.** The subclass's version runs before its fields are initialised, so it sees zeros and nulls.
+
+</RulesBox>
+
+<ExerciseBox title="Practice">
+
+1. Write a `Subsystem` base class with a name and enable/disable behaviour, then two subclasses that add their own methods.
+2. Add a `describe()` method to the parent and override it in one subclass, calling `super.describe()` inside.
+3. Demonstrate field hiding, then fix it by making the field private with a getter.
+4. Give the parent only a parameterised constructor, then write a subclass constructor that omits `super(...)`. Read the compile error.
+5. Take a class that extends another purely for code reuse and rewrite it using composition.
+
+<details>
+<summary>Hints</summary>
+
+1. `protected` fields, or private with accessors.
+2. Put `super.describe()` first, then add the extra line.
+3. Same field name in both, assign a `Child` to a `Parent` variable.
+4. The error is worth seeing once so you recognise it later.
+5. Replace `extends X` with a private field of type `X`, and forward the calls you actually need.
+
+</details>
+
+</ExerciseBox>
+
+<LinkGrid
+  title="Next"
+  section="java"
+  links={[
+    { "label": "Abstract Classes and Methods", "id": "java-abstract-classes" },
+    { "label": "Interfaces", "id": "java-interfaces" },
+    { "label": "Runtime Polymorphism", "id": "java-runtime-polymorphism" }
+  ]}
+/>
+
+<LinkGrid
+  title="Review"
+  section="java"
+  links={[
+    { "label": "Java Classes", "id": "java-classes" },
+    { "label": "Objects and References", "id": "java-objects-references" }
+  ]}
+/>

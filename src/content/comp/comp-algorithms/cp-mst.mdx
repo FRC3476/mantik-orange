@@ -75,7 +75,7 @@ The cost is O(E log E), dominated by the sort. Union-find contributes an almost-
 - Initialise `parent[i] = i` for every node, including index 0 if you allocate it.
 - Break once `V - 1` edges are used; scanning the rest is wasted work.
 - If fewer than `V - 1` edges were added, the graph is **disconnected** and no spanning tree exists. Problems often require detecting this, so do not assume connectivity.
-- Use `Integer.compare` in the comparator rather than subtraction, which can overflow. See [Sorting in Java](/comp/cp-sorting-java).
+- Use `Integer.compare` in the comparator rather than subtraction, which can overflow. See [Sorting in Java](/java/java-algo-sorting).
 
 </RulesBox>
 
@@ -197,9 +197,9 @@ The last row is a useful trick: pre-existing connections are just unions applied
   title="Related"
   section="comp"
   links={[
-    { "label": "Union Find (Disjoint Sets)", "id": "comp-union-find" },
-    { "label": "Shortest Paths", "id": "cp-shortest-paths" },
-    { "label": "Graph Representation and Traversal", "id": "cp-graph-basics" },
-    { "label": "Verifying a Greedy Strategy", "id": "cp-greedy-verification" }
+    {"label":"Union Find (Disjoint Sets)","id":"comp-union-find"},
+    {"label":"Shortest Paths","id":"cp-shortest-paths"},
+    {"label":"Graphs","url":"/java/java-ds-graphs"},
+    {"label":"Verifying a Greedy Strategy","id":"cp-greedy-verification"}
   ]}
 />

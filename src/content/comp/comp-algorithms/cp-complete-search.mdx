@@ -126,7 +126,7 @@ This is O(range · N). It works because the coordinate range is small. When the 
 
 ### Permutations
 
-When you need every ordering of N ≤ 10 items, generate permutations recursively. The general technique is covered in [Recursive Complete Search](/comp/cp-recursive-search); for small fixed sizes, nested loops with distinctness checks are simpler:
+When you need every ordering of N ≤ 10 items, generate permutations recursively. The general technique is covered in [Recursive Complete Search](/java/java-algo-backtracking); for small fixed sizes, nested loops with distinctness checks are simpler:
 
 ```java
 // every ordered triple of distinct indices
@@ -193,8 +193,8 @@ Pruning only helps if the condition genuinely rules out the rest of the branch. 
   title="Next"
   section="comp"
   links={[
-    {"label":"Recursive Complete Search","id":"cp-recursive-search"},
-    {"label":"Sorting in Java","id":"cp-sorting-java"},
+    {"label":"Backtracking","url":"/java/java-algo-backtracking"},
+    {"label":"Sorting Algorithms","url":"/java/java-algo-sorting"},
     {"label":"Reading Constraints to Choose an Approach","id":"cp-constraints"}
   ]}
 />

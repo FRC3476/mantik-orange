@@ -1,0 +1,242 @@
+---
+title: Interfaces
+lessonId: java-interfaces
+section: java
+group: java-oop
+groupLabel: "Object-Oriented Programming"
+groupOrder: 4
+order: 7
+difficulty: intermediate
+duration: 30 min
+description: Declaring a capability that any class can claim, implementing several at once, and the default and static methods interfaces gained in modern Java.
+---
+
+### Describing a capability
+
+An interface lists methods a class promises to provide, without saying how.
+
+```java
+interface Stoppable {
+    void stop();
+}
+```
+
+Any class can claim that capability, regardless of what else it is:
+
+```java
+class Intake extends Subsystem implements Stoppable {
+    @Override
+    public void stop() {
+        motor.set(0);
+    }
+}
+
+class Camera implements Stoppable {          // unrelated to Subsystem
+    @Override
+    public void stop() {
+        stopRecording();
+    }
+}
+```
+
+`Intake` and `Camera` share no ancestor, but both are `Stoppable`, so code can handle them together:
+
+```java
+List<Stoppable> everything = List.of(intake, camera);
+for (Stoppable s : everything) {
+    s.stop();
+}
+```
+
+That is the thing [inheritance](/java/java-inheritance) cannot do. A class extends one parent, but implements as many interfaces as it needs.
+
+### Implementing several
+
+```java
+interface Stoppable  { void stop(); }
+interface Loggable   { String toLogLine(); }
+
+class Intake extends Subsystem implements Stoppable, Loggable {
+    @Override public void stop() { motor.set(0); }
+    @Override public String toLogLine() { return "intake: " + motor.get(); }
+}
+```
+
+`extends` comes first and names one class; `implements` follows and names any number of interfaces.
+
+<RulesBox title="Interface methods are public">
+
+Methods declared in an interface are implicitly `public`, so implementations must be `public` too. Writing:
+
+```java
+@Override
+void stop() { }              // package-private — will not compile
+```
+
+fails with "attempting to assign weaker access privileges". Java will not let an implementation be less visible than the interface promises. Always write `public` on interface implementations.
+
+</RulesBox>
+
+### Default methods
+
+Originally every interface method was abstract. Modern Java lets an interface supply a body with `default`:
+
+```java
+interface Stoppable {
+    void stop();
+
+    default void emergencyStop() {
+        System.out.println("emergency stop requested");
+        stop();                              // may call abstract methods
+    }
+}
+```
+
+Implementations get `emergencyStop` for free and may override it if they want something different.
+
+The reason `default` exists is practical: adding a method to an interface used to break every existing implementation. A `default` method can be added without breaking anything, which is how the standard library gained things like `List.sort` and `Collection.removeIf` without invalidating existing code.
+
+<RulesBox title="Do not treat default methods as a replacement for abstract classes">
+
+A `default` method cannot use instance fields, because interfaces have no instance state. It can only call other interface methods.
+
+When shared behaviour needs shared *data*, you still want an [abstract class](/java/java-abstract-classes).
+
+</RulesBox>
+
+### Static and private methods
+
+An interface may also hold static helpers:
+
+```java
+interface Stoppable {
+    void stop();
+
+    static void stopAll(List<Stoppable> items) {
+        for (Stoppable s : items) s.stop();
+    }
+}
+
+Stoppable.stopAll(everything);
+```
+
+Static interface methods are **not** inherited by implementations — call them on the interface name.
+
+Private interface methods also exist, purely so several `default` methods can share code without exposing it.
+
+### Constants
+
+Fields in an interface are implicitly `public static final`:
+
+```java
+interface RobotLimits {
+    double MAX_SPEED = 4.5;              // public static final
+}
+```
+
+This works but is generally poor practice. An interface should describe behaviour; a bag of constants is better as a `final` class with a private constructor, or an `enum`.
+
+### Functional interfaces
+
+An interface with exactly one abstract method can be implemented by a [lambda](/java/java-fn-lambdas):
+
+```java
+@FunctionalInterface
+interface ReadingTest {
+    boolean matches(int reading);
+}
+
+ReadingTest above100 = r -> r > 100;      // no class needed
+```
+
+`default` and `static` methods do not count toward the "exactly one" rule — only abstract ones do. The `@FunctionalInterface` annotation is optional but makes the compiler reject a second abstract method, which would silently break every lambda written against it.
+
+This is the mechanism behind the whole [Functions as Data](/java/java-fn-functions-as-data) module.
+
+### Interface or abstract class
+
+<ContentTable
+  headers={["Need", "Use"]}
+  rows={[
+    ["A capability unrelated classes might share", "Interface"],
+    ["A class to fill several roles", "Interface"],
+    ["Shared fields or constructor logic", "Abstract class"],
+    ["A fixed sequence with subclass-supplied steps", "Abstract class"],
+    ["Something a lambda can implement", "Interface with one abstract method"],
+    ["Both would work", "Interface &mdash; it costs nothing to add later"]
+  ]}
+/>
+
+The last row is the practical tie-breaker. A class extends only one class, so spending that slot is a real commitment; implementing an interface is not.
+
+### Naming
+
+Two conventions worth following. Capabilities often end in *-able* — `Stoppable`, `Comparable`, `Runnable`. Roles are plain nouns — `List`, `Command`, `MotorController`.
+
+Do not prefix with `I` (`IStoppable`). That convention comes from other ecosystems and looks out of place in Java.
+
+### Programming to the interface
+
+The main practical habit interfaces enable:
+
+```java
+List<String> names = new ArrayList<>();          // declared as the interface
+Map<String, Integer> ports = new HashMap<>();
+```
+
+Declaring the variable as the interface means switching implementation later touches one line. It also means methods taking `List` accept any list, rather than only `ArrayList`.
+
+The same reasoning drives [dependency injection](/java/java-dp-dependency-injection) — accept an interface, and callers decide what to supply, including a fake for testing.
+
+<RulesBox title="Common mistakes">
+
+- **Forgetting `public`** on an implementation.
+- **Expecting instance fields.** Interfaces have none.
+- **Expecting a constructor.** Interfaces have none.
+- **Calling a static interface method on an instance.** Use the interface name.
+- **Adding a second abstract method** to a functional interface, breaking lambdas.
+- **Using an interface as a constants holder.**
+- **`IStoppable`-style naming.**
+- **Declaring variables as `ArrayList`** rather than `List`, losing the flexibility.
+
+</RulesBox>
+
+<ExerciseBox title="Practice">
+
+1. Write a `Stoppable` interface and implement it in two classes that share no parent. Loop a mixed list and stop each.
+2. Write a class implementing two interfaces at once and confirm it satisfies both.
+3. Add a `default` method to an interface, then override it in one implementation and not the other. Confirm which runs.
+4. Write a functional interface and implement it with a lambda. Then add a second abstract method and read the compile error.
+5. Take a class with a hard-coded dependency and rewrite it to accept an interface, then test it with a fake implementation.
+
+<details>
+<summary>Hints</summary>
+
+1. `List<Stoppable>` holding both.
+2. `implements A, B` and implement every method from each.
+3. The one that does not override inherits the default.
+4. With `@FunctionalInterface` the error is clear; without it, the failure shows up at the lambda instead.
+5. This is dependency injection — the fake records what it was told so the test can check it.
+
+</details>
+
+</ExerciseBox>
+
+<LinkGrid
+  title="Next"
+  section="java"
+  links={[
+    { "label": "Runtime Polymorphism", "id": "java-runtime-polymorphism" },
+    { "label": "Passing Functions as Data", "id": "java-fn-functions-as-data" }
+  ]}
+/>
+
+<LinkGrid
+  title="Related"
+  section="java"
+  links={[
+    { "label": "Inheritance", "id": "java-inheritance" },
+    { "label": "Abstract Classes and Methods", "id": "java-abstract-classes" },
+    { "label": "Dependency Injection", "id": "java-dp-dependency-injection" }
+  ]}
+/>

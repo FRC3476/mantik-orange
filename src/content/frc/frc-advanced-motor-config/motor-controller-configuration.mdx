@@ -29,5 +29,106 @@ Every motor controller should be configured for safety and consistency. Key para
 
 <CodeTabs tabs={[{"label":"Talon FX","code":"package frc.robot.subsystems;\n\nimport com.ctre.phoenix6.hardware.TalonFX;\nimport com.ctre.phoenix6.configs.TalonFXConfiguration;\nimport com.ctre.phoenix6.signals.InvertedValue;\nimport com.ctre.phoenix6.signals.NeutralModeValue;\n\npublic class Drivetrain extends SubsystemBase {\n    private TalonFX motor = new TalonFX(1);\n    \n    // ... (other fields and methods)\n    \n    public void configureMotor() {\n        TalonFXConfiguration config = new TalonFXConfiguration();\n        \n        // Set motor direction\n        config.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;\n        // Set neutral mode (Brake or Coast)\n        config.MotorOutput.NeutralMode = NeutralModeValue.Brake;\n        \n        // Current limiting (Stator = motor protection, Supply = battery protection)\n        config.CurrentLimits.StatorCurrentLimitEnable = true;\n        config.CurrentLimits.StatorCurrentLimit = 40.0;\n        \n        // Voltage compensation (maintains consistent output despite battery voltage)\n        config.Voltage.PeakForwardVoltage = 12.0;\n        config.Voltage.PeakReverseVoltage = -12.0;\n        \n        // Ramp rate: time to reach full output (reduces sudden changes)\n        config.ClosedLoopRamps.VoltageClosedLoopRampPeriod = 0.25; // 0.25 seconds\n        \n        motor.getConfigurator().apply(config);\n    }\n    \n    // ... (rest of class)","language":"java"},{"label":"SPARK MAX","code":"package frc.robot.subsystems;\n\nimport com.revrobotics.spark.SparkMax;\nimport com.revrobotics.spark.SparkLowLevel.MotorType;\nimport com.revrobotics.spark.config.SparkMaxConfig;\nimport com.revrobotics.spark.config.SparkBaseConfig.IdleMode;\nimport com.revrobotics.spark.SparkBase.ResetMode;\nimport com.revrobotics.spark.SparkBase.PersistMode;\n\npublic class Drivetrain extends SubsystemBase {\n    private SparkMax motor = new SparkMax(1, MotorType.kBrushless);\n    \n    // ... (other fields and methods)\n    \n    public void configureMotor() {\n        SparkMaxConfig config = new SparkMaxConfig();\n        \n        // Chain configuration methods\n        config\n            .inverted(false)              // Motor direction\n            .idleMode(IdleMode.kBrake)    // Neutral mode\n            .smartCurrentLimit(40)        // Current limit in amps\n            .voltageCompensation(12.0)    // Voltage compensation\n            .closedLoopRampRate(0.25);    // Ramp rate in seconds\n        \n        motor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);\n    }\n    \n    // ... (rest of class)","language":"java"}]} />
 
-<LinkGrid links={[{"label":"Motor PID Control","id":"motor-pid-control"},{"label":"Current Limiting Details","id":"motor-current-limiting"}]} title="Resources" section="frc" />
+### Applying Configuration Can Fail
+
+`getConfigurator().apply(config)` returns a `StatusCode`. On a busy CAN bus — twenty-odd devices all powering up at once — it sometimes does not succeed.
+
+A failed apply is silent. The motor keeps whatever configuration it had before, which might be last season's inversion or no current limit at all, and nothing reports it. You find out when a mechanism runs backwards or a breaker trips.
+
+Retry it:
+
+```java
+package frc.robot.util;
+
+import com.ctre.phoenix6.StatusCode;
+import java.util.function.Supplier;
+
+public class PhoenixUtil {
+    /** Attempts to run the command until no error is produced. */
+    public static void tryUntilOk(int maxAttempts, Supplier<StatusCode> command) {
+        for (int i = 0; i < maxAttempts; i++) {
+            var error = command.get();
+            if (error.isOK()) break;
+        }
+    }
+}
+```
+
+```java
+PhoenixUtil.tryUntilOk(5, () -> motor.getConfigurator().apply(config));
+```
+
+Five attempts cost nothing and remove the failure mode. Our robot code routes every apply through this helper.
+
+### Control Request Types
+
+Once configured, a Talon FX is commanded with a **control request** object. Reuse one instance per motor rather than allocating a new one each loop, and set its value with the `with...` methods.
+
+<ContentTable
+  title="Phoenix 6 control requests"
+  headers={["Request", "Commands", "Typical use"]}
+  rows={[
+    ["<code>DutyCycleOut</code>", "Raw output, &minus;1 to 1", "Rollers, conveyors &mdash; anything open-loop"],
+    ["<code>VoltageOut</code>", "A fixed voltage", "Characterization; consistent output as the battery sags"],
+    ["<code>VelocityVoltage</code>", "Closed-loop velocity, voltage output", "Flywheels, swerve drive motors"],
+    ["<code>VelocityDutyCycle</code>", "Closed-loop velocity, duty-cycle output", "Velocity control without voltage compensation"],
+    ["<code>MotionMagicVoltage</code>", "Profiled move to a position", "Arms, pivots, elevators"],
+    ["<code>Follower</code>", "Mirror another motor", "A second motor on the same mechanism"]
+  ]}
+/>
+
+```java
+// Fields — created once, reused every loop
+private final VelocityVoltage velocityRequest = new VelocityVoltage(0);
+private final MotionMagicVoltage motionMagic = new MotionMagicVoltage(0);
+
+public void setFlywheelVelocity(double rotationsPerSecond) {
+    rightShooter.setControl(velocityRequest.withVelocity(rotationsPerSecond));
+}
+
+public void setPivotPosition(double rotations) {
+    pivot.setControl(motionMagic.withPosition(rotations));
+}
+```
+
+Motion Magic needs a profile as well as gains, configured alongside `Slot0`:
+
+```java
+MotionMagicConfigs motionMagicConfigs = config.MotionMagic;
+motionMagicConfigs.MotionMagicCruiseVelocity = 80;   // rotations per second
+motionMagicConfigs.MotionMagicAcceleration = 160;    // rotations per second squared
+motionMagicConfigs.MotionMagicJerk = 1600;           // rotations per second cubed
+```
+
+### Following
+
+When two motors drive the same mechanism, configure both, then set one to follow the other:
+
+```java
+PhoenixUtil.tryUntilOk(5, () -> rightShooter.getConfigurator().apply(config));
+
+config.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
+PhoenixUtil.tryUntilOk(5, () -> leftShooter.getConfigurator().apply(config));
+
+leftShooter.setControl(new Follower(rightShooter.getDeviceID(), MotorAlignmentValue.Opposed));
+```
+
+`MotorAlignmentValue.Opposed` means the follower runs the opposite direction from the leader — correct for motors mounted facing each other. Use `Aligned` when they face the same way.
+
+Following happens on the motor controller, so the follower keeps tracking even if the roboRIO loop is slow. Commanding both motors from code instead works, but adds CAN traffic and lets the two drift apart.
+
+### Software Limit Switches
+
+For a mechanism with hard stops, let the controller enforce the range rather than checking it in code:
+
+```java
+config.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
+config.SoftwareLimitSwitch.ForwardSoftLimitThreshold = INTAKE_PIVOT_DOWN;
+config.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
+config.SoftwareLimitSwitch.ReverseSoftLimitThreshold = 0;
+```
+
+The motor controller refuses to drive past these positions regardless of what is commanded. That protects the mechanism even from a bug in your own code.
+
+<LinkGrid links={[{"label":"Subsystems","id":"subsystems"},{"label":"Motor PID Control","id":"motor-pid-control"},{"label":"Current Limiting Details","id":"motor-current-limiting"},{"label":"Phoenix 6 Control Requests","url":"https://v6.docs.ctr-electronics.com/en/stable/docs/api-reference/api-usage/control-requests.html"}]} title="Resources" section="frc" />
 

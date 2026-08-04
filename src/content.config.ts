@@ -14,6 +14,9 @@ const lessonSchema = z.object({
   description: z.string().optional(),
   draft: z.boolean().optional().default(false),
   isOverview: z.boolean().optional().default(false),
+  // Builds a page reachable by direct URL, but hidden from the sidebar,
+  // prev/next navigation, and site search. Unlike `draft`, the page still exists.
+  unlisted: z.boolean().optional().default(false),
 });
  
 const createLessonCollection = (section: 'java' | 'ftc' | 'frc' | 'comp') =>

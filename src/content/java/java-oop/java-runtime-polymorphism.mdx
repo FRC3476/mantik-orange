@@ -1,0 +1,241 @@
+---
+title: Runtime Polymorphism
+lessonId: java-runtime-polymorphism
+section: java
+group: java-oop
+groupLabel: "Object-Oriented Programming"
+groupOrder: 4
+order: 8
+difficulty: intermediate
+duration: 30 min
+description: How Java decides which version of a method to run while the program is running, and why that lets you write code against a type you have not written yet.
+---
+
+### Two kinds of type
+
+Every object reference in Java has two types.
+
+```java
+Subsystem s = new Drivetrain();
+```
+
+The **declared type** is `Subsystem` — what the compiler sees, and what decides which methods you are allowed to call. The **actual type** is `Drivetrain` — the real object, and what decides which version of a method actually runs.
+
+Runtime polymorphism is that second part: the choice of implementation happens while the program runs, based on the real object, not on what the variable was declared as.
+
+### A worked example
+
+```java
+abstract class Subsystem {
+    abstract void periodic();
+
+    void report() {
+        System.out.println(getClass().getSimpleName() + " reporting");
+    }
+}
+
+class Drivetrain extends Subsystem {
+    @Override
+    void periodic() {
+        System.out.println("updating drive motors");
+    }
+}
+
+class Intake extends Subsystem {
+    @Override
+    void periodic() {
+        System.out.println("checking intake sensor");
+    }
+}
+```
+
+Now a single loop drives every subsystem without knowing which is which:
+
+```java
+List<Subsystem> subsystems = List.of(new Drivetrain(), new Intake());
+
+for (Subsystem s : subsystems) {
+    s.periodic();       // runs Drivetrain's or Intake's version as appropriate
+}
+```
+
+Output:
+
+```
+updating drive motors
+checking intake sensor
+```
+
+The loop contains no `if` checking the type. Each object supplies its own behaviour, and Java routes the call.
+
+<RulesBox title="Why this matters more than it first appears">
+
+The loop was written before `Intake` existed, and it needs no change when a third subsystem is added. That is the real payoff — you write code against the *idea* of a subsystem, and new implementations slot in without editing the code that uses them.
+
+This is the mechanism behind almost every design pattern, and behind lambdas. Everything in the next two modules rests on it.
+
+</RulesBox>
+
+### Always use @Override
+
+```java
+class Intake extends Subsystem {
+    @Override
+    void periodic() { ... }
+}
+```
+
+`@Override` is optional to the compiler but you should treat it as mandatory. It asks the compiler to verify that you really are overriding something. Misspell the name or get a parameter type wrong, and you have quietly written a *new* method that nothing ever calls:
+
+```java
+class Intake extends Subsystem {
+    void periodick() { ... }      // typo — compiles fine, never runs
+}
+```
+
+With `@Override`, that becomes a compile error instead of a silent bug.
+
+### Interfaces versus abstract classes
+
+Both let you write code against a type rather than a specific class.
+
+<ContentTable
+  headers={["", "Interface", "Abstract class"]}
+  rows={[
+    ["How many can a class have?", "Many", "One"],
+    ["Can hold fields?", "Only constants", "Yes"],
+    ["Can have a constructor?", "No", "Yes"],
+    ["Can provide method bodies?", "Yes, as <code>default</code> methods", "Yes"],
+    ["Use it for", "A capability the class has", "Shared state and behaviour"]
+  ]}
+/>
+
+A rough rule: if you are describing what something *can do*, use an interface. If you are sharing actual implementation and fields between related classes, use an abstract class.
+
+```java
+interface Stoppable {
+    void stop();
+}
+
+class Drivetrain extends Subsystem implements Stoppable {
+    @Override public void periodic() { ... }
+    @Override public void stop() { System.out.println("brakes on"); }
+}
+```
+
+A class can extend one thing and implement several, which is why capabilities are usually interfaces.
+
+### What is not polymorphic
+
+Two things behave differently from what you might expect.
+
+**Fields are not overridden.** They are chosen by the declared type:
+
+```java
+class Parent { String name = "parent"; }
+class Child extends Parent { String name = "child"; }
+
+Parent p = new Child();
+System.out.println(p.name);          // "parent" — not "child"
+```
+
+This is called field hiding, and it is a good reason to keep fields `private` and expose them through methods, which *are* polymorphic.
+
+**Static methods are not overridden** either. They are resolved by the declared type at compile time, so a static method never dispatches on the actual object.
+
+### Overloading is a different thing
+
+The two words look similar and are frequently confused.
+
+<ContentTable
+  headers={["", "Overriding", "Overloading"]}
+  rows={[
+    ["What varies", "Same signature, different class", "Same name, different parameters"],
+    ["Chosen", "At runtime, by the actual object", "At compile time, by the argument types"],
+    ["Requires inheritance?", "Yes", "No"]
+  ]}
+/>
+
+Only overriding is polymorphism. See [Method and Constructor Overloading](/java/java-overloading) for the other one.
+
+### Checking the actual type
+
+Occasionally you genuinely need to know what you have:
+
+```java
+for (Subsystem s : subsystems) {
+    if (s instanceof Stoppable stoppable) {     // pattern matching, Java 16+
+        stoppable.stop();
+    }
+}
+```
+
+The variable after the type is declared and assigned in one step, so no separate cast is needed.
+
+<RulesBox title="Frequent instanceof checks are a warning sign">
+
+```java
+// this defeats the purpose
+if (s instanceof Drivetrain) {
+    ((Drivetrain) s).driveForward();
+} else if (s instanceof Intake) {
+    ((Intake) s).runIntake();
+}
+```
+
+A chain like this is polymorphism written by hand, badly — every new subsystem means editing it. The fix is usually to add a method to the base type so each class handles itself.
+
+Checking for a *capability interface* like `Stoppable` is more defensible, since it asks what the object can do rather than what it is.
+
+</RulesBox>
+
+<RulesBox title="Common mistakes">
+
+- **Omitting `@Override`** and silently creating a new method.
+- **Expecting fields to be overridden.** They are hidden, not overridden.
+- **Expecting static methods to dispatch** on the actual object.
+- **Long `instanceof` chains** instead of adding a method to the base type.
+- **Calling an overridable method from a constructor.** The subclass's version runs before its fields are initialised, so it sees zeros and nulls.
+- **Confusing overriding with overloading.**
+
+</RulesBox>
+
+<ExerciseBox title="Practice">
+
+1. Write an abstract `Shape` class with an abstract `area()` method, plus `Circle` and `Rectangle` subclasses. Put several in a list and print every area in one loop.
+2. Add a `describe()` method to `Shape` with a default body, and override it in only one subclass. Confirm which version runs for each.
+3. Write a `Stoppable` interface and implement it in two unrelated classes. Loop a mixed list and stop only the ones that can be stopped.
+4. Demonstrate field hiding: a parent and child each with a `name` field, and show that the declared type decides which you see.
+5. Take a method containing a three-branch `instanceof` chain and rewrite it using polymorphism so the chain disappears.
+
+<details>
+<summary>Hints</summary>
+
+1. `List<Shape>` and a for-each calling `area()`.
+2. Give `Shape.describe()` a body; override it in `Circle` only. `Rectangle` inherits the default.
+3. `instanceof Stoppable stoppable` inside the loop.
+4. Assign a `Child` to a `Parent` variable and read `name` through both.
+5. Move each branch's body into an overridden method on the respective class, then call that one method.
+
+</details>
+
+</ExerciseBox>
+
+<LinkGrid
+  title="Next"
+  section="java"
+  links={[
+    {"label":"Passing Functions as Data","id":"java-fn-functions-as-data"},
+    {"label":"Instance Factory Methods","id":"java-dp-factory-method"}
+  ]}
+/>
+
+<LinkGrid
+  title="Review"
+  section="java"
+  links={[
+    {"label":"Java Classes","id":"java-classes"},
+    {"label":"Objects and References","id":"java-objects-references"},
+    {"label":"Method and Constructor Overloading","id":"java-overloading"}
+  ]}
+/>

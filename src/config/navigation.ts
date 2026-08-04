@@ -20,13 +20,7 @@ export const sections: NavSection[] = [
   { id: 'java', label: 'Java', path: '/java', collection: 'java' },
   { id: 'ftc', label: 'FTC', path: '/ftc', collection: 'ftc' },
   { id: 'frc', label: 'FRC', path: '/frc', collection: 'frc' },
-  {
-    id: 'comp',
-    label: 'Competitive',
-    path: '/comp',
-    collection: 'comp',
-    underConstruction: true,
-  },
+  { id: 'comp', label: 'Competitive', path: '/comp', collection: 'comp' },
 ];
 
 export const appRoutes: AppRoute[] = [

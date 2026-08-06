@@ -74,9 +74,52 @@ public double get() {
 
 <RulesBox title="Turn tuningMode off for competition">
 
-With it on, every tunable is a live NetworkTables entry. A dashboard that fails to connect, a stale value left over from practice, or someone typing in the pit all become ways for the robot to behave differently than the code says.
+With it on, every tunable is a live NetworkTables entry, and the robot uses whatever value is sitting in that entry rather than what the source file says. A stale value left over from practice survives until the next reboot.
 
 Tune with it on. Copy the values you settled on into the defaults in code. Set it to `false`. Deploy. Now the robot does the same thing every time, and the source file is the truth.
+
+</RulesBox>
+
+### Editing Tunables From AdvantageScope
+
+AdvantageScope can write values back to NetworkTables, which is how you change a gain without touching the dashboard's own widgets.
+
+Everything is **read-only by default**. To change that, click the **slider icon to the right of the search bar** while connected to a live source. When the icon is purple, tuning mode is on and fields become editable:
+
+- **Numeric field** — type a new value in the text box to the right of the field in the sidebar. It publishes when the box loses focus or you press Enter. Leave it blank to go back to the robot-published value.
+- **Boolean field** — click the red or green circle to the right of the field.
+
+That read-only default is a real safeguard: nobody can nudge a gain by clicking around in the pit unless they deliberately turn the toggle on first.
+
+<RulesBox title="It is a safeguard, not a substitute">
+
+The AdvantageScope toggle controls whether **AdvantageScope** may write. It does not change whether the **robot** reads.
+
+With `tuningMode = true`, the robot still takes its values from NetworkTables no matter what the viewer is doing — so a value someone set an hour ago is still in effect. Setting `tuningMode = false` is what makes the robot ignore NetworkTables entirely and use the compiled-in constants.
+
+Use both. The toggle prevents accidental edits during a session; the flag is what you ship.
+
+</RulesBox>
+
+AdvantageScope's own documentation is blunt about the scope of the feature:
+
+> This feature is not intended for controlling the robot on the field. Dashboard-style inputs like choosers, trigger buttons, etc. are not supported.
+
+<RulesBox title="Publish tunables under /Tuning">
+
+With the **NetworkTables (AdvantageKit)** live source, AdvantageScope surfaces editable fields from the `/Tuning` table. AdvantageKit's own input subtable is deliberately **not** editable, because it is what gets recorded for replay.
+
+`LoggedNetworkNumber` publishes to the root of NetworkTables using your key verbatim, so the key you choose decides whether the field is editable at all:
+
+```java
+// Editable from AdvantageScope
+new LoggedNetworkNumber("/Tuning/Flywheel/kP", 0.4);
+
+// Publishes to /TunableNumbers/... — outside the Tuning table
+new LoggedNetworkNumber("TunableNumbers/Flywheel/kP", 0.4);
+```
+
+If your tunables are not showing up as editable, this is almost always why. Prefix the key with `/Tuning/`.
 
 </RulesBox>
 
@@ -105,8 +148,8 @@ The first argument is an id used to track "changed since last check" per caller.
 
 1. Make the values tunable and confirm `tuningMode = true`.
 2. Deploy once.
-3. Open the dashboard; the entries appear under the tunable table.
-4. Run the mechanism, change a value, watch the effect immediately.
+3. Connect AdvantageScope to the robot and turn on tuning mode — the slider icon right of the search bar.
+4. Run the mechanism, change a value in the sidebar, watch the effect immediately.
 5. Watch **commanded vs actual** on a graph, not the mechanism itself. Your eyes cannot see 20 ms of overshoot.
 6. When it is right, copy the values into the defaults in code.
 7. Set `tuningMode = false` and deploy.

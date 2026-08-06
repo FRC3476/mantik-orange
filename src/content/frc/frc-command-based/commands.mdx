@@ -7,13 +7,13 @@ groupLabel: Command-Based Programming
 groupOrder: 3
 order: 3
 difficulty: beginner
-duration: 15 min
-description: ""
+duration: 30 min
+description: Subsystem command factories for single-mechanism actions, and full Command classes for the multi-subsystem cases that need them.
 ---
 
 ### Overview
 
-Commands define robot actions. They use subsystem methods to perform tasks. Commands can be full classes or inline factories for simple actions.
+Commands define robot actions. They use subsystem methods to perform tasks, and the scheduler decides which ones run.
 
 <RulesBox title="Command Lifecycle" subtitle="Four key methods:">
 
@@ -24,64 +24,193 @@ Commands define robot actions. They use subsystem methods to perform tasks. Comm
 
 </RulesBox>
 
-### Full Command Class
+### Subsystem Command Factories
 
-For complex commands, create a class extending `Command`. Always call `addRequirements()` in the constructor to declare which subsystems the command uses.
-
-### Full Command Example
+For an action that involves a **single** subsystem, the shortest correct version is a method on that subsystem. `SubsystemBase` provides factory methods that build a command already requiring `this`:
 
 ```java
-package frc.robot.commands;
+public class Intake extends SubsystemBase {
+    // Runs every loop while scheduled
+    public Command setIntakeCommand(double speed) {
+        return run(() -> setIntakeDutyCycle(speed));
+    }
 
-import edu.wpi.first.wpilibj2.command.Command;
-import frc.robot.subsystems.Intake;
+    // Runs once, then finishes
+    public Command setIntakePosCommand(double pos) {
+        return runOnce(() -> setIntakePosition(pos));
+    }
+}
+```
 
-public class RunIntakeCommand extends Command {
-    private final Intake m_intake;
-    
-    public RunIntakeCommand(Intake intake) {
-        m_intake = intake;
-        addRequirements(intake);
-    }
-    
-    @Override
-    public void initialize() {
-        m_intake.run(0.6);
-    }
-    
-    @Override
-    public void end(boolean interrupted) {
-        m_intake.stop();
-    }
+<ContentTable
+  title="The factory methods on SubsystemBase"
+  headers={["Method", "Behaviour", "Ends when"]}
+  rows={[
+    ["<code>run(Runnable)</code>", "Calls the runnable every loop", "Never &mdash; runs until interrupted"],
+    ["<code>runOnce(Runnable)</code>", "Calls the runnable once", "Immediately"],
+    ["<code>startEnd(onStart, onEnd)</code>", "One action at start, another at end", "When interrupted"],
+    ["<code>runEnd(whileRunning, onEnd)</code>", "Every loop, plus cleanup", "When interrupted"]
+  ]}
+/>
+
+Which one you want follows from what the hardware needs. A **duty cycle** must be re-commanded every loop or the motor safety watchdog cuts it off, so use `run()`. A **closed-loop setpoint** is held by the motor controller itself, so `runOnce()` is enough — re-sending it 50 times a second achieves nothing.
+
+<RulesBox title="Requirements come free">
+
+`run` and `runOnce` are instance methods on the subsystem, so the command they return already requires that subsystem. There is no `addRequirements()` call to forget.
+
+That matters more than it sounds. A command with no requirements conflicts with nothing, so two of them can drive the same motor at once with no error and no symptom beyond a mechanism that behaves strangely.
+
+</RulesBox>
+
+Because a factory is a method, it can take arguments — one method covers what would otherwise be several classes:
+
+```java
+intake.setIntakeCommand(1)      // intake
+intake.setIntakeCommand(-1)     // eject
+intake.setIntakeCommand(0)      // stop
+```
+
+The alternative is `RunIntakeCommand`, `EjectIntakeCommand`, and `StopIntakeCommand`, all nearly identical. Bindings read better too: `intake.deployAndIntakeCommand()` says what happens once, where `new DeployAndIntakeCommand(intake)` says it twice.
+
+When a setpoint has a meaning, name the factory after the meaning rather than parameterizing it:
+
+```java
+public Command intakeDeployCommand() {
+    return runOnce(() -> setIntakePosition(INTAKE_PIVOT_DOWN));
+}
+
+public Command intakeHomeCommand() {
+    return runOnce(() -> setIntakePosition(INTAKE_PIVOT_UP));
 }
 ```
 
 ### Inline Commands
 
-For simple actions, use command constructors like `new RunCommand()` or `new InstantCommand()`. These reduce boilerplate for straightforward tasks.
-
-### Inline Command Examples
+For a one-off action that does not deserve a factory, `Commands` has static builders:
 
 ```java
-import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.RunCommand;
-import frc.robot.subsystems.Intake;
+import edu.wpi.first.wpilibj2.command.Commands;
 
 // Run continuously while scheduled
-Command runCmd = new RunCommand(() -> intake.run(0.6), intake);
+Command runCmd = Commands.run(() -> intake.setIntakeDutyCycle(0.6), intake);
 
 // Run once immediately, then finish
-Command stopCmd = new InstantCommand(() -> intake.stop(), intake);
+Command stopCmd = Commands.runOnce(() -> intake.setIntakeDutyCycle(0), intake);
 
-// Run with a condition
-Command conditionalCmd = new RunCommand(() -> intake.run(0.6), intake)
-    .until(() -> intake.hasGamePiece());
+// Run until a condition is met
+Command untilCmd = intake.setIntakeCommand(0.6).until(intake::hasGamePiece);
+```
+
+Note the subsystem passed as the second argument — with the static form, requirements are **not** automatic.
+
+### Full Command Classes
+
+Write a class extending `Command` when an action coordinates **several subsystems that must react to each other**, every loop. A factory cannot express that, because `run` and `runOnce` require exactly one subsystem.
+
+Shooting while moving is the standard example: the drive pose determines the flywheel speed, the flywheel speed determines whether the feeder may run, and all of it is recomputed continuously.
+
+```java
+package frc.robot.commands;
+
+public class SmartShootCommand extends Command {
+    private final Shooter shooter;
+    private final Transfer transfer;
+    private final Conveyor conveyor;
+    private final Drive drive;
+
+    public SmartShootCommand(Drive drive, Shooter shooter, Transfer transfer, Conveyor conveyor) {
+        this.shooter = shooter;
+        this.transfer = transfer;
+        this.conveyor = conveyor;
+        this.drive = drive;
+        addRequirements(shooter, transfer, conveyor);
+    }
+
+    @Override
+    public void initialize() {
+        transfer.feeding = false;
+    }
+
+    @Override
+    public void execute() {
+        double distance = drive.getPose().getTranslation().getDistance(targetPose.getTranslation());
+        double setpoint = shooter.getVelo(distance);
+        shooter.setPIDSetpoint(setpoint);
+
+        Logger.recordOutput(getName() + "/distance", distance);
+        Logger.recordOutput(getName() + "/setpoint", setpoint);
+
+        if (shooter.atOrAboveSpeed()) {
+            transfer.setTransferDutyCycle(1.0);
+            conveyor.setConveyorDutyCycle(-1.0);
+        }
+    }
+
+    @Override
+    public void end(boolean interrupted) {
+        transfer.setTransferDutyCycle(0);
+        conveyor.setConveyorDutyCycle(0);
+        shooter.setDutyCycleSetpoint(0);
+    }
+
+    @Override
+    public boolean isFinished() {
+        return false;
+    }
+}
 ```
 
 ### Requirements
 
-Commands declare subsystem requirements to prevent conflicts. The Scheduler ensures only one command controls a subsystem at a time. If a new command requires a subsystem in use, it interrupts the current command.
+Commands declare subsystem requirements to prevent conflicts. The scheduler ensures only one command controls a subsystem at a time; if a new command requires a subsystem in use, it interrupts the current one.
 
-<LinkGrid links={[{"label":"RobotContainer & Bindings","id":"robot-container-and-bindings"},{"label":"Command Groups","id":"command-groups"},{"label":"WPILib Commands Documentation","url":"https://docs.wpilib.org/en/stable/docs/software/commandbased/commands.html"}]} title="Resources" section="frc" />
+<RulesBox title="Require what you command, not what you read">
 
+Four subsystems are passed into the constructor above. Only three are required.
+
+`drive` is deliberately left out, because the command only *reads* the drive pose — it never commands the drivetrain. Requiring it would interrupt the joystick drive, and the driver would lose control the instant they pressed the shoot button.
+
+Over-requiring is the more common mistake and the harder one to debug: the mechanism works, but pressing the button silently cancels something else.
+
+</RulesBox>
+
+### Ending Cleanly
+
+`isFinished()` returning `false` means the command runs until something cancels it — correct for a `whileTrue` binding, where the trigger controls its lifetime.
+
+That makes `end()` load-bearing. It runs on interruption as well as normal completion, and it must stop **everything** the command started. Default commands only cover subsystems this command required; anything else left commanded here stays commanded.
+
+### Logging From a Command
+
+```java
+Logger.recordOutput(getName() + "/distance", distance);
+```
+
+`getName()` returns the command's class name, so keys come out as `SmartShootCommand/distance` and follow the class if it is ever renamed.
+
+Log the intermediate values, not just the final output. When a shot misses, `distance` and `setpoint` are what tell you whether the pose estimate was wrong or the shot table was.
+
+<ContentTable
+  title="Which form to use"
+  headers={["Situation", "Write"]}
+  rows={[
+    ["One subsystem", "A factory method on that subsystem"],
+    ["Several subsystems, independent of each other", "Compose factories &mdash; see <a href=\"/frc/command-groups\">Command Groups</a>"],
+    ["Several subsystems that must react to each other", "A class extending <code>Command</code>"]
+  ]}
+/>
+
+<RulesBox title="Common mistakes">
+
+- **A `run()` factory for a closed-loop setpoint**, flooding the bus for no reason.
+- **A `runOnce()` factory for a duty cycle**, which motor safety will cut off.
+- **Requiring a subsystem you only read from.**
+- **An `end()` that does not stop everything it started.**
+- **State initialised in the constructor instead of `initialize()`.** The constructor runs once at startup; the command may be scheduled hundreds of times.
+- **Blocking loops in `execute()`.** Everything runs on one thread — a loop that waits freezes the whole robot.
+- **Reaching for a class too early.** If the action fits one subsystem, it is a factory.
+
+</RulesBox>
+
+<LinkGrid links={[{"label":"Command Groups","id":"command-groups"},{"label":"RobotContainer & Bindings","id":"robot-container-and-bindings"},{"label":"Subsystems","id":"subsystems"},{"label":"WPILib Commands Documentation","url":"https://docs.wpilib.org/en/stable/docs/software/commandbased/commands.html"}]} title="Resources" section="frc" />

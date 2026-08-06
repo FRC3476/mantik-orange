@@ -13,10 +13,20 @@ interface Props {
   next?: SidebarItem;
   difficulty?: string;
   duration?: string;
+  unlisted?: boolean;
 }
 
-const { title, description, currentPath, sidebarGroups, prev, next, difficulty, duration } =
-  Astro.props;
+const {
+  title,
+  description,
+  currentPath,
+  sidebarGroups,
+  prev,
+  next,
+  difficulty,
+  duration,
+  unlisted,
+} = Astro.props;
 ---
 
 <BaseLayout
@@ -38,7 +48,8 @@ const { title, description, currentPath, sidebarGroups, prev, next, difficulty, 
     )}
   </div>
 
-  <div class="lesson-content" data-pagefind-body>
+  {/* Pagefind ignores pages with no data-pagefind-body, which keeps unlisted lessons out of search. */}
+  <div class="lesson-content" data-pagefind-body={unlisted ? undefined : true}>
     <slot />
   </div>
 

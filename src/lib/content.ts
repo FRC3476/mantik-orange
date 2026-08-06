@@ -28,7 +28,9 @@ export async function getSectionLessons(section: SectionId): Promise<LessonEntry
 
 export async function getSidebarGroups(section: SectionId): Promise<SidebarGroup[]> {
   const lessons = await getSectionLessons(section);
-  const contentLessons = lessons.filter((l) => !l.data.isOverview);
+  // `unlisted` lessons still build a page, but are absent from the sidebar — and
+  // therefore from prev/next, which is derived from these groups.
+  const contentLessons = lessons.filter((l) => !l.data.isOverview && !l.data.unlisted);
 
   const groups = new Map<string, SidebarGroup>();
 

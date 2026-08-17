@@ -8,7 +8,7 @@ import { pagefindDevPlugin } from './scripts/pagefind-dev-plugin.mjs';
 import { netlifyFunctionsDevPlugin } from './scripts/netlify-functions-dev-plugin.mjs';
 import { normalizeWindowsDevPathsPlugin } from './scripts/normalize-windows-dev-paths.mjs';
 
-const SITE = 'https://mantik.netlify.app';
+const SITE = 'https://frc3476.github.io/mantik-orange';
 const analyze = process.env.ANALYZE === '1';
 // Astro default 4321 falls in Windows excluded range 4239–4338 (Hyper-V/WSL) → EACCES on bind.
 const DEV_PORT = 5173;
@@ -17,6 +17,7 @@ const DEV_HOST = '127.0.0.1';
 export default defineConfig({
   devToolbar: { enabled: false },
   site: SITE,
+  base: '/mantik-orange',
   output: 'static',
   trailingSlash: 'never',
   server: {

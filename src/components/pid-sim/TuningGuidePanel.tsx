@@ -85,10 +85,10 @@ export default function TuningGuidePanel({
             <a
               href={
                 mechanism === 'arm'
-                  ? {`${import.meta.env.BASE_URL}frc/pid-tuning-practice-arm`}
+                  ? `${import.meta.env.BASE_URL}frc/pid-tuning-practice-arm`
                   : mechanism === 'flywheel'
-                    ? {`${import.meta.env.BASE_URL}frc/pid-tuning-practice-shooter`}
-                    : {`${import.meta.env.BASE_URL}frc/pid-tuning-practice-elevator`}
+                    ? `${import.meta.env.BASE_URL}frc/pid-tuning-practice-shooter`
+                    : `${import.meta.env.BASE_URL}frc/pid-tuning-practice-elevator`
               }
             >
               {mechanism === 'arm'

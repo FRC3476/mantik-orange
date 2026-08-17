@@ -11,6 +11,20 @@ order: 0
 
 Welcome to the comprehensive competitive programming training section! This curriculum is designed to take you from beginner to advanced problem solver, preparing you for coding competitions, technical interviews, and real-world programming challenges.
 
+<RulesBox title="Start with Java Training first">
+
+This section **builds directly on the [Java Training](/java) section** and does not repeat it. The lessons here assume you already know the language and the standard data structures, and they focus on the parts that are specific to competitive programming — recognizing which technique a problem wants, and making a correct solution fast enough.
+
+If any of the following are unfamiliar, work through Java Training before starting here:
+
+- Arrays, `ArrayList`, stacks, queues, deques, trees, and graphs — see [Data Structures](/java/java-ds-arrays)
+- Recursion, sorting, searching, DFS, BFS, backtracking, and memoization — see [Common Algorithms](/java/java-algo-recursion)
+- Setting up and running Java locally — see [Setting Up Java Locally](/java/java-setup)
+
+Coming back to those pages when something here moves too fast is the right instinct, not a step backwards.
+
+</RulesBox>
+
 <RulesBox title="What is Competitive Programming?" subtitle="Competitive programming is:">
 
 - Solving algorithmic problems under time constraints
@@ -35,15 +49,16 @@ Competitive programming skills are valuable for:
 
 ### Learning Path Overview
 
-This competitive programming training is organized into five main sections, each building upon the previous knowledge:
+This section is organized into five groups, ordered roughly from foundational to advanced. Every code example is Java. Work through a group in order, or jump to a specific topic from the sidebar.
 
 ### Curriculum Structure
 
-- **Foundation:** Problem-solving framework, Big O notation, time complexity analysis, and interview preparation. This establishes the fundamental mindset and tools for competitive programming.
-- **Data Structures:** Master arrays, strings, linked lists, trees, graphs, heaps, hash tables, tries, and union-find. Understanding these structures is crucial for efficient problem solving.
-- **Algorithms:** Learn sorting, searching, binary search, two pointers, sliding window, dynamic programming, greedy algorithms, and backtracking. These are the core techniques used in competitive programming.
-- **Advanced Topics:** Dive into advanced dynamic programming, bit manipulation, and segment trees. These topics separate intermediate from advanced competitive programmers.
-- **Competition Strategies:** Learn problem patterns, code optimization techniques, contest strategies, and advanced problem-solving approaches. This prepares you for real competitions and interviews.
+- **Foundation Concepts:** Problem-solving framework, Big O notation, and complexity analysis, plus the practical setup that decides whether a correct Java solution actually passes — local setup, fast input and output, integer overflow, reading constraints to choose an approach, and debugging.
+- **Data Structures:** Arrays, strings, linked lists, trees, graphs, heaps, hash tables, tries, and union-find, plus how to choose between them and how Java's set and map types behave in practice.
+- **Algorithms:** Sorting, searching, binary search, two pointers, sliding window, dynamic programming, greedy algorithms, and backtracking, plus complete search, recursive search, simulation, prefix sums, modular arithmetic, number theory, shortest paths, topological sort, and minimum spanning trees.
+- **Advanced Topics:** Advanced dynamic programming, bit manipulation, segment trees, tree DP, Euler tours, inclusion-exclusion, sweep line, string matching, computational geometry, and maximum flow.
+- **Competition Strategies:** Problem patterns, code optimization, contest strategies, casework, ad hoc problem solving, and how to practice effectively.
+
 
 <RulesBox title="Prerequisites" subtitle="Before starting competitive programming training, you should have:">
 
@@ -91,9 +106,39 @@ Successful competitive programmers follow a systematic approach:
 
 ### Getting Started
 
-Ready to begin your competitive programming journey? Start with the **Problem Solving Framework** lesson to learn systematic approaches to algorithmic problems, then progress through data structures and algorithms.
+New to competitive programming? Start with the **Problem-Solving Framework** and **Big O Notation**, then set up your environment with the practical lessons below.
 
-<LinkGrid links={[{"label":"Problem Solving Framework","id":"comp-problem-solving"},{"label":"Big O Notation","id":"comp-big-o"},{"label":"Arrays and Strings","id":"comp-arrays-strings"},{"label":"Interview Preparation","id":"comp-interview-prep"}]} title="Quick Navigation" section="comp" />
+<LinkGrid
+  title="Start here"
+  section="comp"
+  links={[
+    {"label":"Problem-Solving Framework","id":"comp-problem-solving","description":"A systematic approach to algorithmic problems"},
+    {"label":"Big O Notation","id":"comp-big-o","description":"Complexity analysis from the ground up"},
+    {"label":"Reading Constraints to Choose an Approach","id":"cp-constraints","description":"Let the input size tell you which algorithm fits"}
+  ]}
+/>
+
+<LinkGrid
+  title="Practical setup"
+  section="comp"
+  links={[
+    {"label":"Setting Up Java Locally","description":"JDK, compiling, testing against sample input","url":"/java/java-setup"},
+    {"label":"Reading Input Fast","id":"cp-fast-io","description":"Why Scanner times out, and what to use instead"},
+    {"label":"Data Types and Overflow","id":"cp-data-types","description":"Where int silently gives a wrong answer"},
+    {"label":"Debugging Under Time Pressure","id":"cp-debugging","description":"Finding a bug without seeing the failing test"}
+  ]}
+/>
+
+<LinkGrid
+  title="Core topics"
+  section="comp"
+  links={[
+    {"label":"Data Structures","id":"comp-arrays-strings","description":"Arrays, trees, graphs, hash tables, union-find"},
+    {"label":"Sorting Algorithms","description":"Sorting, searching, DP, greedy, backtracking","url":"/java/java-algo-sorting"},
+    {"label":"Advanced Topics","id":"comp-advanced-dp","description":"Advanced DP, bitmasks, segment trees, geometry"},
+    {"label":"Contest Strategies","id":"comp-contest-strategies","description":"Patterns, optimization, and contest tactics"}
+  ]}
+/>
 
 <ExerciseBox title="Competitive Programming Readiness" description="Before starting competitive programming training, assess your readiness:">
 

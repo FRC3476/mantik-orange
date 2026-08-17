@@ -41,46 +41,87 @@ To use PathPlanner, you must configure [AutoBuilder](https://pathplanner.dev/api
 
 ### AutoBuilder Configuration (Swerve)
 
+Current PathPlannerLib uses `AutoBuilder.configure()` with a `PPHolonomicDriveController` and a `RobotConfig` describing the drivetrain's physical properties. Older guides show `configureHolonomic()` with `HolonomicPathFollowerConfig` and `ReplanningConfig` — those types no longer exist.
+
 ```java
 import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.util.HolonomicPathFollowerConfig;
-import com.pathplanner.lib.util.PIDConstants;
-import com.pathplanner.lib.util.ReplanningConfig;
+import com.pathplanner.lib.config.ModuleConfig;
+import com.pathplanner.lib.config.PIDConstants;
+import com.pathplanner.lib.config.RobotConfig;
+import com.pathplanner.lib.controllers.PPHolonomicDriveController;
+import com.pathplanner.lib.pathfinding.Pathfinding;
 
-public class Drivetrain extends SubsystemBase {
-    public Drivetrain() {
+public class Drive extends SubsystemBase {
+    // Physical description of the robot, used for PathPlanner's feedforward
+    private static final RobotConfig PP_CONFIG = new RobotConfig(
+            PathPlannerConstants.ROBOT_MASS_KG,      // total robot mass, kg
+            PathPlannerConstants.ROBOT_MOI,          // moment of inertia, kg*m^2
+            new ModuleConfig(
+                    TunerConstants.FrontLeft.WheelRadius,
+                    TunerConstants.kSpeedAt12Volts.in(MetersPerSecond),
+                    PathPlannerConstants.WHEEL_COF,  // wheel coefficient of friction
+                    DCMotor.getKrakenX60(1)
+                            .withReduction(TunerConstants.FrontLeft.DriveMotorGearRatio),
+                    TunerConstants.FrontLeft.SlipCurrent,
+                    1),                              // motors per module
+            getModuleTranslations());
+
+    public Drive(/* ... */) {
         // ... hardware init ...
 
-        // API: AutoBuilder.configureHolonomic() - https://pathplanner.dev/api/java/com/pathplanner/lib/auto/AutoBuilder.html
-        AutoBuilder.configureHolonomic(
-                this::getPose,          // Supplier<Pose2d> function to supply current robot pose
-                this::resetPose,        // Consumer<Pose2d> function to reset the pose
-                this::getRobotRelativeSpeeds, // Supplier<ChassisSpeeds> current speeds
-                this::driveRobotRelative,     // Consumer<ChassisSpeeds> output for driving
-                // API: HolonomicPathFollowerConfig - https://pathplanner.dev/api/java/com/pathplanner/lib/util/HolonomicPathFollowerConfig.html
-                new HolonomicPathFollowerConfig(
-                        // API: PIDConstants - https://pathplanner.dev/api/java/com/pathplanner/lib/util/PIDConstants.html
-                        new PIDConstants(5.0, 0.0, 0.0), // Translation PID constants
-                        new PIDConstants(5.0, 0.0, 0.0), // Rotation PID constants
-                        4.5,                             // Max module speed (m/s)
-                        0.4,                             // Drive base radius (m) (distance from center to furthest module)
-                        // API: ReplanningConfig - https://pathplanner.dev/api/java/com/pathplanner/lib/util/ReplanningConfig.html
-                        new ReplanningConfig()           // Default path replanning config
-                ),
-                () -> {
-                    // Boolean supplier that controls when the path will be mirrored for the red alliance
-                    // This will flip the path being followed to the red side of the field.
-                    // THE ORIGIN WILL REMAIN ON THE BLUE SIDE
-                    var alliance = DriverStation.getAlliance();
-                    if (alliance.isPresent()) {
-                        return alliance.get() == DriverStation.Alliance.Red;
-                    }
-                    return false;
-                },
+        // API: AutoBuilder.configure() - https://pathplanner.dev/api/java/com/pathplanner/lib/auto/AutoBuilder.html
+        AutoBuilder.configure(
+                this::getPose,           // Supplier<Pose2d> current robot pose
+                this::setPose,           // Consumer<Pose2d> reset the pose
+                this::getChassisSpeeds,  // Supplier<ChassisSpeeds> robot-relative speeds
+                this::runVelocity,       // Consumer<ChassisSpeeds> output for driving
+                new PPHolonomicDriveController(
+                        new PIDConstants(5.0, 0.0, 0.0),  // Translation PID
+                        new PIDConstants(5.0, 0.0, 0.0)), // Rotation PID
+                PP_CONFIG,
+                // Flip the path for the red alliance. The origin stays on the blue side.
+                () -> DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red,
                 this // Reference to this subsystem to set requirements
         );
     }
 }
+```
+
+<RulesBox title="Keep RobotConfig honest">
+
+`RobotConfig` is how PathPlanner predicts what the robot will do. Mass, moment of inertia, and wheel coefficient of friction all feed its feedforward.
+
+A mass left over from last season's robot produces consistent tracking error on every path — and it looks exactly like badly tuned PID, so teams often spend a practice session tuning gains to compensate for a wrong number. Update it when the robot's weight changes.
+
+</RulesBox>
+
+### Warmup and Pathfinding
+
+Two additions worth making once the basics work.
+
+**Warmup.** The first path of autonomous otherwise pays a one-time class-loading cost while the match clock is running. Schedule the warmup commands at startup to pay it before the match instead:
+
+```java
+// In the Robot constructor
+FollowPathCommand.warmupCommand().schedule();
+PathfindingCommand.warmupCommand().schedule();
+```
+
+**Pathfinding with AdvantageKit.** PathPlanner's default pathfinder runs on a background thread, which makes log replay non-deterministic. Teams using AdvantageKit swap in a logged wrapper:
+
+```java
+Pathfinding.setPathfinder(new LocalADStarAK());
+```
+
+`LocalADStarAK` routes the pathfinder's results through the logger so a replay follows the same path the robot did. It is a single file, published by PathPlanner's author — see [the gist](https://gist.github.com/mjansen4857/a8024b55eb427184dbd10ae8923bd57d).
+
+You can also log the active path and target pose so they appear in AdvantageScope:
+
+```java
+PathPlannerLogging.setLogActivePathCallback(
+        (activePath) -> Logger.recordOutput("Odometry/Trajectory", activePath.toArray(new Pose2d[0])));
+PathPlannerLogging.setLogTargetPoseCallback(
+        (targetPose) -> Logger.recordOutput("Odometry/TrajectorySetpoint", targetPose));
 ```
 
 ### Creating and Running Paths
@@ -137,8 +178,10 @@ public class RobotContainer {
 - Use 'On-the-fly' generation for dynamic pathing if needed, but pre-generated paths are safer.
 - Visualize path following in AdvantageScope or Field2d to debug tracking errors.
 - Remember to register [NamedCommands](https://pathplanner.dev/api/java/com/pathplanner/lib/auto/NamedCommands.html) before building the auto chooser.
+- Schedule the warmup commands at startup so the first path does not stutter.
+- Keep the robot mass in `RobotConfig` current.
 
 </RulesBox>
 
-<LinkGrid links={[{"label":"PathPlanner Docs","url":"https://pathplanner.dev/"},{"label":"PathPlannerLib API","url":"https://pathplanner.dev/api/java/"},{"label":"Command-Based Programming","id":"intro-to-command-based"},{"label":"Pose Estimation","id":"pose-estimation-intro"}]} title="Resources" section="frc" />
+<LinkGrid links={[{"label":"Swerve Drive Example","id":"swerve-drive-example"},{"label":"PathPlanner Docs","url":"https://pathplanner.dev/"},{"label":"PathPlannerLib API","url":"https://pathplanner.dev/api/java/"},{"label":"Command-Based Programming","id":"intro-to-command-based"},{"label":"Pose Estimation","id":"pose-estimation-intro"}]} title="Resources" section="frc" />
 

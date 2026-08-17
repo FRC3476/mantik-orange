@@ -226,5 +226,65 @@ This is critical for testing autonomous paths. If the robot follows the path on 
 
 </RulesBox>
 
-<LinkGrid links={[{"label":"Unit Testing","id":"frc-unit-testing"},{"label":"AdvantageKit","id":"advantagekit"},{"label":"AdvantageScope","id":"advantagescope"}]} title="Resources" section="frc" />
+### Three Runtime Modes
+
+Simulation is one of three environments the same source code can run in. A project structured around an [IO layer](/frc/io-layer) selects between them with a single constant:
+
+```java
+public static final Mode simMode = Mode.SIM;
+public static final Mode currentMode = RobotBase.isReal() ? Mode.REAL : simMode;
+
+public static enum Mode {
+    /** Running on a real robot. */
+    REAL,
+    /** Running a physics simulator. */
+    SIM,
+    /** Replaying from a log file. */
+    REPLAY
+}
+```
+
+`RobotBase.isReal()` is true on the roboRIO, so on the actual robot `currentMode` is always `REAL` regardless of anything else. Off the robot it takes whatever `simMode` says — which is how you switch between physics simulation and log replay: **you edit `simMode`**.
+
+<ContentTable
+  headers={["Mode", "Where it runs", "Where inputs come from", "Does the robot respond?"]}
+  rows={[
+    ["<code>REAL</code>", "roboRIO", "Actual hardware", "Yes"],
+    ["<code>SIM</code>", "Your laptop", "Physics simulation", "Yes &mdash; to a model"],
+    ["<code>REPLAY</code>", "Your laptop", "A recorded <code>.wpilog</code>", "No &mdash; inputs are fixed"]
+  ]}
+/>
+
+`RobotContainer` reads that constant once to decide which IO implementations to construct — see [Hardware Abstraction with IO Layers](/frc/io-layer). Nothing else in the codebase needs to know.
+
+### Log Replay
+
+Simulation asks "what would the robot do?" Replay asks "what *did* it do, and would my fix have changed it?"
+
+In replay mode the recorded inputs from a real match are fed back into your current code. There is no physics model and the robot does not react — you are watching your code process real inputs.
+
+<StepsBox title="Replaying a match log">
+
+1. Pull the `.wpilog` off the USB stick after the match (on a real robot it is written to `/U/logs`).
+2. Set `simMode = Mode.REPLAY`.
+3. Run **Simulate Robot Code** from the WPILib extension.
+4. `LogFileUtil.findReplayLog()` prompts you for the file.
+5. A second log is written next to the first with `_sim` appended, holding whatever your *current* code produced.
+6. Open both in AdvantageScope and compare the outputs.
+
+</StepsBox>
+
+`setUseTiming(false)` in the replay branch removes the wait between loops, so a full match replays in seconds. AdvantageKit also ships a `ReplayWatch` entry point that re-runs the replay every time you save a file, giving a fast edit-and-look loop while chasing a bug.
+
+<RulesBox title="What replay can and cannot do">
+
+**Can:** reproduce a once-per-event bug on demand, on a laptop, with no robot, field, or battery. Add logging that was not there during the match and still get the values, because the inputs were all recorded. Verify a fix against real match data.
+
+**Cannot:** reproduce anything that was not recorded as an **input**. A value read straight off a motor inside a subsystem was never an input, so replay does not have it.
+
+**Breaks on:** non-determinism. `Math.random()`, wall-clock time, or iteration order that varies will make the replay diverge from the match.
+
+</RulesBox>
+
+<LinkGrid links={[{"label":"Hardware Abstraction with IO Layers","id":"io-layer"},{"label":"Unit Testing","id":"frc-unit-testing"},{"label":"AdvantageKit","id":"advantagekit"},{"label":"AdvantageScope","id":"advantagescope"}]} title="Resources" section="frc" />
 

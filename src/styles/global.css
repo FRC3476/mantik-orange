@@ -4009,6 +4009,8 @@ html[data-theme="dark"] .astro-code span {
 /* Fenced Shiki blocks — standalone fences in lessons (not inside CodeTabs panels) */
 .lesson-content > pre.astro-code,
 .exercise-box-body > pre.astro-code,
+.rules-box-content > pre.astro-code,
+.steps-box-content > pre.astro-code,
 #furo-main-content .lesson-content > pre.astro-code {
     background: var(--color-code-background) !important;
     border: 1px solid var(--color-background-border) !important;
@@ -4057,6 +4059,8 @@ html[data-theme="dark"] .astro-code span {
 
 .lesson-content pre.astro-code code,
 .exercise-box-body pre.astro-code code,
+.rules-box-content pre.astro-code code,
+.steps-box-content pre.astro-code code,
 .code-tabs-container pre.astro-code code {
     background: transparent !important;
     background-color: transparent !important;
@@ -4074,7 +4078,9 @@ html[data-theme="dark"] .astro-code span {
 
 /* Non-Shiki fenced blocks (plain pre) */
 .lesson-content > pre:not(.astro-code),
-.exercise-box-body > pre:not(.astro-code) {
+.exercise-box-body > pre:not(.astro-code),
+.rules-box-content > pre:not(.astro-code),
+.steps-box-content > pre:not(.astro-code) {
     background: var(--color-background-secondary);
     border: 1px solid var(--color-background-border);
     border-radius: 0;
@@ -4087,7 +4093,9 @@ html[data-theme="dark"] .astro-code span {
 }
 
 .lesson-content pre:not(.astro-code) code,
-.exercise-box-body pre:not(.astro-code) code {
+.exercise-box-body pre:not(.astro-code) code,
+.rules-box-content pre:not(.astro-code) code,
+.steps-box-content pre:not(.astro-code) code {
     background: transparent;
     font-family: inherit;
     font-size: inherit;
@@ -4097,9 +4105,14 @@ html[data-theme="dark"] .astro-code span {
 
 html[data-theme="dark"] .lesson-content > pre.astro-code,
 html[data-theme="dark"] .exercise-box-body > pre.astro-code,
+html[data-theme="dark"] .rules-box-content > pre.astro-code,
+html[data-theme="dark"] .steps-box-content > pre.astro-code,
 html[data-theme="dark"] #furo-main-content .lesson-content > pre.astro-code {
     background: var(--color-code-background) !important;
     border-color: var(--color-background-border) !important;
+    /* Shiki inlines the light theme's foreground on the pre; any token without its own
+       span colour would otherwise render dark-on-dark. */
+    color: var(--color-code-foreground) !important;
 }
 
 html[data-theme="dark"] .code-tabs-container pre.astro-code {
@@ -4109,9 +4122,13 @@ html[data-theme="dark"] .code-tabs-container pre.astro-code {
 @media (max-width: 48em) {
     .lesson-content > pre.astro-code,
     .exercise-box-body > pre.astro-code,
+    .rules-box-content > pre.astro-code,
+    .steps-box-content > pre.astro-code,
     .code-tabs-container pre.astro-code,
     .lesson-content > pre:not(.astro-code),
-    .exercise-box-body pre:not(.astro-code) {
+    .exercise-box-body pre:not(.astro-code),
+    .rules-box-content pre:not(.astro-code),
+    .steps-box-content pre:not(.astro-code) {
         font-size: 0.9rem;
         padding: 1rem 0.75rem;
     }

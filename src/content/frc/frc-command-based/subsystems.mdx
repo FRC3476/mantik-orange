@@ -7,8 +7,8 @@ groupLabel: Command-Based Programming
 groupOrder: 3
 order: 2
 difficulty: beginner
-duration: 20 min
-description: ""
+duration: 30 min
+description: Encapsulating hardware in a subsystem — configuration that cannot fail silently, logging that comes for free, and command factories.
 ---
 
 ### Overview
@@ -21,16 +21,129 @@ Subsystems encapsulate hardware (motors, sensors) and provide methods to control
 - **Methods:** Provide simple, focused control methods.
 - **No Complex Logic:** Commands handle when and why; subsystems handle how.
 - **Configuration:** Set up hardware in the constructor.
+- **Nearly empty `periodic()`:** Logging and safety checks only.
 
 </RulesBox>
 
 ### Intake Subsystem Example
 
-<CodeTabs tabs={[{"label":"Talon FX","code":"package frc.robot.subsystems;\n\nimport edu.wpi.first.wpilibj2.command.SubsystemBase;\nimport com.ctre.phoenix6.hardware.TalonFX;\nimport com.ctre.phoenix6.configs.TalonFXConfiguration;\nimport com.ctre.phoenix6.signals.NeutralModeValue;\nimport com.ctre.phoenix6.controls.DutyCycleOut;\n\npublic class Intake extends SubsystemBase {\n    private final TalonFX m_motor = new TalonFX(5);\n    private final DutyCycleOut m_out = new DutyCycleOut(0);\n    \n    public Intake() {\n        TalonFXConfiguration config = new TalonFXConfiguration();\n        config.MotorOutput.NeutralMode = NeutralModeValue.Coast;\n        config.CurrentLimits.StatorCurrentLimitEnable = true;\n        config.CurrentLimits.StatorCurrentLimit = 30.0;\n        m_motor.getConfigurator().apply(config);\n    }\n    \n    public void run(double speed) {\n        m_motor.setControl(m_out.withOutput(speed));\n    }\n    \n    public void stop() {\n        m_motor.setControl(m_out.withOutput(0));\n    }\n}","language":"java"},{"label":"SPARK MAX","code":"package frc.robot.subsystems;\n\nimport edu.wpi.first.wpilibj2.command.SubsystemBase;\nimport com.revrobotics.spark.SparkMax;\nimport com.revrobotics.spark.SparkLowLevel.MotorType;\nimport com.revrobotics.spark.config.SparkMaxConfig;\nimport com.revrobotics.spark.config.SparkBaseConfig.IdleMode;\nimport com.revrobotics.spark.SparkBase.ResetMode;\nimport com.revrobotics.spark.SparkBase.PersistMode;\n\npublic class Intake extends SubsystemBase {\n    private final SparkMax m_motor = new SparkMax(5, MotorType.kBrushless);\n    \n    public Intake() {\n        SparkMaxConfig config = new SparkMaxConfig();\n        config.idleMode(IdleMode.kCoast);\n        config.smartCurrentLimit(30);\n        m_motor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);\n    }\n    \n    public void run(double speed) {\n        m_motor.set(speed);\n    }\n    \n    public void stop() {\n        m_motor.set(0);\n    }\n}","language":"java"}]} />
+<CodeTabs tabs={[{"label":"Talon FX","code":"package frc.robot.subsystems.intake;\n\nimport edu.wpi.first.wpilibj2.command.SubsystemBase;\nimport com.ctre.phoenix6.hardware.TalonFX;\nimport com.ctre.phoenix6.configs.TalonFXConfiguration;\nimport com.ctre.phoenix6.signals.NeutralModeValue;\nimport frc.robot.util.PhoenixUtil;\n\nimport static frc.robot.Constants.IntakeConstants.*;\n\npublic class Intake extends SubsystemBase {\n    TalonFX motor = new TalonFX(INTAKE_MOTOR_PORT);\n    TalonFXConfiguration config = new TalonFXConfiguration();\n\n    public Intake() {\n        config.MotorOutput.NeutralMode = NeutralModeValue.Coast;\n        config.CurrentLimits.StatorCurrentLimitEnable = true;\n        config.CurrentLimits.SupplyCurrentLimitEnable = true;\n        config.CurrentLimits.StatorCurrentLimit = 60;\n        config.CurrentLimits.SupplyCurrentLimit = 40;\n\n        PhoenixUtil.tryUntilOk(5, () -> motor.getConfigurator().apply(config));\n    }\n\n    public double setIntakeDutyCycle(double dc) {\n        motor.set(dc);\n        return dc;\n    }\n\n    public double getIntakeVelocity() {\n        return motor.getVelocity().getValueAsDouble();\n    }\n}","language":"java"},{"label":"SPARK MAX","code":"package frc.robot.subsystems.intake;\n\nimport edu.wpi.first.wpilibj2.command.SubsystemBase;\nimport com.revrobotics.spark.SparkMax;\nimport com.revrobotics.spark.SparkLowLevel.MotorType;\nimport com.revrobotics.spark.config.SparkMaxConfig;\nimport com.revrobotics.spark.config.SparkBaseConfig.IdleMode;\nimport com.revrobotics.spark.SparkBase.ResetMode;\nimport com.revrobotics.spark.SparkBase.PersistMode;\n\nimport static frc.robot.Constants.IntakeConstants.*;\n\npublic class Intake extends SubsystemBase {\n    SparkMax motor = new SparkMax(INTAKE_MOTOR_PORT, MotorType.kBrushless);\n\n    public Intake() {\n        SparkMaxConfig config = new SparkMaxConfig();\n        config.idleMode(IdleMode.kCoast);\n        config.smartCurrentLimit(40);\n        config.secondaryCurrentLimit(60);\n\n        motor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);\n    }\n\n    public double setIntakeDutyCycle(double dc) {\n        motor.set(dc);\n        return dc;\n    }\n\n    public double getIntakeVelocity() {\n        return motor.getEncoder().getVelocity();\n    }\n}","language":"java"}]} />
+
+### Configuration Can Fail Silently
+
+On the CTRE side, `getConfigurator().apply(config)` returns a `StatusCode`, and on a busy CAN bus at startup — twenty-odd devices powering up at once — it does not always succeed.
+
+A failed apply reports nothing. The motor keeps whatever configuration it already had, which might be last season's inversion or no current limit at all. You find out when a mechanism runs backwards or a breaker trips.
+
+Retry it:
+
+```java
+PhoenixUtil.tryUntilOk(5, () -> motor.getConfigurator().apply(config));
+```
+
+Five attempts cost nothing and remove the failure mode. The helper itself is about ten lines — see [Motor Configuration](/frc/motor-controller-configuration).
+
+### Keep the Config as a Field
+
+Notice the `TalonFXConfiguration` above is a **field**, not a local variable. That lets you change one setting and re-apply it later without rebuilding the whole configuration:
+
+```java
+public void coast() {
+  config.MotorOutput.NeutralMode = NeutralModeValue.Coast;
+  motor.getConfigurator().apply(config);
+}
+```
+
+Useful in the pit, where you want to push a mechanism by hand.
+
+It also makes configuring two mirrored motors trivial — set the shared values once, apply, flip the inversion, apply again:
+
+```java
+config.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
+PhoenixUtil.tryUntilOk(5, () -> rightTransfer.getConfigurator().apply(config));
+
+config.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
+PhoenixUtil.tryUntilOk(5, () -> leftTransfer.getConfigurator().apply(config));
+```
+
+That one flipped line is the entire difference between the two sides.
+
+### Setters That Return What They Set
+
+The setters above return their argument instead of being `void`. That is not decorative — it is what makes commanded values loggable with a single annotation:
+
+```java
+@AutoLogOutput(key = "Intake/targetDutyCycle")
+public double setIntakeDutyCycle(double dc) {
+    motor.set(dc);
+    return dc;
+}
+
+@AutoLogOutput(key = "Intake/velocity")
+public double getIntakeVelocity() {
+    return motor.getVelocity().getValueAsDouble();
+}
+```
+
+`@AutoLogOutput` records **the return value of the method**. A `void` setter has nothing to record, so the value you commanded never reaches the log — and then tuning means guessing at half the picture.
+
+With both sides logged, the commanded value and the measured result can be dragged onto the same graph. See [AdvantageKit](/frc/advantagekit) for the annotation and [AdvantageScope](/frc/advantagescope) for reading the result.
+
+<RulesBox title="What to log on a new subsystem" subtitle="At minimum:">
+
+- **Every commanded value**, via a setter that returns it.
+- **Every measured value** a command depends on — position, velocity.
+- **A key path starting with the subsystem name**, so it groups correctly in the log viewer.
+
+If you would want it on a graph while tuning, log it now. Adding it after the match where you needed it is too late.
+
+</RulesBox>
+
+### Command Factories
+
+A subsystem exposes its actions as methods returning `Command`. `SubsystemBase` provides `run()` and `runOnce()`, which build a command that already requires this subsystem:
+
+```java
+// Duty cycle — must be re-commanded every loop
+public Command setIntakeCommand(double speed) {
+    return run(() -> setIntakeDutyCycle(speed));
+}
+
+// Closed-loop setpoint — the controller holds it
+public Command setIntakePosCommand(double pos) {
+    return runOnce(() -> setIntakePosition(pos));
+}
+```
+
+Because these are instance methods, the requirement is automatic — there is no `addRequirements()` to forget. And because they are methods, they take parameters, so one factory replaces several near-identical command classes.
+
+Full treatment in [Commands](/frc/commands).
 
 ### Default Commands
 
 Subsystems can have a default command that runs when no other command requires the subsystem. Use `setDefaultCommand()` in `RobotContainer` to set one.
 
-<LinkGrid links={[{"label":"Commands","id":"commands"},{"label":"Intake Example","id":"intake-command-based"},{"label":"WPILib Subsystems Documentation","url":"https://docs.wpilib.org/en/stable/docs/software/commandbased/subsystems.html"}]} title="Resources" section="frc" />
+```java
+intake.setDefaultCommand(intake.setIntakeCommand(0));
+```
 
+<RulesBox title="Default commands are how mechanisms stop">
+
+Release the trigger and the intake command is unscheduled. The scheduler immediately restarts the default command, which commands zero.
+
+Without a default command, the last value stays applied and the roller keeps spinning until something else claims the subsystem. Every mechanism that can be left running needs one — and the drivetrain's default command is the joystick drive, for the same reason.
+
+</RulesBox>
+
+<RulesBox title="Common mistakes">
+
+- **Applying configuration without a retry**, so a failure is silent.
+- **Setting only one current limit.** Stator protects the motor; supply protects the battery. See [Current Limiting](/frc/motor-current-limiting).
+- **`void` setters**, so commanded values never reach the log.
+- **Logic in `periodic()`** that belongs in a command.
+- **Blocking loops in a subsystem.** A `while` loop waiting on a mechanism stalls the entire scheduler — every other subsystem stops updating, including the sensor the loop is waiting on. Use `Commands.waitUntil` instead.
+- **No default command,** so a mechanism never stops.
+
+</RulesBox>
+
+<LinkGrid links={[{"label":"Commands","id":"commands"},{"label":"Hardware Abstraction with IO Layers","id":"io-layer"},{"label":"Intake Example","id":"intake-command-based"},{"label":"WPILib Subsystems Documentation","url":"https://docs.wpilib.org/en/stable/docs/software/commandbased/subsystems.html"}]} title="Resources" section="frc" />

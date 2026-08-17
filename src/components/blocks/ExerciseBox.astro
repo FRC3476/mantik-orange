@@ -1,4 +1,6 @@
 ---
+import { withBase } from '@/lib/withBase';
+
 interface Answer {
   task?: string;
   content?: string;
@@ -27,11 +29,11 @@ const uid = `exercise-${Math.random().toString(36).slice(2, 9)}`;
 <div class="exercise-box" id={uid}>
   {title && <h3>{title}</h3>}
   {subtitle && <h4>{subtitle}</h4>}
-  {description && <p set:html={description} />}
+  {description && <p set:html={withBase(description)} />}
 
   {tasks.length > 0 && (
     <ul>
-      {tasks.map((task) => <li set:html={task} />)}
+      {tasks.map((task) => <li set:html={withBase(task)} />)}
     </ul>
   )}
 

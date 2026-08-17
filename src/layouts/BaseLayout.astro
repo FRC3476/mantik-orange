@@ -74,7 +74,7 @@ const canonicalUrl = canonical ?? new URL(currentPath, siteConfig.url).href;
       referrerpolicy="no-referrer"
     />
 
-    <link rel="icon" href={siteConfig.brand.iconLight} type="image/svg+xml" />
+    <link rel="icon" href={`${import.meta.env.BASE_URL}${siteConfig.brand.iconLight}`} type="image/svg+xml" />
 
     <script is:inline>
       (function () {

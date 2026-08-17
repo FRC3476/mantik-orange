@@ -1,4 +1,6 @@
 ---
+import { withBase } from '@/lib/withBase';
+
 interface StepItem {
   text: string;
   subitems?: string[];
@@ -22,14 +24,14 @@ const hasSlot = Astro.slots.has('default');
     <ol>
       {items.map((item) => {
         if (typeof item === 'string') {
-          return <li set:html={item} />;
+          return <li set:html={withBase(item)} />;
         }
         return (
           <li>
-            <span set:html={item.text} />
+            <span set:html={withBase(item.text)} />
             {item.subitems && item.subitems.length > 0 && (
               <ul>
-                {item.subitems.map((sub) => <li set:html={sub} />)}
+                {item.subitems.map((sub) => <li set:html={withBase(sub)} />)}
               </ul>
             )}
           </li>

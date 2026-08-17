@@ -74,7 +74,7 @@ function groupHasActiveLesson(group: SidebarGroup): boolean {
                       {group.items.map((item) => (
                         <li class="child-tab">
                           <a
-                            href={item.href}
+                            href={`${base}${item.href}`}
                             class:list={['child-reference sidebar-link', { active: isLessonActive(item.href) }]}
                           >
                             {item.label}

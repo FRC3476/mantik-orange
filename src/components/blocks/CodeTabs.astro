@@ -1,4 +1,5 @@
 ---
+import { withBase } from '@/lib/withBase';
 import { Code } from 'astro:components';
 
 interface Tab {
@@ -25,7 +26,7 @@ const uid = `code-tabs-${Math.random().toString(36).slice(2, 9)}`;
 ---
 
 {title && <h3>{title}</h3>}
-{description && <p set:html={description} />}
+{description && <p set:html={withBase(description)} />}
 
 <div
   class="code-tabs-container"

@@ -33,7 +33,7 @@ export default defineConfig({
     }),
   ],
   markdown: {
-    rehypePlugins: [rehypeBasePath('/mantik-orange')],
+    rehypePlugins: [[rehypeBasePath, '/mantik-orange']],
     shikiConfig: {
       theme: 'github-light',
       themes: {

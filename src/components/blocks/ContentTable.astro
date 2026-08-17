@@ -1,4 +1,6 @@
 ---
+import { withBase } from '@/lib/withBase';
+
 interface Props {
   title?: string;
   headers?: string[];
@@ -14,14 +16,14 @@ const { title, headers = [], rows = [] } = Astro.props;
     {headers.length > 0 && (
       <thead>
         <tr>
-          {headers.map((header) => <th set:html={header} />)}
+          {headers.map((header) => <th set:html={withBase(header)} />)}
         </tr>
       </thead>
     )}
     <tbody>
       {rows.map((row) => (
         <tr>
-          {row.map((cell) => <td set:html={cell} />)}
+          {row.map((cell) => <td set:html={withBase(cell)} />)}
         </tr>
       ))}
     </tbody>

@@ -6,10 +6,12 @@ interface Props {
   height?: number;
   class?: string;
 }
+
+const base = import.meta.env.BASE_URL;
 ---
 
 <img
-  src={siteConfig.brand.iconLight}
+  src={`${base}${siteConfig.brand.iconLight}`}
   alt=""
   class:list={['brand-icon', 'brand-icon--light', Astro.props.class]}
   width={Astro.props.width ?? 28}
@@ -17,7 +19,7 @@ interface Props {
   decoding="async"
 />
 <img
-  src={siteConfig.brand.iconDark}
+  src={`${base}${siteConfig.brand.iconDark}`}
   alt=""
   class:list={['brand-icon', 'brand-icon--dark', Astro.props.class]}
   width={Astro.props.width ?? 28}

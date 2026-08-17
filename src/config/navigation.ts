@@ -32,9 +32,9 @@ export const siteConfig = {
   title: 'Mantik - FIRST Programming Made Easy',
   description:
     'Comprehensive programming documentation and interactive learning platform for FIRST Robotics students.',
-  url: 'https://mantik.netlify.app',
-  author: 'Abdullah Khaled',
-  github: 'https://github.com/itkan-robotics/mantik',
+  url: 'https://frc3476.github.io/mantik-orange',
+  author: 'FRC Team 3476, credit Abdullah Khaled and ITKAN Robotics',
+  github: 'https://github.com/FRC3476/mantik-orange',
   brand: {
     iconLight: '/media/mantik-icon.svg',
     iconDark: '/media/mantik-icon-dark.svg',

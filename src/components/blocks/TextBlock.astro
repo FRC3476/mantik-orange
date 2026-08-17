@@ -1,4 +1,6 @@
 ---
+import { withBase } from '@/lib/withBase';
+
 interface Props {
   content: string;
 }
@@ -6,4 +8,4 @@ interface Props {
 const { content } = Astro.props;
 ---
 
-<div class="text-block" set:html={content} />
+<div class="text-block" set:html={withBase(content)} />

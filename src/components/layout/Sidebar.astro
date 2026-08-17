@@ -1,6 +1,7 @@
 ---
 import BrandIcon from '@/components/layout/BrandIcon.astro';
 import type { SidebarGroup } from '@/lib/content';
+const base = import.meta.env.BASE_URL;
 
 interface Props {
   currentPath: string;
@@ -25,7 +26,7 @@ function groupHasActiveLesson(group: SidebarGroup): boolean {
 >
   <div class="sidebar-container">
     <div class="sidebar-sticky">
-      <a class="sidebar-brand" href="/">
+      <a class="sidebar-brand" href={base}>
         <BrandIcon class="sidebar-brand-logo" width={28} height={28} />
         <span class="sidebar-brand-text">Mantik</span>
       </a>

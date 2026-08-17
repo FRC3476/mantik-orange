@@ -1,6 +1,7 @@
 ---
 import { sections, appRoutes } from '@/config/navigation';
 import ThemeToggle from '@/components/islands/ThemeToggle.astro';
+const base = import.meta.env.BASE_URL;
 
 interface Props {
   currentPath: string;
@@ -24,7 +25,7 @@ function isActive(path: string): boolean {
     </div>
     <div class="header-center">
       <nav class="header-navigation">
-        <a href="/" class:list={['header-nav-link', { active: isActive('/') }]}>Home</a>
+        <a href={base} class:list={['header-nav-link', { active: isActive({base}) }]}>Home</a>
         {sections.map((section) => (
           <a
             href={section.path}
@@ -67,7 +68,7 @@ function isActive(path: string): boolean {
     </div>
   </div>
   <nav class="mobile-section-nav" aria-label="Site sections">
-    <a href="/" class:list={['mobile-section-link', { active: isActive('/') }]}>Home</a>
+    <a href={base} class:list={['mobile-section-link', { active: isActive({base}) }]}>Home</a>
     {sections.map((section) => (
       <a
         href={section.path}

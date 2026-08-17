@@ -7,6 +7,7 @@ import { visualizer } from 'rollup-plugin-visualizer';
 import { pagefindDevPlugin } from './scripts/pagefind-dev-plugin.mjs';
 import { netlifyFunctionsDevPlugin } from './scripts/netlify-functions-dev-plugin.mjs';
 import { normalizeWindowsDevPathsPlugin } from './scripts/normalize-windows-dev-paths.mjs';
+import { rehypeBasePath } from './scripts/rehype-base-path.mjs';
 
 const SITE = 'https://frc3476.github.io/mantik-orange';
 const analyze = process.env.ANALYZE === '1';
@@ -32,6 +33,7 @@ export default defineConfig({
     }),
   ],
   markdown: {
+    rehypePlugins: [rehypeBasePath('/mantik-orange')],
     shikiConfig: {
       theme: 'github-light',
       themes: {

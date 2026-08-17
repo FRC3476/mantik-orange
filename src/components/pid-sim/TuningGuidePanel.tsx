@@ -81,14 +81,14 @@ export default function TuningGuidePanel({
         )}
         {step.id === 'complete' && (
           <div className="pid-wizard-links">
-            <a href="/frc/pid-tuning-practice-setup">Full setup guide</a>
+            <a href={`${import.meta.env.BASE_URL}frc/pid-tuning-practice-setup`}>Full setup guide</a>
             <a
               href={
                 mechanism === 'arm'
-                  ? '/frc/pid-tuning-practice-arm'
+                  ? {`${import.meta.env.BASE_URL}frc/pid-tuning-practice-arm`}
                   : mechanism === 'flywheel'
-                    ? '/frc/pid-tuning-practice-shooter'
-                    : '/frc/pid-tuning-practice-elevator'
+                    ? {`${import.meta.env.BASE_URL}frc/pid-tuning-practice-shooter`}
+                    : {`${import.meta.env.BASE_URL}frc/pid-tuning-practice-elevator`}
               }
             >
               {mechanism === 'arm'

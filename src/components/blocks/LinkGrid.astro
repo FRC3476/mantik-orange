@@ -16,19 +16,21 @@ interface Props {
 
 const { title, links, section } = Astro.props;
 
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
+
 function resolveHref(link: Link): string {
   if (link.url) return link.url;
   if (link.id) {
     const sectionMap: Record<string, string> = {
-      'java-training': '/java',
-      'ftc-specific': '/ftc',
-      'frc-specific': '/frc',
-      'competitive-training': '/comp',
-      homepage: '/',
+      'java-training': '${BASE}/java',
+      'ftc-specific': '${BASE}/ftc',
+      'frc-specific': '${BASE}/frc',
+      'competitive-training': '${BASE}/comp',
+      homepage: '${BASE}/',
     };
     if (sectionMap[link.id]) return sectionMap[link.id];
-    if (section) return `/${section}/${link.id}`;
-    return `/${link.id}`;
+    if (section) return `${BASE}/${section}/${link.id}`;
+    return `${BASE}/${link.id}`;
   }
   return '#';
 }

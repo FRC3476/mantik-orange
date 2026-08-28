@@ -98,7 +98,7 @@ System.out.println("Hello");
 </ExerciseBox>
 ```
 
-On Java coding lessons, each Try It Yourself / Practice task needs a **compilable scaffold** in its own ` ```java ` fence. Students click **Run** on that fence before opening Show Answers. The scaffold must compile as Java 8, include sample data and empty method bodies, and omit the solution. Skip a fence only for non-code tasks (IDE shortcuts, Git, reflection questions). Intended compile errors stay as a commented line the student can uncomment.
+On Java coding lessons, each Try It Yourself / Practice task needs a **compilable scaffold** in its own ` ```java ` fence. Students edit and click **Run** in the same Monaco editor used by `<JavaPlayground>`, then open Show Answers or Hints when they want to compare. The scaffold must compile as Java 8, include sample data and empty method bodies, and omit the solution. Skip a fence only for non-code tasks (IDE shortcuts, Git, reflection questions). Intended compile errors stay as a commented line the student can uncomment.
 
 Legacy prop style still works (`items={[]}`, `tasks={[]}`) but prefer slots for new content.
 
@@ -118,7 +118,7 @@ The first Run downloads a Java runtime (CheerpJ) and the Eclipse compiler jar fr
 
 ### Runnable Java examples
 
-Fenced `java` blocks on Java course pages get a **Run** control automatically. Students can run the snippet in the browser and click **Edit** to change it.
+Fenced `java` blocks on Java course pages get a **Run** control automatically. In Try It Yourself / Practice boxes, the fence is the same Monaco editor window as `<JavaPlayground>` (no Check button). In-lesson examples stay as highlighted code until the student clicks **Edit**, which opens that same editor.
 
 You do not wrap examples in a component. Write a normal fence:
 

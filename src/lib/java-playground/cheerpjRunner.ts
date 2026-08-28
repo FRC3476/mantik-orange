@@ -115,6 +115,10 @@ interface CheerpJGlobals {
 
 let initPromise: Promise<void> | null = null;
 let runChain: Promise<unknown> = Promise.resolve();
+let cheerpjReady = false;
+let launcherReady = false;
+let compiledKey: string | null = null;
+let initStatus: StatusFn | undefined;
 
 function globals(): CheerpJGlobals {
   return globalThis as unknown as CheerpJGlobals;
@@ -223,24 +227,56 @@ function enqueue<T>(fn: () => Promise<T>): Promise<T> {
   return run;
 }
 
+async function compileLauncher(): Promise<void> {
+  if (launcherReady) return;
+  const g = globals();
+  if (typeof g.cheerpjRunMain !== 'function') {
+    throw new Error('CheerpJ loaded, but cheerpjRunMain is missing.');
+  }
+  addStringFile(LAUNCHER_PATH, LAUNCHER_SOURCE);
+  initStatus?.('Preparing compiler…');
+  const compileCapture = await captureConsole(() =>
+    g.cheerpjRunMain!(
+      ECJ_MAIN,
+      ecjClasspath(),
+      '-d',
+      CLASS_DIR,
+      '-1.8',
+      '-nowarn',
+      '-bootclasspath',
+      '/lt/8/jre/lib/rt.jar',
+      LAUNCHER_PATH,
+    ),
+  );
+  if (compileCapture.result !== 0) {
+    throw new Error(filterRuntimeLog(compileCapture.log) || 'Could not prepare the Java compiler.');
+  }
+  launcherReady = true;
+}
+
 async function ensureInit(onStatus?: StatusFn): Promise<void> {
+  if (onStatus) initStatus = onStatus;
   if (!initPromise) {
     initPromise = (async () => {
-      onStatus?.('Loading Java runtime…');
-      await loadScript(CHEERPJ_LOADER);
-      const g = globals();
-      if (typeof g.cheerpjInit !== 'function') {
-        throw new Error('CheerpJ loaded, but cheerpjInit is missing.');
+      if (!cheerpjReady) {
+        initStatus?.('Loading Java runtime…');
+        await loadScript(CHEERPJ_LOADER);
+        const g = globals();
+        if (typeof g.cheerpjInit !== 'function') {
+          throw new Error('CheerpJ loaded, but cheerpjInit is missing.');
+        }
+        await g.cheerpjInit({
+          version: 8,
+          status: 'none',
+          preloadProgress: (done: number, total: number) => {
+            if (total > 0) {
+              initStatus?.(`Loading Java runtime… ${Math.round((done / total) * 100)}%`);
+            }
+          },
+        });
+        cheerpjReady = true;
       }
-      await g.cheerpjInit({
-        version: 8,
-        status: 'none',
-        preloadProgress: (done: number, total: number) => {
-          if (total > 0) {
-            onStatus?.(`Loading Java runtime… ${Math.round((done / total) * 100)}%`);
-          }
-        },
-      });
+      await compileLauncher();
     })();
   }
   try {
@@ -262,71 +298,33 @@ function compileFail(message: string): RunResult {
   };
 }
 
-export async function compileAndRun(
+function cacheKey(entryClass: string, source: string): string {
+  return `${entryClass}\n${source.replace(/\r\n/g, '\n')}`;
+}
+
+/** Start CheerpJ without compiling student code. Safe to call from idle preload. */
+export function preloadJavaRuntime(onStatus?: StatusFn): Promise<void> {
+  return ensureInit(onStatus);
+}
+
+async function compileIfNeeded(
   source: string,
-  stdin = '',
+  entryClass: string,
   onStatus?: StatusFn,
-): Promise<RunResult> {
-  const classError = assertPublicMain(source);
-  if (classError) return compileFail(classError);
-  return enqueue(() =>
-    compileRunFiles({
-      source,
-      entryClass: 'Main',
-      stdin,
-      onStatus,
-      runMain: true,
-    }),
-  );
-}
-
-/** Lesson examples: wrap snippets, allow any public class name, skip run when there is no main. */
-export async function compileAndRunExample(
-  source: string,
-  stdin = '',
-  onStatus?: StatusFn,
-): Promise<RunResult> {
-  const prepared = wrapExampleSource(source);
-  if (!ENTRY_CLASS_RE.test(prepared.entryClass)) {
-    return compileFail('This example does not have a valid class name to compile.');
-  }
-  return enqueue(() =>
-    compileRunFiles({
-      source: prepared.source,
-      entryClass: prepared.entryClass,
-      stdin,
-      onStatus,
-      runMain: prepared.hasMain,
-    }),
-  );
-}
-
-interface CompileRunFiles {
-  source: string;
-  entryClass: string;
-  stdin: string;
-  onStatus?: StatusFn;
-  runMain: boolean;
-}
-
-async function compileRunFiles({
-  source,
-  entryClass,
-  stdin,
-  onStatus,
-  runMain,
-}: CompileRunFiles): Promise<RunResult> {
-  await ensureInit(onStatus);
-
+): Promise<RunResult | null> {
   const g = globals();
   if (typeof g.cheerpjRunMain !== 'function') {
     throw new Error('CheerpJ loaded, but cheerpjRunMain is missing.');
   }
 
+  const normalized = source.replace(/\r\n/g, '\n');
+  const key = cacheKey(entryClass, normalized);
+  if (compiledKey === key) {
+    return null;
+  }
+
   const sourcePath = `/str/${entryClass}.java`;
-  addStringFile(sourcePath, source.replace(/\r\n/g, '\n'));
-  addStringFile(LAUNCHER_PATH, LAUNCHER_SOURCE);
-  addStringFile(STDIN_PATH, stdin.replace(/\r\n/g, '\n'));
+  addStringFile(sourcePath, normalized);
 
   onStatus?.('Compiling…');
   const compileCapture = await captureConsole(() =>
@@ -340,13 +338,12 @@ async function compileRunFiles({
       '-bootclasspath',
       '/lt/8/jre/lib/rt.jar',
       sourcePath,
-      LAUNCHER_PATH,
     ),
   );
 
   const compileOutput = filterRuntimeLog(compileCapture.log);
-
   if (compileCapture.result !== 0) {
+    compiledKey = null;
     return {
       ok: false,
       compileFailed: true,
@@ -356,6 +353,23 @@ async function compileRunFiles({
       exitCode: compileCapture.result,
     };
   }
+
+  compiledKey = key;
+  return null;
+}
+
+async function runEntry(
+  entryClass: string,
+  stdin: string,
+  onStatus?: StatusFn,
+  runMain = true,
+): Promise<RunResult> {
+  const g = globals();
+  if (typeof g.cheerpjRunMain !== 'function') {
+    throw new Error('CheerpJ loaded, but cheerpjRunMain is missing.');
+  }
+
+  addStringFile(STDIN_PATH, stdin.replace(/\r\n/g, '\n'));
 
   if (!runMain) {
     return {
@@ -401,4 +415,77 @@ async function compileRunFiles({
     stderr,
     exitCode: runCapture.result,
   };
+}
+
+async function compileThenRun(options: {
+  source: string;
+  entryClass: string;
+  stdin: string;
+  onStatus?: StatusFn;
+  runMain: boolean;
+}): Promise<RunResult> {
+  await ensureInit(options.onStatus);
+  const failed = await compileIfNeeded(options.source, options.entryClass, options.onStatus);
+  if (failed) return failed;
+  return runEntry(options.entryClass, options.stdin, options.onStatus, options.runMain);
+}
+
+export async function compileAndRun(
+  source: string,
+  stdin = '',
+  onStatus?: StatusFn,
+): Promise<RunResult> {
+  const classError = assertPublicMain(source);
+  if (classError) return compileFail(classError);
+  return enqueue(() =>
+    compileThenRun({
+      source,
+      entryClass: 'Main',
+      stdin,
+      onStatus,
+      runMain: true,
+    }),
+  );
+}
+
+/** Lesson examples: wrap snippets, allow any public class name, skip run when there is no main. */
+export async function compileAndRunExample(
+  source: string,
+  stdin = '',
+  onStatus?: StatusFn,
+): Promise<RunResult> {
+  const prepared = wrapExampleSource(source);
+  if (!ENTRY_CLASS_RE.test(prepared.entryClass)) {
+    return compileFail('This example does not have a valid class name to compile.');
+  }
+  return enqueue(() =>
+    compileThenRun({
+      source: prepared.source,
+      entryClass: prepared.entryClass,
+      stdin,
+      onStatus,
+      runMain: prepared.hasMain,
+    }),
+  );
+}
+
+/** Compile once, then run the same classes with each stdin. Used by Check. */
+export async function compileAndRunCases(
+  source: string,
+  stdins: string[],
+  onStatus?: StatusFn,
+): Promise<RunResult[]> {
+  const classError = assertPublicMain(source);
+  if (classError) return stdins.map(() => compileFail(classError));
+  return enqueue(async () => {
+    await ensureInit(onStatus);
+    const failed = await compileIfNeeded(source, 'Main', onStatus);
+    if (failed) return stdins.map(() => failed);
+    const results: RunResult[] = [];
+    for (let i = 0; i < stdins.length; i++) {
+      onStatus?.(stdins.length > 1 ? `Checking ${i + 1} of ${stdins.length}…` : 'Checking…');
+      results.push(await runEntry('Main', stdins[i] ?? '', onStatus, true));
+    }
+    return results;
+  });
 }

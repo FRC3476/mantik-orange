@@ -9,6 +9,16 @@ export function publicClassName(source: string): string | null {
   return match ? match[1] : null;
 }
 
+/** File tab label for the shared editor chrome. */
+export function javaFileName(source: string): string {
+  const pub = publicClassName(source);
+  if (pub) return `${pub}.java`;
+  const match = withoutComments(source).match(
+    /\b(?:class|interface|enum)\s+([A-Za-z_][A-Za-z0-9_]*)\b/,
+  );
+  return match ? `${match[1]}.java` : 'Main.java';
+}
+
 export function hasMainMethod(source: string): boolean {
   return /\bstatic\s+void\s+main\s*\(\s*String/.test(withoutComments(source));
 }

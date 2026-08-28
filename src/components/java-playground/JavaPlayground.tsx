@@ -1,11 +1,8 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
-import { useSiteTheme } from '@/lib/useSiteTheme';
+import { useCallback, useEffect, useState } from 'react';
+import JavaEditorPane from '@/components/java-playground/JavaEditorPane';
 import { getExercise } from '@/lib/java-playground/exercises';
-import { compileAndRun } from '@/lib/java-playground/cheerpjRunner';
-import { runHiddenTests } from '@/lib/java-playground/runChecks';
+import { preloadJavaRuntimeOnIdle } from '@/lib/java-playground/preloadJavaRuntime';
 import type { CheckResult } from '@/lib/java-playground/types';
-
-const MonacoEditor = lazy(() => import('@monaco-editor/react'));
 
 interface Props {
   id: string;
@@ -15,8 +12,6 @@ type Phase = 'idle' | 'working';
 
 export default function JavaPlayground({ id }: Props) {
   const exercise = getExercise(id);
-  const siteTheme = useSiteTheme();
-  const monacoTheme = siteTheme === 'dark' ? 'vs-dark' : 'vs';
 
   const [code, setCode] = useState(exercise?.starter ?? '');
   const [stdin, setStdin] = useState('');
@@ -25,35 +20,12 @@ export default function JavaPlayground({ id }: Props) {
   const [consoleText, setConsoleText] = useState('');
   const [consoleKind, setConsoleKind] = useState<'empty' | 'out' | 'error'>('empty');
   const [check, setCheck] = useState<CheckResult | null>(null);
-  const [editorReady, setEditorReady] = useState(false);
 
   useEffect(() => {
-    setEditorReady(true);
+    preloadJavaRuntimeOnIdle();
   }, []);
 
   const busy = phase === 'working';
-
-  const editorOptions = useMemo(
-    () => ({
-      minimap: { enabled: false },
-      fontSize: 13,
-      fontFamily: 'JetBrains Mono, monospace',
-      scrollBeyondLastLine: false,
-      wordWrap: 'on' as const,
-      padding: { top: 12 },
-      lineNumbers: 'on' as const,
-      tabSize: 4,
-      automaticLayout: true,
-      renderLineHighlight: 'line' as const,
-      quickSuggestions: false,
-      suggestOnTriggerCharacters: false,
-      wordBasedSuggestions: 'off' as const,
-      parameterHints: { enabled: false },
-      snippetSuggestions: 'none' as const,
-      hover: { enabled: false },
-    }),
-    [],
-  );
 
   const handleRun = useCallback(async () => {
     if (!exercise || busy) return;
@@ -61,6 +33,7 @@ export default function JavaPlayground({ id }: Props) {
     setCheck(null);
     setStatus('Starting…');
     try {
+      const { compileAndRun } = await import('@/lib/java-playground/cheerpjRunner');
       const result = await compileAndRun(code, exercise.showStdin ? stdin : '', setStatus);
       if (result.compileFailed) {
         setConsoleKind('error');
@@ -87,6 +60,7 @@ export default function JavaPlayground({ id }: Props) {
     setCheck(null);
     setStatus('Checking…');
     try {
+      const { runHiddenTests } = await import('@/lib/java-playground/runChecks');
       const result = await runHiddenTests(code, exercise.tests, setStatus);
       setCheck(result);
       const failed = result.cases.find((c) => !c.passed);
@@ -132,32 +106,13 @@ export default function JavaPlayground({ id }: Props) {
       <h3>{exercise.title}</h3>
       <p className="jp-prompt">{exercise.prompt}</p>
 
-      <div className="jp-editor">
-        <div className="jp-editor-header">
-          <span>Main.java</span>
-          {status ? <span className="jp-status">{status}</span> : <span className="jp-status">Editable</span>}
-        </div>
-        <div className="jp-editor-body">
-          {editorReady ? (
-            <Suspense fallback={<p className="jp-editor-loading">Loading editor…</p>}>
-              <MonacoEditor
-                height="280px"
-                defaultLanguage="java"
-                theme={monacoTheme}
-                value={code}
-                onChange={(value) => setCode(value ?? '')}
-                onMount={(editor, monaco) => {
-                  editor.layout();
-                  editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Space, () => {});
-                }}
-                options={editorOptions}
-              />
-            </Suspense>
-          ) : (
-            <p className="jp-editor-loading">Loading editor…</p>
-          )}
-        </div>
-      </div>
+      <JavaEditorPane
+        fileName="Main.java"
+        code={code}
+        onChange={setCode}
+        status={status}
+        busy={busy}
+      />
 
       {exercise.showStdin && (
         <label className="jp-stdin">

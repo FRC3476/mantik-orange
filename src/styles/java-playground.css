@@ -209,8 +209,22 @@
   padding: 0.75rem 1rem 1rem;
 }
 
+.jp-example-in-exercise > pre,
+.jp-example-editing > pre {
+  display: none !important;
+}
+
+.jp-example-in-exercise .jp-example-tools {
+  border-top: none;
+  padding-top: 0.75rem;
+}
+
+.jp-example-tools .jp-editor {
+  margin-bottom: 0.75rem;
+}
+
 .jp-example-actions {
-  margin-top: 0;
+  margin-top: 0.75rem;
   align-items: center;
 }
 
@@ -221,30 +235,9 @@
   color: var(--color-foreground-muted);
 }
 
-.jp-example-edit {
-  display: block;
-  width: 100%;
-  box-sizing: border-box;
-  margin: 0 0 0.75rem;
-  font-family: var(--font-stack--monospace);
-  font-size: 0.85rem;
-  line-height: 1.45;
-  padding: 0.75rem;
-  border: 1px solid var(--color-background-border);
-  border-radius: 0;
-  background: var(--color-code-background);
-  color: var(--color-code-foreground);
-  resize: vertical;
-  min-height: 8rem;
-}
-
-.jp-example-edit[hidden] {
-  display: none;
-}
-
 .jp-example-stdin {
-  margin-top: 0;
-  margin-bottom: 0.75rem;
+  margin-top: 0.75rem;
+  margin-bottom: 0;
 }
 
 .jp-example-console {

@@ -85,6 +85,9 @@ export default defineConfig({
             if (id.includes('node_modules/monaco-editor') || id.includes('node_modules/@monaco-editor')) {
               return 'monaco';
             }
+            if (id.includes('/lib/java-playground/cheerpjRunner') || id.includes('/lib/java-playground/runChecks')) {
+              return 'java-playground';
+            }
             if (
               id.includes('/lib/pid-sim/physics/elevatorSim') ||
               id.includes('/lib/pid-sim/physics/flywheelSim') ||

@@ -18,6 +18,31 @@ Objects are **instances** of classes - they are the actual entities created from
 ### Object Instantiation:
 
 ```java
+class FRCRobot {
+    private String name;
+    private int teamNumber;
+    private double batteryLevel = 100.0;
+    private boolean active = false;
+
+    FRCRobot(String name, int teamNumber) {
+        this.name = name;
+        this.teamNumber = teamNumber;
+    }
+
+    void setBatteryLevel(double level) { batteryLevel = level; }
+    void activate() {
+        active = true;
+        System.out.println(name + " activated");
+    }
+    void runDiagnostics() {
+        System.out.println(name + " diagnostics: battery " + batteryLevel + "%");
+    }
+    public String toString() {
+        return name + " (Team " + teamNumber + ") battery " + batteryLevel
+            + "%" + (active ? " active" : " inactive");
+    }
+}
+
 // Creating objects from a class
 FRCRobot robot1 = new FRCRobot("CompetitionBot", 12345);
 FRCRobot robot2 = new FRCRobot("PracticeBot", 67890);
@@ -45,6 +70,44 @@ Each object maintains its own **state** through its instance variables, while al
 ### Multiple Objects Example:
 
 ```java
+class FRCRobot {
+    private String name;
+    private int teamNumber;
+    private double batteryLevel = 100.0;
+    private int maxSpeed = 50;
+    private int liftCapacity = 0;
+    private boolean precisionMode = false;
+    private boolean active = false;
+
+    FRCRobot(String name, int teamNumber) {
+        this.name = name;
+        this.teamNumber = teamNumber;
+    }
+
+    void setMaxSpeed(int speed) { maxSpeed = speed; }
+    void setBatteryLevel(double level) { batteryLevel = level; }
+    void setLiftCapacity(int capacity) { liftCapacity = capacity; }
+    void enablePrecisionMode(boolean enabled) { precisionMode = enabled; }
+    void activate() {
+        active = true;
+        System.out.println(name + " activated");
+    }
+    void moveForward(int distance) {
+        System.out.println(name + " moving forward " + distance + " at speed " + maxSpeed);
+    }
+    void liftObject() {
+        System.out.println(name + " lifting with capacity " + liftCapacity);
+    }
+    void moveToCoordinate(double x, double y) {
+        System.out.println(name + " moving to (" + x + ", " + y + ")"
+            + (precisionMode ? " (precision)" : ""));
+    }
+    public String toString() {
+        return name + " (Team " + teamNumber + ") battery " + batteryLevel
+            + "% speed " + maxSpeed + (active ? " active" : " inactive");
+    }
+}
+
 public class RobotDemo {
     public static void main(String[] args) {
         // Create three different robot objects
@@ -89,6 +152,25 @@ In Java, variables don't actually contain objects - they contain **references** 
 ### Object References Explained:
 
 ```java
+class FRCRobot {
+    private String name;
+    private int teamNumber;
+    private double batteryLevel = 100.0;
+    private int maxSpeed = 50;
+    private boolean active = false;
+
+    FRCRobot(String name, int teamNumber) {
+        this.name = name;
+        this.teamNumber = teamNumber;
+    }
+
+    void setBatteryLevel(double level) { batteryLevel = level; }
+    double getBatteryLevel() { return batteryLevel; }
+    void setMaxSpeed(int speed) { maxSpeed = speed; }
+    int getMaxSpeed() { return maxSpeed; }
+    void activate() { active = true; }
+}
+
 // Create one robot object
 FRCRobot mainRobot = new FRCRobot("TeamBot", 12345);
 
@@ -138,6 +220,25 @@ Objects can be passed as parameters to methods. When you pass an object to a met
 ### Objects as Parameters:
 
 ```java
+class FRCRobot {
+    private String name;
+    private double batteryLevel = 100.0;
+    private int maxSpeed = 50;
+    private boolean active = false;
+
+    FRCRobot(String name, int teamNumber) { this.name = name; }
+
+    String getName() { return name; }
+    void setBatteryLevel(double level) { batteryLevel = level; }
+    double getBatteryLevel() { return batteryLevel; }
+    void setMaxSpeed(int speed) { maxSpeed = speed; }
+    void enableCompetitionMode(boolean enabled) { }
+    void enableSafetyLimits(boolean enabled) { }
+    void activate() { active = true; }
+    boolean isActive() { return active; }
+    void returnToBase() { System.out.println(name + " returning to base"); }
+}
+
 public class RobotManager {
     
     // Method that takes robot objects as parameters
@@ -195,6 +296,16 @@ public class RobotManager {
         }
     }
 }
+
+RobotManager manager = new RobotManager();
+FRCRobot alpha = new FRCRobot("Alpha", 1);
+FRCRobot beta = new FRCRobot("Beta", 2);
+alpha.setBatteryLevel(20);
+beta.setBatteryLevel(80);
+manager.initializeRobot(alpha, "competition");
+manager.initializeRobot(beta, "practice");
+manager.compareRobots(alpha, beta);
+manager.manageRobotTeam(new FRCRobot[] { alpha, beta, null });
 ```
 
 <JavaPlayground id="java-objects" />

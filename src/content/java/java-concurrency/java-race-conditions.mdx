@@ -28,6 +28,16 @@ class Counter {
 ```
 
 ```java
+class Counter {
+    private int count = 0;
+
+    void increment() {
+        count++;
+    }
+
+    int get() { return count; }
+}
+
 Counter counter = new Counter();
 
 Thread a = new Thread(() -> { for (int i = 0; i < 100_000; i++) counter.increment(); });
@@ -104,6 +114,10 @@ class Tracker {
     private final Object lock = new Object();
     private int count = 0;
 
+    void expensiveWorkNeedingNoLock() {
+        // pretend this takes time; it does not need the lock
+    }
+
     void record() {
         expensiveWorkNeedingNoLock();
 
@@ -111,7 +125,13 @@ class Tracker {
             count++;
         }
     }
+
+    int get() { return count; }
 }
+
+Tracker tracker = new Tracker();
+tracker.record();
+System.out.println(tracker.get());
 ```
 
 Holding a lock for less time lets more work proceed in parallel. Using a dedicated private lock object — rather than `this` — also prevents outside code from locking on your object and interfering.
@@ -125,15 +145,27 @@ Without it, one thread's write may never become visible to another. The compiler
 ```java
 class Worker {
     private boolean running = true;         // BUG: not volatile
+    private int steps = 0;
 
     void stop() { running = false; }
 
+    void doWork() {
+        steps++;
+    }
+
     void run() {
-        while (running) {                   // may never see the change
+        while (running && steps < 80) {     // bound so the demo always ends
             doWork();
         }
+        System.out.println("steps: " + steps);
     }
 }
+
+Worker worker = new Worker();
+Thread t = new Thread(() -> worker.run());
+t.start();
+worker.stop();
+t.join();
 ```
 
 Adding `volatile` forces reads and writes to go to main memory:
@@ -191,7 +223,7 @@ class Counter {
 
 Locks introduce a failure of their own. Two threads each holding a lock the other wants will both wait forever:
 
-```java
+```java norun
 // thread A
 synchronized (lockOne) {
     synchronized (lockTwo) { ... }

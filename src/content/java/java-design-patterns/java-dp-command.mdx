@@ -19,13 +19,28 @@ Everything in this module has been building toward this. A command is an object 
 interface Command {
     void execute();
 }
+
+Command beep = () -> System.out.println("command executed");
+beep.execute();
 ```
 
 That is the minimal form. Because the action is an object, you can put it in a list, hand it to another method, keep it for later, or store enough information to reverse it.
 
 ```java
+interface Command {
+    void execute();
+}
+
+class Shooter {
+    void set(double output) {
+        System.out.println("shooter set to " + output);
+    }
+}
+
+Shooter shooter = new Shooter();
 Command spinUp = () -> shooter.set(0.9);
 Command stop   = () -> shooter.set(0.0);
+System.out.println("commands created, not run yet");
 ```
 
 Neither has run. They are values describing work, created with [lambdas](/java/java-fn-lambdas).
@@ -61,11 +76,47 @@ interface Command {
     }
     default void end(boolean interrupted) {}  // once, at the end
 }
+
+Command pulse = () -> System.out.println("execute called");
+pulse.initialize();
+pulse.execute();
+System.out.println("finished=" + pulse.isFinished());
 ```
 
 `default` methods let an implementation override only what it cares about. A simple command supplies `execute` and nothing else.
 
 ```java
+interface Command {
+    default void initialize() {}
+    void execute();
+    default boolean isFinished() { return false; }
+    default void end(boolean interrupted) {}
+}
+
+class Shooter {
+    private double targetRpm;
+    private double rpm;
+
+    void setTarget(double rpm) {
+        this.targetRpm = rpm;
+        System.out.println("shooter target " + rpm + " rpm");
+    }
+
+    void update() {
+        rpm = targetRpm;
+        System.out.println("shooter at " + rpm + " rpm");
+    }
+
+    boolean atTargetSpeed() {
+        return rpm == targetRpm && rpm != 0;
+    }
+
+    void stop() {
+        rpm = 0;
+        System.out.println("shooter stopped");
+    }
+}
+
 class SpinUpShooter implements Command {
     private final Shooter shooter;
     private final double targetRpm;
@@ -91,6 +142,13 @@ class SpinUpShooter implements Command {
         if (interrupted) shooter.stop();
     }
 }
+
+Shooter shooter = new Shooter();
+SpinUpShooter spinUp = new SpinUpShooter(shooter, 4000);
+spinUp.initialize();
+spinUp.execute();
+System.out.println("finished=" + spinUp.isFinished());
+spinUp.end(false);
 ```
 
 The dependencies arrive through the constructor — [dependency injection](/java/java-dp-dependency-injection) — so this class is testable with a fake shooter.
@@ -108,6 +166,30 @@ Passing `interrupted` lets one method handle both without the caller needing two
 Something has to run these. The loop is short:
 
 ```java
+interface Command {
+    default void initialize() {}
+    void execute();
+    default boolean isFinished() { return false; }
+    default void end(boolean interrupted) {}
+}
+
+class CountOnce implements Command {
+    private boolean done;
+
+    @Override public void execute() {
+        System.out.println("count command executed");
+        done = true;
+    }
+
+    @Override public boolean isFinished() {
+        return done;
+    }
+
+    @Override public void end(boolean interrupted) {
+        System.out.println(interrupted ? "interrupted" : "completed");
+    }
+}
+
 class Scheduler {
     private final List<Command> running = new ArrayList<>();
 
@@ -135,6 +217,10 @@ class Scheduler {
         running.clear();
     }
 }
+
+Scheduler scheduler = new Scheduler();
+scheduler.schedule(new CountOnce());
+scheduler.run();
 ```
 
 Using an `Iterator` with `it.remove()` is what allows removal mid-loop. A for-each with `running.remove(c)` would throw `ConcurrentModificationException` — the trap from the [ArrayLists](/java/java-ds-arraylists) lesson.
@@ -146,12 +232,33 @@ Call `run()` once per cycle and every scheduled command advances one step.
 Because commands are objects, you can build commands out of other commands. This is where the pattern becomes genuinely powerful.
 
 ```java
+interface Command {
+    default void initialize() {}
+    void execute();
+    default boolean isFinished() { return false; }
+    default void end(boolean interrupted) {}
+}
+
+class NamedCommand implements Command {
+    private final String name;
+    private boolean done;
+
+    NamedCommand(String name) { this.name = name; }
+
+    @Override public void execute() {
+        System.out.println(name);
+        done = true;
+    }
+
+    @Override public boolean isFinished() { return done; }
+}
+
 class SequentialCommand implements Command {
     private final List<Command> steps;
     private int index = 0;
 
     SequentialCommand(Command... steps) {
-        this.steps = List.of(steps);
+        this.steps = Arrays.asList(steps);
     }
 
     @Override public void initialize() {
@@ -178,11 +285,152 @@ class SequentialCommand implements Command {
         return index >= steps.size();
     }
 }
+
+Command sequence = new SequentialCommand(
+    new NamedCommand("first"),
+    new NamedCommand("second")
+);
+sequence.initialize();
+while (!sequence.isFinished()) {
+    sequence.execute();
+}
 ```
 
 `SequentialCommand` *is* a `Command`, so it can be scheduled like any other — or nested inside another sequence.
 
 ```java
+interface Command {
+    default void initialize() {}
+    void execute();
+    default boolean isFinished() { return false; }
+    default void end(boolean interrupted) {}
+}
+
+class Drivetrain {
+    void driveMeters(double meters) {
+        System.out.println("drivetrain moved " + meters + " m");
+    }
+}
+
+class Shooter {
+    void setTarget(double rpm) { System.out.println("shooter target " + rpm); }
+    void shoot() { System.out.println("shot fired"); }
+}
+
+class Feeder {
+    void run() { System.out.println("feeder running"); }
+}
+
+class DriveDistance implements Command {
+    private final Drivetrain drivetrain;
+    private final double meters;
+    private boolean done;
+
+    DriveDistance(Drivetrain drivetrain, double meters) {
+        this.drivetrain = drivetrain;
+        this.meters = meters;
+    }
+
+    @Override public void execute() {
+        drivetrain.driveMeters(meters);
+        done = true;
+    }
+
+    @Override public boolean isFinished() { return done; }
+}
+
+class SpinUpShooter implements Command {
+    private final Shooter shooter;
+    private final double targetRpm;
+    private boolean done;
+
+    SpinUpShooter(Shooter shooter, double targetRpm) {
+        this.shooter = shooter;
+        this.targetRpm = targetRpm;
+    }
+
+    @Override public void execute() {
+        shooter.setTarget(targetRpm);
+        done = true;
+    }
+
+    @Override public boolean isFinished() { return done; }
+}
+
+class Shoot implements Command {
+    private final Shooter shooter;
+    private final Feeder feeder;
+    private boolean done;
+
+    Shoot(Shooter shooter, Feeder feeder) {
+        this.shooter = shooter;
+        this.feeder = feeder;
+    }
+
+    @Override public void execute() {
+        feeder.run();
+        shooter.shoot();
+        done = true;
+    }
+
+    @Override public boolean isFinished() { return done; }
+}
+
+class SequentialCommand implements Command {
+    private final List<Command> steps;
+    private int index = 0;
+
+    SequentialCommand(Command... steps) {
+        this.steps = Arrays.asList(steps);
+    }
+
+    @Override public void initialize() {
+        index = 0;
+        if (!steps.isEmpty()) steps.get(0).initialize();
+    }
+
+    @Override public void execute() {
+        if (index >= steps.size()) return;
+        Command current = steps.get(index);
+        current.execute();
+        if (current.isFinished()) {
+            current.end(false);
+            index++;
+            if (index < steps.size()) steps.get(index).initialize();
+        }
+    }
+
+    @Override public boolean isFinished() {
+        return index >= steps.size();
+    }
+}
+
+class Scheduler {
+    private final List<Command> running = new ArrayList<>();
+
+    void schedule(Command command) {
+        command.initialize();
+        running.add(command);
+    }
+
+    void run() {
+        Iterator<Command> it = running.iterator();
+        while (it.hasNext()) {
+            Command c = it.next();
+            c.execute();
+            if (c.isFinished()) {
+                c.end(false);
+                it.remove();
+            }
+        }
+    }
+}
+
+Drivetrain drivetrain = new Drivetrain();
+Shooter shooter = new Shooter();
+Feeder feeder = new Feeder();
+Scheduler scheduler = new Scheduler();
+
 Command autonomous = new SequentialCommand(
     new DriveDistance(drivetrain, 2.0),
     new SpinUpShooter(shooter, 4000),
@@ -191,6 +439,9 @@ Command autonomous = new SequentialCommand(
 );
 
 scheduler.schedule(autonomous);
+for (int i = 0; i < 4; i++) {
+    scheduler.run();
+}
 ```
 
 An entire autonomous routine is one object. A parallel version — running several at once and finishing when all are done — follows the same shape.
@@ -218,6 +469,17 @@ interface UndoableCommand {
     void undo();
 }
 
+class Arm {
+    private double position;
+
+    double getPosition() { return position; }
+
+    void moveTo(double target) {
+        position = target;
+        System.out.println("arm at " + position);
+    }
+}
+
 class SetPosition implements UndoableCommand {
     private final Arm arm;
     private final double target;
@@ -237,6 +499,11 @@ class SetPosition implements UndoableCommand {
         arm.moveTo(previous);
     }
 }
+
+Arm arm = new Arm();
+SetPosition move = new SetPosition(arm, 45);
+move.execute();
+move.undo();
 ```
 
 Push executed commands onto a [stack](/java/java-ds-stacks); undo pops and reverses. That is how every editor's undo works.

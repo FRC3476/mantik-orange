@@ -36,8 +36,10 @@ The output interleaves, and **the exact order changes between runs**. That unpre
 <RulesBox title="start(), not run()">
 
 ```java
+Thread worker = new Thread(() -> System.out.println("work"));
 worker.start();      // runs on a NEW thread
 worker.run();        // runs on the CURRENT thread — just a normal method call
+worker.join();
 ```
 
 Calling `run()` compiles and executes the code, but sequentially, with no second thread. Nothing appears wrong; you simply do not get concurrency. This is the single most common beginner mistake here.
@@ -49,17 +51,26 @@ Calling `run()` compiles and executes the code, but sequentially, with no second
 Three forms, all equivalent in effect:
 
 ```java
+class Worker extends Thread {
+    @Override public void run() { System.out.println("hello"); }
+}
+
 // 1. lambda — clearest for short tasks
 Thread t = new Thread(() -> System.out.println("hello"));
 
 // 2. a Runnable stored first
 Runnable task = () -> System.out.println("hello");
-Thread t = new Thread(task);
+Thread fromTask = new Thread(task);
 
 // 3. extending Thread — rarely the right choice
-class Worker extends Thread {
-    @Override public void run() { System.out.println("hello"); }
-}
+Worker fromSubclass = new Worker();
+
+t.start();
+fromTask.start();
+fromSubclass.start();
+t.join();
+fromTask.join();
+fromSubclass.join();
 ```
 
 Prefer the first two. Extending `Thread` spends your one inheritance slot and couples the task to the mechanism running it — the task is a `Runnable`, and how it is executed should be a separate decision.
@@ -69,24 +80,35 @@ Prefer the first two. Extending `Thread` spends your one inheritance slot and co
 `start()` returns immediately. To wait for a thread to finish, `join()` it:
 
 ```java
-Thread worker = new Thread(() -> {
-    heavyCalculation();
-});
+class Work {
+    static void heavyCalculation() {
+        System.out.println("calculating");
+    }
+
+    static void doSomethingElse() {
+        System.out.println("other work");
+    }
+}
+
+Thread worker = new Thread(Work::heavyCalculation);
 
 worker.start();
-doSomethingElse();       // happens concurrently
-worker.join();           // blocks until worker finishes
+Work.doSomethingElse();       // happens concurrently
+worker.join();                // blocks until worker finishes
 System.out.println("both done");
 ```
 
 `join()` throws `InterruptedException`, so it must be handled:
 
 ```java
+Thread worker = new Thread(() -> System.out.println("work"));
+worker.start();
 try {
     worker.join();
 } catch (InterruptedException e) {
     Thread.currentThread().interrupt();   // restore the flag
 }
+System.out.println("joined");
 ```
 
 Restoring the interrupt flag matters. Catching `InterruptedException` clears it, and swallowing it silently means code further up can no longer tell it was asked to stop.
@@ -140,9 +162,17 @@ Because of this, the guiding principle is to share as little mutable state as po
 A daemon thread does not keep the program alive:
 
 ```java
-Thread background = new Thread(this::pollSensor);
+class Sensor {
+    static void pollSensor() {
+        System.out.println("poll");
+    }
+}
+
+Thread background = new Thread(Sensor::pollSensor);
 background.setDaemon(true);           // must be set BEFORE start()
 background.start();
+background.join();
+System.out.println("main done");
 ```
 
 Java exits when all non-daemon threads finish. Use daemon threads for background work that should not prevent shutdown — and remember they are killed abruptly, so never use one for work that must complete.

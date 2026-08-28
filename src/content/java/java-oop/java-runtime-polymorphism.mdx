@@ -16,7 +16,17 @@ description: How Java decides which version of a method to run while the program
 Every object reference in Java has two types.
 
 ```java
+abstract class Subsystem {
+    abstract void periodic();
+}
+
+class Drivetrain extends Subsystem {
+    @Override
+    void periodic() { System.out.println("updating drive motors"); }
+}
+
 Subsystem s = new Drivetrain();
+s.periodic();
 ```
 
 The **declared type** is `Subsystem` — what the compiler sees, and what decides which methods you are allowed to call. The **actual type** is `Drivetrain` — the real object, and what decides which version of a method actually runs.
@@ -52,7 +62,21 @@ class Intake extends Subsystem {
 Now a single loop drives every subsystem without knowing which is which:
 
 ```java
-List<Subsystem> subsystems = List.of(new Drivetrain(), new Intake());
+abstract class Subsystem {
+    abstract void periodic();
+}
+
+class Drivetrain extends Subsystem {
+    @Override
+    void periodic() { System.out.println("updating drive motors"); }
+}
+
+class Intake extends Subsystem {
+    @Override
+    void periodic() { System.out.println("checking intake sensor"); }
+}
+
+List<Subsystem> subsystems = Arrays.asList(new Drivetrain(), new Intake());
 
 for (Subsystem s : subsystems) {
     s.periodic();       // runs Drivetrain's or Intake's version as appropriate
@@ -79,18 +103,31 @@ This is the mechanism behind almost every design pattern, and behind lambdas. Ev
 ### Always use @Override
 
 ```java
+abstract class Subsystem {
+    abstract void periodic();
+}
+
 class Intake extends Subsystem {
     @Override
-    void periodic() { ... }
+    void periodic() { System.out.println("checking intake sensor"); }
 }
+
+new Intake().periodic();
 ```
 
 `@Override` is optional to the compiler but you should treat it as mandatory. It asks the compiler to verify that you really are overriding something. Misspell the name or get a parameter type wrong, and you have quietly written a *new* method that nothing ever calls:
 
 ```java
-class Intake extends Subsystem {
-    void periodick() { ... }      // typo — compiles fine, never runs
+class Subsystem {
+    void periodic() { System.out.println("base periodic"); }
 }
+
+class Intake extends Subsystem {
+    void periodick() { System.out.println("intake periodic"); }      // typo — compiles fine, never runs
+}
+
+Subsystem s = new Intake();
+s.periodic();
 ```
 
 With `@Override`, that becomes a compile error instead of a silent bug.
@@ -113,14 +150,22 @@ Both let you write code against a type rather than a specific class.
 A rough rule: if you are describing what something *can do*, use an interface. If you are sharing actual implementation and fields between related classes, use an abstract class.
 
 ```java
+class Subsystem {
+    void periodic() { }
+}
+
 interface Stoppable {
     void stop();
 }
 
 class Drivetrain extends Subsystem implements Stoppable {
-    @Override public void periodic() { ... }
+    @Override public void periodic() { System.out.println("updating drive motors"); }
     @Override public void stop() { System.out.println("brakes on"); }
 }
+
+Drivetrain drive = new Drivetrain();
+drive.periodic();
+drive.stop();
 ```
 
 A class can extend one thing and implement several, which is why capabilities are usually interfaces.
@@ -163,8 +208,27 @@ Only overriding is polymorphism. See [Method and Constructor Overloading](/java/
 Occasionally you genuinely need to know what you have:
 
 ```java
+interface Stoppable {
+    void stop();
+}
+
+abstract class Subsystem {
+    abstract void periodic();
+}
+
+class Drivetrain extends Subsystem implements Stoppable {
+    @Override void periodic() { System.out.println("updating drive motors"); }
+    @Override public void stop() { System.out.println("brakes on"); }
+}
+
+class Intake extends Subsystem {
+    @Override void periodic() { System.out.println("checking intake sensor"); }
+}
+
+List<Subsystem> subsystems = Arrays.asList(new Drivetrain(), new Intake());
 for (Subsystem s : subsystems) {
-    if (s instanceof Stoppable stoppable) {     // pattern matching, Java 16+
+    if (s instanceof Stoppable) {            // Java 8; Java 16+ can bind a variable here
+        Stoppable stoppable = (Stoppable) s;
         stoppable.stop();
     }
 }
@@ -175,6 +239,17 @@ The variable after the type is declared and assigned in one step, so no separate
 <RulesBox title="Frequent instanceof checks are a warning sign">
 
 ```java
+class Subsystem { }
+
+class Drivetrain extends Subsystem {
+    void driveForward() { System.out.println("driving forward"); }
+}
+
+class Intake extends Subsystem {
+    void runIntake() { System.out.println("running intake"); }
+}
+
+Subsystem s = new Drivetrain();
 // this defeats the purpose
 if (s instanceof Drivetrain) {
     ((Drivetrain) s).driveForward();

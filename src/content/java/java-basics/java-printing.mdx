@@ -105,6 +105,10 @@ In FRC, printing to the console is a powerful tool for debugging and monitoring 
 ### FRC Console Printing Example:
 
 ```java
+java.text.DecimalFormat formatter = new java.text.DecimalFormat("0.000");
+double kS = 0.15;
+double kV = 2.34;
+
 System.out.println("********** Drive FF Characterization Results **********");
 System.out.println("\tkS: " + formatter.format(kS));
 System.out.println("\tkV: " + formatter.format(kV));

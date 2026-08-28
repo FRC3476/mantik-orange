@@ -20,6 +20,10 @@ static int factorial(int n) {
     if (n <= 1) return 1;             // base case
     return n * factorial(n - 1);      // recursive case
 }
+
+public static void main(String[] args) {
+    System.out.println(factorial(4));
+}
 ```
 
 `factorial(4)` cannot answer immediately, so it asks for `factorial(3)`, which asks for `factorial(2)`, and so on. Once `factorial(1)` returns `1`, the answers multiply back up the chain.
@@ -77,6 +81,15 @@ For most recursion on trees or small inputs this is nowhere close. It becomes a 
 Two fixes: rewrite as a loop, or run on a thread with a bigger stack:
 
 ```java
+static int factorial(int n) {
+    if (n <= 1) return 1;
+    return n * factorial(n - 1);
+}
+
+static void solve() {
+    System.out.println(factorial(10));
+}
+
 public static void main(String[] args) {
     new Thread(null, Main::solve, "main", 1 << 26).start();   // 64 MB stack
 }
@@ -99,6 +112,10 @@ static int factorialLoop(int n) {
     }
     return result;
 }
+
+public static void main(String[] args) {
+    System.out.println(factorialLoop(4));
+}
 ```
 
 For factorial, the loop is simpler and uses no stack. Recursion earns its place when the *problem itself* branches.
@@ -118,9 +135,23 @@ When the problem is a simple linear repetition, use a loop.
 Summing a tree with a loop requires managing your own stack. Recursively it is three lines:
 
 ```java
+static class TreeNode {
+    int value;
+    TreeNode left;
+    TreeNode right;
+    TreeNode(int value) { this.value = value; }
+}
+
 static int sum(TreeNode node) {
     if (node == null) return 0;                       // base case
     return node.value + sum(node.left) + sum(node.right);
+}
+
+public static void main(String[] args) {
+    TreeNode root = new TreeNode(1);
+    root.left = new TreeNode(2);
+    root.right = new TreeNode(3);
+    System.out.println(sum(root));
 }
 ```
 
@@ -134,6 +165,10 @@ Some innocent-looking recursion does enormous amounts of repeated work:
 static int fib(int n) {
     if (n <= 1) return n;
     return fib(n - 1) + fib(n - 2);
+}
+
+public static void main(String[] args) {
+    System.out.println(fib(10));
 }
 ```
 
@@ -154,6 +189,10 @@ private static int countFrom(int[] values, int target, int index) {
     if (index == values.length) return 0;
     int here = (values[index] == target) ? 1 : 0;
     return here + countFrom(values, target, index + 1);
+}
+
+public static void main(String[] args) {
+    System.out.println(countMatches(new int[]{1, 4, 4, 2, 4}, 4));
 }
 ```
 

@@ -22,6 +22,8 @@ A hash set answers the same question in O(1) average time. That single change tu
 Stores distinct values, no order.
 
 ```java
+int[] a = {4, 1, 4, 2};
+int n = a.length;
 Set<Integer> seen = new HashSet<>();
 
 for (int i = 0; i < n; i++) {
@@ -35,8 +37,12 @@ for (int i = 0; i < n; i++) {
 `add` returns a boolean — `true` if the value was new, `false` if it was already present. That lets you combine the test and the insert:
 
 ```java
-if (!seen.add(a[i])) {
-    // a[i] was already in the set
+int[] a = {4, 1, 4, 2};
+Set<Integer> seen = new HashSet<>();
+for (int i = 0; i < a.length; i++) {
+    if (!seen.add(a[i])) {
+        System.out.println("already in the set: " + a[i]);
+    }
 }
 ```
 
@@ -56,28 +62,47 @@ if (!seen.add(a[i])) {
 Associates each key with a value. The dominant use is counting.
 
 ```java
+int[] a = {1, 2, 2, 3};
+int n = a.length;
 Map<Integer, Integer> count = new HashMap<>();
 for (int i = 0; i < n; i++) {
     count.merge(a[i], 1, Integer::sum);
 }
+System.out.println(count);
 ```
 
 `merge(key, 1, Integer::sum)` inserts `1` if the key is absent, otherwise adds `1` to the existing value. The equivalent longer form:
 
 ```java
-count.put(a[i], count.getOrDefault(a[i], 0) + 1);
+int[] a = {1, 2, 2, 3};
+Map<Integer, Integer> count = new HashMap<>();
+for (int i = 0; i < a.length; i++) {
+    count.put(a[i], count.getOrDefault(a[i], 0) + 1);
+}
+System.out.println(count);
 ```
 
 Both are correct. `getOrDefault` is worth knowing because it also covers reads:
 
 ```java
+Map<Integer, Integer> count = new HashMap<>();
+count.put(2, 3);
+int x = 2;
 int timesSeen = count.getOrDefault(x, 0);   // 0 rather than null when absent
+System.out.println(timesSeen);
 ```
 
 <RulesBox title="Never call get() and assume non-null">
 
 ```java
-int c = count.get(x);        // NullPointerException if x is absent
+Map<Integer, Integer> count = new HashMap<>();
+int x = 5;
+try {
+    int c = count.get(x);        // NullPointerException if x is absent
+    System.out.println(c);
+} catch (NullPointerException e) {
+    System.out.println("threw " + e);
+}
 ```
 
 `get` returns `Integer`, and unboxing `null` throws. Use `getOrDefault` unless you have already checked `containsKey`. This is one of the most common runtime errors in Java contest code.
@@ -87,6 +112,9 @@ int c = count.get(x);        // NullPointerException if x is absent
 Iterating a map:
 
 ```java
+Map<Integer, Integer> count = new HashMap<>();
+count.put(1, 2);
+count.put(3, 1);
 for (Map.Entry<Integer, Integer> e : count.entrySet()) {
     System.out.println(e.getKey() + " -> " + e.getValue());
 }
@@ -99,11 +127,14 @@ Use `entrySet` rather than iterating `keySet` and calling `get` for each key —
 If the keys are integers in a known, reasonably small range, use an array. It is faster, uses far less memory, and has no hashing overhead at all.
 
 ```java
+int[] a = {2, 5, 2, 7};
+int n = a.length;
 // values guaranteed between 1 and 100,000
 int[] count = new int[100_001];
 for (int i = 0; i < n; i++) {
     count[a[i]]++;
 }
+System.out.println(count[2]);
 ```
 
 <RulesBox title="Array versus HashMap">
@@ -119,9 +150,13 @@ The array is not a micro-optimization. A `HashMap` with a million `Integer` keys
 Values can be shifted into range when they are negative but bounded:
 
 ```java
+int[] a = {-3, 0, 5, -3};
 // values between -1000 and 1000
 int[] count = new int[2001];
-count[a[i] + 1000]++;
+for (int i = 0; i < a.length; i++) {
+    count[a[i] + 1000]++;
+}
+System.out.println(count[-3 + 1000]);
 ```
 
 ### TreeSet and TreeMap
@@ -145,8 +180,13 @@ System.out.println(s.lower(5));      // 1  — strictly less
 These methods return `null` when nothing qualifies, so check before unboxing:
 
 ```java
+TreeSet<Integer> s = new TreeSet<>();
+s.add(5); s.add(1); s.add(9);
+int x = 6;
 Integer c = s.ceiling(x);
-if (c != null) { /* use c */ }
+if (c != null) {
+    System.out.println(c);
+}
 ```
 
 ### Sets of pairs and coordinates
@@ -154,23 +194,32 @@ if (c != null) { /* use c */ }
 Grid problems often need "have I visited this cell". Three approaches, in order of preference:
 
 ```java
+int rows = 3, cols = 4;
+int r = 1, c = 2;
+
 // 1. Best: a 2D boolean array, when the grid dimensions are known
-boolean[][] visited = new boolean[rows][cols];
-visited[r][c] = true;
+boolean[][] visitedGrid = new boolean[rows][cols];
+visitedGrid[r][c] = true;
 
 // 2. Encode the pair into a single integer, when the grid is large but bounded
-Set<Integer> visited = new HashSet<>();
-visited.add(r * cols + c);
+Set<Integer> visitedEncoded = new HashSet<>();
+visitedEncoded.add(r * cols + c);
 
 // 3. A set of strings — works, but slow; avoid in hot loops
-Set<String> visited = new HashSet<>();
-visited.add(r + "," + c);
+Set<String> visitedStrings = new HashSet<>();
+visitedStrings.add(r + "," + c);
+
+System.out.println(visitedGrid[r][c]);
+System.out.println(visitedEncoded);
+System.out.println(visitedStrings);
 ```
 
 Encoding as `r * cols + c` is valid as long as `c` is always less than `cols`, which makes the mapping unique. For coordinates that can be large or negative, use a `long`:
 
 ```java
+int r = 3, c = 4;
 long key = (long) r * 2_000_000 + c;
+System.out.println(key);
 ```
 
 <RulesBox title="Objects as keys need equals and hashCode">
@@ -178,7 +227,7 @@ long key = (long) r * 2_000_000 + c;
 A custom class used as a `HashSet` element or `HashMap` key must override both `equals` and `hashCode`, or lookups will fail — two objects with identical fields will be treated as different keys.
 
 ```java
-static class Point {
+class Point {
     int r, c;
     Point(int r, int c) { this.r = r; this.c = c; }
 
@@ -192,6 +241,10 @@ static class Point {
         return Objects.hash(r, c);
     }
 }
+
+Set<Point> visited = new HashSet<>();
+visited.add(new Point(1, 2));
+System.out.println(visited.contains(new Point(1, 2)));
 ```
 
 This is easy to get wrong under time pressure. Encoding the pair into a single `int` or `long` avoids the issue entirely and is faster. Prefer that in contests.
@@ -205,6 +258,9 @@ This is easy to get wrong under time pressure. Encoding the pair into a single `
 The brute force is O(N<sup>2</sup>). With a map of counts it becomes O(N):
 
 ```java
+int[] a = {1, 5, 3, 3, 4};
+int n = a.length;
+int x = 6;
 Map<Integer, Integer> count = new HashMap<>();
 long pairs = 0;
 

@@ -22,12 +22,23 @@ class TreeNode {
     int value;
     TreeNode left;
     TreeNode right;
+
+    TreeNode(int value) {
+        this.value = value;
+    }
 }
 ```
 
 Three of the four are the same recursion with one line moved:
 
 ```java
+static class TreeNode {
+    int value;
+    TreeNode left;
+    TreeNode right;
+    TreeNode(int value) { this.value = value; }
+}
+
 static void preOrder(TreeNode node) {
     if (node == null) return;
     System.out.println(node.value);    // handle first
@@ -47,6 +58,18 @@ static void postOrder(TreeNode node) {
     postOrder(node.left);
     postOrder(node.right);
     System.out.println(node.value);    // handle last
+}
+
+public static void main(String[] args) {
+    TreeNode root = new TreeNode(1);
+    root.left = new TreeNode(2);
+    root.right = new TreeNode(3);
+    root.left.left = new TreeNode(4);
+    preOrder(root);
+    System.out.println("---");
+    inOrder(root);
+    System.out.println("---");
+    postOrder(root);
 }
 ```
 
@@ -72,11 +95,26 @@ Two of these are worth dwelling on.
 **Post-order is what you need when a node's answer depends on its children.** Computing a subtree's size or height requires the children's answers first:
 
 ```java
+static class TreeNode {
+    int value;
+    TreeNode left;
+    TreeNode right;
+    TreeNode(int value) { this.value = value; }
+}
+
 static int height(TreeNode node) {
     if (node == null) return 0;
     int left = height(node.left);       // children first
     int right = height(node.right);
     return 1 + Math.max(left, right);   // then this node
+}
+
+public static void main(String[] args) {
+    TreeNode root = new TreeNode(1);
+    root.left = new TreeNode(2);
+    root.right = new TreeNode(3);
+    root.left.left = new TreeNode(4);
+    System.out.println(height(root));
 }
 ```
 
@@ -87,6 +125,13 @@ Deleting a tree is the same reason in reverse — free the children before the p
 The odd one out. It cannot be done with plain recursion because it moves across the tree rather than down it. Use a [queue](/java/java-ds-queues):
 
 ```java
+static class TreeNode {
+    int value;
+    TreeNode left;
+    TreeNode right;
+    TreeNode(int value) { this.value = value; }
+}
+
 static void levelOrder(TreeNode root) {
     if (root == null) return;
 
@@ -101,6 +146,14 @@ static void levelOrder(TreeNode root) {
         if (node.right != null) queue.offer(node.right);
     }
 }
+
+public static void main(String[] args) {
+    TreeNode root = new TreeNode(1);
+    root.left = new TreeNode(2);
+    root.right = new TreeNode(3);
+    root.left.left = new TreeNode(4);
+    levelOrder(root);
+}
 ```
 
 This is [breadth-first search](/java/java-algo-bfs) applied to a tree.
@@ -108,6 +161,21 @@ This is [breadth-first search](/java/java-algo-bfs) applied to a tree.
 To process one level at a time — printing each row on its own line, say — capture the queue size before draining that level:
 
 ```java
+class TreeNode {
+    int value;
+    TreeNode left;
+    TreeNode right;
+    TreeNode(int value) { this.value = value; }
+}
+
+TreeNode root = new TreeNode(1);
+root.left = new TreeNode(2);
+root.right = new TreeNode(3);
+root.left.left = new TreeNode(4);
+
+Queue<TreeNode> queue = new ArrayDeque<>();
+queue.offer(root);
+
 while (!queue.isEmpty()) {
     int levelSize = queue.size();       // fixed before we add the next level
 
@@ -130,6 +198,13 @@ Recursion is clearer, but a very deep tree can overflow the call stack. An expli
 Pre-order is the easy one:
 
 ```java
+static class TreeNode {
+    int value;
+    TreeNode left;
+    TreeNode right;
+    TreeNode(int value) { this.value = value; }
+}
+
 static void preOrderIterative(TreeNode root) {
     if (root == null) return;
 
@@ -144,6 +219,14 @@ static void preOrderIterative(TreeNode root) {
         if (node.left != null)  stack.push(node.left);    // ...so left pops first
     }
 }
+
+public static void main(String[] args) {
+    TreeNode root = new TreeNode(1);
+    root.left = new TreeNode(2);
+    root.right = new TreeNode(3);
+    root.left.left = new TreeNode(4);
+    preOrderIterative(root);
+}
 ```
 
 Pushing right before left is deliberate. A stack reverses order, so the last pushed is processed first — pushing left last means left is handled first, matching pre-order.
@@ -151,6 +234,13 @@ Pushing right before left is deliberate. A stack reverses order, so the last pus
 In-order iteratively is trickier, because you must descend fully left before handling anything:
 
 ```java
+static class TreeNode {
+    int value;
+    TreeNode left;
+    TreeNode right;
+    TreeNode(int value) { this.value = value; }
+}
+
 static void inOrderIterative(TreeNode root) {
     Deque<TreeNode> stack = new ArrayDeque<>();
     TreeNode current = root;
@@ -164,6 +254,14 @@ static void inOrderIterative(TreeNode root) {
         System.out.println(current.value);
         current = current.right;        // then move right
     }
+}
+
+public static void main(String[] args) {
+    TreeNode root = new TreeNode(1);
+    root.left = new TreeNode(2);
+    root.right = new TreeNode(3);
+    root.left.left = new TreeNode(4);
+    inOrderIterative(root);
 }
 ```
 
@@ -182,9 +280,10 @@ Switch to **iterative** when the tree could be deep enough to overflow the stack
 Not every tree has exactly two children. With a list of children, the same shapes apply:
 
 ```java
-class Node {
+static class Node {
     int value;
     List<Node> children = new ArrayList<>();
+    Node(int value) { this.value = value; }
 }
 
 static void preOrder(Node node) {
@@ -192,6 +291,13 @@ static void preOrder(Node node) {
     for (Node child : node.children) {
         preOrder(child);
     }
+}
+
+public static void main(String[] args) {
+    Node root = new Node(1);
+    root.children.add(new Node(2));
+    root.children.add(new Node(3));
+    preOrder(root);
 }
 ```
 

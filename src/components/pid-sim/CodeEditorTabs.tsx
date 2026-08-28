@@ -100,6 +100,7 @@ export default function CodeEditorTabs({
   const handleMount = (ed: editor.IStandaloneCodeEditor, monaco: Monaco) => {
     editorRef.current = ed;
     monacoRef.current = monaco;
+    ed.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Space, () => {});
     applyMarkers();
   };
 
@@ -149,6 +150,11 @@ export default function CodeEditorTabs({
             padding: { top: 12 },
             lineNumbers: 'on',
             renderValidationDecorations: 'on',
+            quickSuggestions: false,
+            suggestOnTriggerCharacters: false,
+            wordBasedSuggestions: 'off',
+            parameterHints: { enabled: false },
+            snippetSuggestions: 'none',
           }}
         />
       </Suspense>

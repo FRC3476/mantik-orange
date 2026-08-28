@@ -16,6 +16,14 @@ description: Passing a class the things it needs instead of letting it build the
 Here is a class that creates what it depends on:
 
 ```java
+class Motor {
+    private final int port;
+    Motor(int port) { this.port = port; }
+    void set(double output) {
+        System.out.println("motor on port " + port + " set to " + output);
+    }
+}
+
 class Shooter {
     private final Motor motor;
 
@@ -27,6 +35,8 @@ class Shooter {
         motor.set(0.9);
     }
 }
+
+new Shooter().spinUp();
 ```
 
 This works, and it is what most people write first. But three things are now impossible.
@@ -38,6 +48,14 @@ The class made a decision that was not really its business.
 ### Passing it in instead
 
 ```java
+class Motor {
+    private final int port;
+    Motor(int port) { this.port = port; }
+    void set(double output) {
+        System.out.println("motor on port " + port + " set to " + output);
+    }
+}
+
 class Shooter {
     private final Motor motor;
 
@@ -49,13 +67,31 @@ class Shooter {
         motor.set(0.9);
     }
 }
+
+Shooter injected = new Shooter(new Motor(5));
+injected.spinUp();
 ```
 
 The change is small. The consequences are not.
 
 ```java
+class Motor {
+    private final int port;
+    Motor(int port) { this.port = port; }
+    void set(double output) {
+        System.out.println("motor on port " + port + " set to " + output);
+    }
+}
+
+class Shooter {
+    private final Motor motor;
+    Shooter(Motor motor) { this.motor = motor; }
+    void spinUp() { motor.set(0.9); }
+}
+
 Motor shooterMotor = new Motor(5);
 Shooter shooter = new Shooter(shooterMotor);
+shooter.spinUp();
 ```
 
 The decision about *which* motor moved outward, to the code assembling the robot. `Shooter` now describes behaviour, and something else decides configuration.
@@ -67,13 +103,23 @@ That is dependency injection: a class receives what it needs rather than constru
 Passing dependencies through the constructor is the best of the three options:
 
 ```java
-// constructor injection — preferred
-Shooter(Motor motor) { this.motor = motor; }
+class Motor {}
 
-// setter injection — object exists in an incomplete state first
-void setMotor(Motor motor) { this.motor = motor; }
+class Shooter {
+    private Motor motor;
 
-// field injection via a framework — hidden, hard to follow
+    // constructor injection — preferred
+    Shooter(Motor motor) { this.motor = motor; }
+
+    // setter injection — object exists in an incomplete state first
+    void setMotor(Motor motor) { this.motor = motor; }
+
+    // field injection via a framework — hidden, hard to follow
+}
+
+Shooter viaConstructor = new Shooter(new Motor());
+viaConstructor.setMotor(new Motor());
+System.out.println("shooter wired");
 ```
 
 Constructor injection lets you mark the field `final`, and it makes the object valid the moment it exists. With a setter, there is a window where `motor` is `null` and any method call fails.
@@ -102,6 +148,19 @@ class Shooter {
     void spinUp() { motor.set(0.9); }
     void stop()   { motor.stop(); }
 }
+
+class ConsoleMotor implements MotorController {
+    @Override public void set(double output) {
+        System.out.println("motor set to " + output);
+    }
+    @Override public void stop() {
+        System.out.println("motor stopped");
+    }
+}
+
+Shooter shooter = new Shooter(new ConsoleMotor());
+shooter.spinUp();
+shooter.stop();
 ```
 
 `Shooter` now works with anything satisfying that interface — a vendor's motor class, a simulated one, or a recording one used for diagnostics. It does not know or care, thanks to [runtime polymorphism](/java/java-runtime-polymorphism).
@@ -111,6 +170,11 @@ class Shooter {
 This is the payoff that convinces most people.
 
 ```java
+interface MotorController {
+    void set(double output);
+    void stop();
+}
+
 class FakeMotor implements MotorController {
     double lastOutput = 0;
     boolean stopped = false;
@@ -118,9 +182,33 @@ class FakeMotor implements MotorController {
     @Override public void set(double output) { lastOutput = output; }
     @Override public void stop() { stopped = true; }
 }
+
+FakeMotor fake = new FakeMotor();
+fake.set(0.9);
+System.out.println("lastOutput=" + fake.lastOutput);
 ```
 
 ```java
+interface MotorController {
+    void set(double output);
+    void stop();
+}
+
+class FakeMotor implements MotorController {
+    double lastOutput = 0;
+    boolean stopped = false;
+
+    @Override public void set(double output) { lastOutput = output; }
+    @Override public void stop() { stopped = true; }
+}
+
+class Shooter {
+    private final MotorController motor;
+    Shooter(MotorController motor) { this.motor = motor; }
+    void spinUp() { motor.set(0.9); }
+    void stop() { motor.stop(); }
+}
+
 FakeMotor fake = new FakeMotor();
 Shooter shooter = new Shooter(fake);
 
@@ -138,6 +226,12 @@ You just tested shooter logic on a laptop. With the original version this test c
 The same reasoning applies to plain values and to [suppliers](/java/java-fn-supplier).
 
 ```java
+class Drivetrain {
+    void arcadeDrive(double forward, double rotation) {
+        System.out.println("arcadeDrive forward=" + forward + " rotation=" + rotation);
+    }
+}
+
 class DriveCommand {
     private final Drivetrain drive;
     private final DoubleSupplier forward;
@@ -153,12 +247,45 @@ class DriveCommand {
         drive.arcadeDrive(forward.getAsDouble(), rotation.getAsDouble());
     }
 }
+
+DriveCommand cmd = new DriveCommand(new Drivetrain(), () -> 0.5, () -> 0.1);
+cmd.execute();
 ```
 
 ```java
-new DriveCommand(drivetrain,
+class Drivetrain {
+    void arcadeDrive(double forward, double rotation) {
+        System.out.println("arcadeDrive forward=" + forward + " rotation=" + rotation);
+    }
+}
+
+class Joystick {
+    double getLeftY() { return 0.4; }
+    double getRightX() { return 0.1; }
+}
+
+class DriveCommand {
+    private final Drivetrain drive;
+    private final DoubleSupplier forward;
+    private final DoubleSupplier rotation;
+
+    DriveCommand(Drivetrain drive, DoubleSupplier forward, DoubleSupplier rotation) {
+        this.drive = drive;
+        this.forward = forward;
+        this.rotation = rotation;
+    }
+
+    void execute() {
+        drive.arcadeDrive(forward.getAsDouble(), rotation.getAsDouble());
+    }
+}
+
+Drivetrain drivetrain = new Drivetrain();
+Joystick joystick = new Joystick();
+DriveCommand teleop = new DriveCommand(drivetrain,
                  () -> -joystick.getLeftY(),
                  () -> joystick.getRightX());
+teleop.execute();
 ```
 
 Injecting suppliers rather than numbers is what keeps the command reading live inputs. Passing `joystick.getLeftY()` directly would freeze one reading forever — the mistake described in the `Supplier` lesson.
@@ -166,7 +293,30 @@ Injecting suppliers rather than numbers is what keeps the command reading live i
 For a test, inject constants:
 
 ```java
-new DriveCommand(fakeDrive, () -> 0.5, () -> 0.0);
+class Drivetrain {
+    void arcadeDrive(double forward, double rotation) {
+        System.out.println("arcadeDrive forward=" + forward + " rotation=" + rotation);
+    }
+}
+
+class DriveCommand {
+    private final Drivetrain drive;
+    private final DoubleSupplier forward;
+    private final DoubleSupplier rotation;
+
+    DriveCommand(Drivetrain drive, DoubleSupplier forward, DoubleSupplier rotation) {
+        this.drive = drive;
+        this.forward = forward;
+        this.rotation = rotation;
+    }
+
+    void execute() {
+        drive.arcadeDrive(forward.getAsDouble(), rotation.getAsDouble());
+    }
+}
+
+Drivetrain fakeDrive = new Drivetrain();
+new DriveCommand(fakeDrive, () -> 0.5, () -> 0.0).execute();
 ```
 
 ### Where the wiring goes
@@ -174,6 +324,34 @@ new DriveCommand(fakeDrive, () -> 0.5, () -> 0.0);
 If every class receives its dependencies, something must eventually create the real objects. That job collects in one place — often called the composition root.
 
 ```java
+interface MotorController {
+    void set(double output);
+    void stop();
+}
+
+class Motor implements MotorController {
+    private final int port;
+    Motor(int port) { this.port = port; }
+    @Override public void set(double output) {
+        System.out.println("motor " + port + " set to " + output);
+    }
+    @Override public void stop() {
+        System.out.println("motor " + port + " stopped");
+    }
+}
+
+class Shooter {
+    private final MotorController motor;
+    Shooter(MotorController motor) { this.motor = motor; }
+    void spinUp() { motor.set(0.9); }
+}
+
+class Intake {
+    private final MotorController motor;
+    Intake(MotorController motor) { this.motor = motor; }
+    void run() { motor.set(0.6); }
+}
+
 class RobotContainer {
     private final MotorController shooterMotor = new Motor(5);
     private final MotorController intakeMotor  = new Motor(6);
@@ -181,7 +359,14 @@ class RobotContainer {
     private final Shooter shooter = new Shooter(shooterMotor);
     private final Intake intake   = new Intake(intakeMotor);
     // ... bind commands here
+
+    void demo() {
+        shooter.spinUp();
+        intake.run();
+    }
 }
+
+new RobotContainer().demo();
 ```
 
 All hardware decisions live in this file. Every other class is portable, testable, and free of port numbers. If you have written FRC command-based code, this is exactly what `RobotContainer` is for, and now the reason is visible.

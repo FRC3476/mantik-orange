@@ -16,12 +16,17 @@ description: Writing a functional interface implementation in one line, what the
 An anonymous class implementing a one-method interface is mostly boilerplate:
 
 ```java
+interface ReadingTest {
+    boolean matches(int reading);
+}
+
 ReadingTest above100 = new ReadingTest() {
     @Override
     public boolean matches(int reading) {
         return reading > 100;
     }
 };
+System.out.println(above100.matches(150));
 ```
 
 Five of those six lines say nothing a reader could not work out. The interface has one method, so its name is known. The parameter type is declared in the interface. `@Override` is implied.
@@ -29,7 +34,12 @@ Five of those six lines say nothing a reader could not work out. The interface h
 A lambda expression writes only what is actually undetermined — the parameter name and the body:
 
 ```java
+interface ReadingTest {
+    boolean matches(int reading);
+}
+
 ReadingTest above100 = reading -> reading > 100;
+System.out.println(above100.matches(150));
 ```
 
 Identical meaning, identical behaviour. The compiler reconstructs the rest.
@@ -44,7 +54,7 @@ That is worth knowing because it tells you where the limits are. A lambda can on
 
 ### Syntax forms
 
-```java
+```java norun
 // one parameter, expression body — parentheses optional
 r -> r > 100
 
@@ -69,7 +79,7 @@ r -> r > 100
 
 <RulesBox title="Expression body versus block body">
 
-```java
+```java norun
 r -> r > 100            // expression: the value IS the return value
 r -> { return r > 100; }  // block: return is required
 ```
@@ -78,7 +88,7 @@ Mixing these up is the most common lambda syntax error. With braces you must wri
 
 For a lambda returning nothing, an expression body works too:
 
-```java
+```java norun
 () -> System.out.println("hello")     // no return needed, nothing to return
 ```
 
@@ -87,9 +97,29 @@ For a lambda returning nothing, an expression body works too:
 ### Applied to the earlier example
 
 ```java
-List<Integer> high     = filter(readings, r -> r > 100);
-List<Integer> even     = filter(readings, r -> r % 2 == 0);
-List<Integer> inRange  = filter(readings, r -> r >= 50 && r <= 150);
+class Main {
+    interface ReadingTest {
+        boolean matches(int reading);
+    }
+
+    static List<Integer> filter(List<Integer> readings, ReadingTest test) {
+        List<Integer> result = new ArrayList<>();
+        for (int r : readings) {
+            if (test.matches(r)) result.add(r);
+        }
+        return result;
+    }
+
+    public static void main(String[] args) {
+        List<Integer> readings = Arrays.asList(40, 80, 120, 160);
+        List<Integer> high     = filter(readings, r -> r > 100);
+        List<Integer> even     = filter(readings, r -> r % 2 == 0);
+        List<Integer> inRange  = filter(readings, r -> r >= 50 && r <= 150);
+        System.out.println(high);
+        System.out.println(even);
+        System.out.println(inRange);
+    }
+}
 ```
 
 Compare that with three anonymous classes. The intent is now visible at a glance, which is the real gain — not the saved keystrokes but the fact that the interesting part is no longer buried.
@@ -99,7 +129,7 @@ Compare that with three anonymous classes. The intent is now visible at a glance
 Lambdas turn up throughout the standard library.
 
 ```java
-List<String> names = new ArrayList<>(List.of("intake", "drive", "shooter"));
+List<String> names = new ArrayList<>(Arrays.asList("intake", "drive", "shooter"));
 
 // sorting with a custom order
 names.sort((a, b) -> Integer.compare(a.length(), b.length()));
@@ -117,7 +147,29 @@ new Thread(() -> System.out.println("running")).start();
 In robotics code they are everywhere. A button binding takes the behaviour to run; a command takes a condition telling it when to finish. Both are lambdas.
 
 ```java
+class Intake {
+    void run() { System.out.println("intake running"); }
+}
+
+class Button {
+    void whenPressed(Runnable action) { action.run(); }
+}
+
+class Sensor {
+    boolean isTriggered() { return true; }
+}
+
+class Command {
+    void until(BooleanSupplier done) {
+        System.out.println("finished: " + done.getAsBoolean());
+    }
+}
+
 // conceptually, though the real API differs:
+Intake intake = new Intake();
+Button button = new Button();
+Sensor sensor = new Sensor();
+Command command = new Command();
 button.whenPressed(() -> intake.run());
 command.until(() -> sensor.isTriggered());
 ```
@@ -127,13 +179,18 @@ command.until(() -> sensor.isTriggered());
 A lambda can use variables from the enclosing scope:
 
 ```java
+interface ReadingTest {
+    boolean matches(int reading);
+}
+
 int threshold = 100;
 ReadingTest test = r -> r > threshold;      // captures threshold
+System.out.println(test.matches(150));
 ```
 
 The captured variable must be **effectively final** — assigned once and never changed:
 
-```java
+```java norun
 int threshold = 100;
 ReadingTest test = r -> r > threshold;
 threshold = 200;          // compile error: threshold must be effectively final
@@ -146,6 +203,9 @@ If you genuinely need a changing value, hold it in a field or an object:
 ```java
 int[] counter = {0};
 Runnable increment = () -> counter[0]++;    // the array reference is final
+increment.run();
+increment.run();
+System.out.println(counter[0]);
 ```
 
 This works because `counter` itself never changes — only its contents. It is legal but slightly sneaky; a field on a class is usually clearer.
@@ -165,6 +225,7 @@ class Robot {
                 System.out.println(this.getClass());
             }
         };
+        r.run();
     }
 
     void lambdaVersion() {
@@ -172,6 +233,13 @@ class Robot {
             // `this` is the Robot
             System.out.println(name);      // works — no qualification needed
         };
+        r.run();
+    }
+
+    public static void main(String[] args) {
+        Robot robot = new Robot();
+        robot.anonymousVersion();
+        robot.lambdaVersion();
     }
 }
 ```
@@ -214,7 +282,7 @@ Inside a lambda, `this` refers to the enclosing object. Inside an anonymous clas
 
 1. Each five-line block collapses to one line.
 2. `Comparator.comparingInt(String::length).thenComparing(s -> s)` — or a single lambda comparing lengths and falling back to `compareTo`.
-3. `list.removeIf(s -> s.isBlank())`.
+3. `list.removeIf(s -> s.trim().isEmpty())`.
 4. The parameter type is `Runnable`; call `run()` in a loop.
 5. Assign after the lambda is created and read the compiler message — it is worth seeing the exact wording once.
 

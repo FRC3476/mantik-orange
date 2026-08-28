@@ -28,11 +28,21 @@ static void dfs(int node, List<List<Integer>> adj, boolean[] visited) {
         }
     }
 }
+
+public static void main(String[] args) {
+    List<List<Integer>> adj = Arrays.asList(
+        Arrays.asList(1, 2),
+        Arrays.asList(0, 3),
+        Arrays.asList(0),
+        Arrays.asList(1)
+    );
+    dfs(0, adj, new boolean[4]);
+}
 ```
 
 <RulesBox title="Mark visited before recursing, not after">
 
-```java
+```java norun
 visited[node] = true;      // first line of the method
 for (...) { ... }
 ```
@@ -48,6 +58,15 @@ This single line is the difference between DFS on a graph and DFS on a tree. Tre
 The classic use. Start a search from every node not yet reached; each fresh start is one separate group.
 
 ```java
+static void dfs(int node, List<List<Integer>> adj, boolean[] visited) {
+    visited[node] = true;
+    for (int neighbour : adj.get(node)) {
+        if (!visited[neighbour]) {
+            dfs(neighbour, adj, visited);
+        }
+    }
+}
+
 static int countComponents(List<List<Integer>> adj, int n) {
     boolean[] visited = new boolean[n];
     int components = 0;
@@ -59,6 +78,17 @@ static int countComponents(List<List<Integer>> adj, int n) {
         }
     }
     return components;
+}
+
+public static void main(String[] args) {
+    int n = 4;
+    List<List<Integer>> adj = Arrays.asList(
+        Arrays.asList(1),
+        Arrays.asList(0),
+        Arrays.asList(3),
+        Arrays.asList(2)
+    );
+    System.out.println(countComponents(adj, n));
 }
 ```
 
@@ -86,6 +116,17 @@ static void fill(char[][] grid, boolean[][] seen, int r, int c) {
         fill(grid, seen, nr, nc);
     }
 }
+
+public static void main(String[] args) {
+    char[][] grid = {
+        {'.', '.', '#'},
+        {'#', '.', '.'},
+        {'.', '#', '.'}
+    };
+    boolean[][] seen = new boolean[grid.length][grid[0].length];
+    fill(grid, seen, 0, 0);
+    System.out.println(seen[0][1]);   // true — same region as (0, 0)
+}
 ```
 
 The bounds checks must come **before** reading `grid[nr][nc]`. Java stops evaluating at the first `continue`, so an out-of-range index is never used. Reorder them and you get `ArrayIndexOutOfBoundsException`.
@@ -93,14 +134,39 @@ The bounds checks must come **before** reading `grid[nr][nc]`. Java stops evalua
 Counting regions then follows the same shape as components:
 
 ```java
-int regions = 0;
-for (int r = 0; r < grid.length; r++) {
-    for (int c = 0; c < grid[0].length; c++) {
-        if (grid[r][c] == '.' && !seen[r][c]) {
-            regions++;
-            fill(grid, seen, r, c);
+static final int[] DR = {-1, 1, 0, 0};
+static final int[] DC = {0, 0, -1, 1};
+
+static void fill(char[][] grid, boolean[][] seen, int r, int c) {
+    seen[r][c] = true;
+    for (int d = 0; d < 4; d++) {
+        int nr = r + DR[d];
+        int nc = c + DC[d];
+        if (nr < 0 || nr >= grid.length) continue;
+        if (nc < 0 || nc >= grid[0].length) continue;
+        if (seen[nr][nc] || grid[nr][nc] == '#') continue;
+        fill(grid, seen, nr, nc);
+    }
+}
+
+public static void main(String[] args) {
+    char[][] grid = {
+        {'.', '.', '#'},
+        {'#', '.', '.'},
+        {'.', '#', '.'}
+    };
+    boolean[][] seen = new boolean[grid.length][grid[0].length];
+
+    int regions = 0;
+    for (int r = 0; r < grid.length; r++) {
+        for (int c = 0; c < grid[0].length; c++) {
+            if (grid[r][c] == '.' && !seen[r][c]) {
+                regions++;
+                fill(grid, seen, r, c);
+            }
         }
     }
+    System.out.println(regions);
 }
 ```
 
@@ -109,8 +175,7 @@ for (int r = 0; r < grid.length; r++) {
 In an **undirected** graph, a cycle exists if you reach an already-visited node that is not the one you came from:
 
 ```java
-static boolean hasCycle(int node, int parent,
-                        List<List<Integer>> adj, boolean[] visited) {
+static boolean hasCycle(int node, int parent, List<List<Integer>> adj, boolean[] visited) {
     visited[node] = true;
 
     for (int neighbour : adj.get(node)) {
@@ -121,6 +186,15 @@ static boolean hasCycle(int node, int parent,
         }
     }
     return false;
+}
+
+public static void main(String[] args) {
+    List<List<Integer>> adj = Arrays.asList(
+        Arrays.asList(1, 2),
+        Arrays.asList(0, 2),
+        Arrays.asList(0, 1)
+    );
+    System.out.println(hasCycle(0, -1, adj, new boolean[3]));
 }
 ```
 
@@ -142,6 +216,22 @@ static boolean hasCycleDirected(int node, List<List<Integer>> adj, int[] state) 
     }
     state[node] = DONE;
     return false;
+}
+
+public static void main(String[] args) {
+    List<List<Integer>> adj = Arrays.asList(
+        Arrays.asList(1),
+        Arrays.asList(2),
+        Arrays.asList(0)
+    );
+    int[] state = new int[3];
+    boolean cycle = false;
+    for (int i = 0; i < 3; i++) {
+        if (state[i] == UNVISITED && hasCycleDirected(i, adj, state)) {
+            cycle = true;
+        }
+    }
+    System.out.println(cycle);
 }
 ```
 
@@ -167,6 +257,17 @@ static void dfsIterative(int start, List<List<Integer>> adj, boolean[] visited) 
             }
         }
     }
+}
+
+public static void main(String[] args) {
+    List<List<Integer>> adj = Arrays.asList(
+        Arrays.asList(1, 2),
+        Arrays.asList(0, 3),
+        Arrays.asList(0),
+        Arrays.asList(1)
+    );
+    dfsIterative(0, adj, new boolean[4]);
+    System.out.println("done");
 }
 ```
 

@@ -49,18 +49,21 @@ All graphs. If the problem describes *things* and *connections between them*, th
 The usual choice is an **adjacency list**: for each node, the list of nodes it connects to.
 
 ```java
-import java.util.*;
-
-int n = 5;                                   // nodes numbered 0..4
-List<List<Integer>> adj = new ArrayList<>();
-for (int i = 0; i < n; i++) {
-    adj.add(new ArrayList<>());
-}
-
-// add an undirected edge between u and v
-void addEdge(List<List<Integer>> adj, int u, int v) {
+static void addEdge(List<List<Integer>> adj, int u, int v) {
     adj.get(u).add(v);
     adj.get(v).add(u);        // omit this line for a directed graph
+}
+
+public static void main(String[] args) {
+    int n = 5;                                   // nodes numbered 0..4
+    List<List<Integer>> adj = new ArrayList<>();
+    for (int i = 0; i < n; i++) {
+        adj.add(new ArrayList<Integer>());
+    }
+
+    addEdge(adj, 0, 1);
+    addEdge(adj, 1, 2);
+    System.out.println(adj);
 }
 ```
 
@@ -75,11 +78,16 @@ If a traversal reaches fewer nodes than you expect, check this first. A one-dire
 When nodes are named rather than numbered, a map works:
 
 ```java
-Map<String, List<String>> adj = new HashMap<>();
+static void addEdge(Map<String, List<String>> adj, String a, String b) {
+    adj.computeIfAbsent(a, k -> new ArrayList<String>()).add(b);
+    adj.computeIfAbsent(b, k -> new ArrayList<String>()).add(a);
+}
 
-void addEdge(Map<String, List<String>> adj, String a, String b) {
-    adj.computeIfAbsent(a, k -> new ArrayList<>()).add(b);
-    adj.computeIfAbsent(b, k -> new ArrayList<>()).add(a);
+public static void main(String[] args) {
+    Map<String, List<String>> adj = new HashMap<>();
+    addEdge(adj, "intake", "shooter");
+    addEdge(adj, "shooter", "hood");
+    System.out.println(adj);
 }
 ```
 
@@ -146,16 +154,40 @@ Here `distance` doubles as the visited marker — `-1` means unreached. Setting 
 A common question: how many separate groups are there? Start a traversal from every node not yet reached; each fresh start is one new group.
 
 ```java
-boolean[] visited = new boolean[n];
-int groups = 0;
+static void addEdge(List<List<Integer>> adj, int u, int v) {
+    adj.get(u).add(v);
+    adj.get(v).add(u);
+}
 
-for (int i = 0; i < n; i++) {
-    if (!visited[i]) {
-        groups++;
-        dfs(i, adj, visited);
+static void dfs(int node, List<List<Integer>> adj, boolean[] visited) {
+    visited[node] = true;
+    for (int neighbour : adj.get(node)) {
+        if (!visited[neighbour]) {
+            dfs(neighbour, adj, visited);
+        }
     }
 }
-System.out.println(groups + " separate groups");
+
+public static void main(String[] args) {
+    int n = 5;
+    List<List<Integer>> adj = new ArrayList<>();
+    for (int i = 0; i < n; i++) {
+        adj.add(new ArrayList<Integer>());
+    }
+    addEdge(adj, 0, 1);
+    addEdge(adj, 2, 3);
+
+    boolean[] visited = new boolean[n];
+    int groups = 0;
+
+    for (int i = 0; i < n; i++) {
+        if (!visited[i]) {
+            groups++;
+            dfs(i, adj, visited);
+        }
+    }
+    System.out.println(groups + " separate groups");
+}
 ```
 
 The outer loop matters. Starting only from node 0 finds one group and misses every disconnected part of the graph.

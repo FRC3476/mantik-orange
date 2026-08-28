@@ -68,6 +68,11 @@ One caveat: `ArrayDeque` does not accept `null` elements. That is usually a feat
 `pop` and `peek` on an empty `ArrayDeque` throw `NoSuchElementException`. Always check first.
 
 ```java
+Deque<String> history = new ArrayDeque<>();
+history.push("moveArm");
+history.push("closeClaw");
+history.push("liftArm");
+
 while (!history.isEmpty()) {
     System.out.println(history.pop());
 }
@@ -76,8 +81,11 @@ while (!history.isEmpty()) {
 If you would rather get `null` than an exception, use the polling forms:
 
 ```java
+Deque<String> history = new ArrayDeque<>();
 String top = history.poll();     // null when empty, instead of throwing
 String look = history.peekFirst();
+System.out.println(top);
+System.out.println(look);
 ```
 
 ### Where stacks show up
@@ -112,9 +120,11 @@ Two checks are easy to forget: popping from an empty stack means a closing brack
 **Reversing.** Push everything, then pop everything.
 
 ```java
+int[] values = {1, 2, 3, 4, 5};
 Deque<Integer> stack = new ArrayDeque<>();
 for (int v : values) stack.push(v);
 while (!stack.isEmpty()) System.out.print(stack.pop() + " ");
+System.out.println();
 ```
 
 **Method calls.** Java itself uses a stack. Each method call pushes a frame holding its local variables; returning pops it. This is why infinite recursion throws `StackOverflowError` — the call stack has a size limit.

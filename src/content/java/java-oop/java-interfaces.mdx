@@ -24,7 +24,18 @@ interface Stoppable {
 Any class can claim that capability, regardless of what else it is:
 
 ```java
+class Motor {
+    void set(double power) { System.out.println("motor power: " + power); }
+}
+
+class Subsystem { }
+
+interface Stoppable {
+    void stop();
+}
+
 class Intake extends Subsystem implements Stoppable {
+    private final Motor motor = new Motor();
     @Override
     public void stop() {
         motor.set(0);
@@ -32,17 +43,35 @@ class Intake extends Subsystem implements Stoppable {
 }
 
 class Camera implements Stoppable {          // unrelated to Subsystem
+    void stopRecording() { System.out.println("camera stopped"); }
     @Override
     public void stop() {
         stopRecording();
     }
 }
+
+new Intake().stop();
+new Camera().stop();
 ```
 
 `Intake` and `Camera` share no ancestor, but both are `Stoppable`, so code can handle them together:
 
 ```java
-List<Stoppable> everything = List.of(intake, camera);
+interface Stoppable {
+    void stop();
+}
+
+class Intake implements Stoppable {
+    public void stop() { System.out.println("intake stopped"); }
+}
+
+class Camera implements Stoppable {
+    public void stop() { System.out.println("camera stopped"); }
+}
+
+Stoppable intake = new Intake();
+Stoppable camera = new Camera();
+List<Stoppable> everything = Arrays.asList(intake, camera);
 for (Stoppable s : everything) {
     s.stop();
 }
@@ -53,13 +82,26 @@ That is the thing [inheritance](/java/java-inheritance) cannot do. A class exten
 ### Implementing several
 
 ```java
+class Motor {
+    private double power;
+    void set(double power) { this.power = power; }
+    double get() { return power; }
+}
+
+class Subsystem { }
+
 interface Stoppable  { void stop(); }
 interface Loggable   { String toLogLine(); }
 
 class Intake extends Subsystem implements Stoppable, Loggable {
+    private final Motor motor = new Motor();
     @Override public void stop() { motor.set(0); }
     @Override public String toLogLine() { return "intake: " + motor.get(); }
 }
+
+Intake intake = new Intake();
+intake.stop();
+System.out.println(intake.toLogLine());
 ```
 
 `extends` comes first and names one class; `implements` follows and names any number of interfaces.
@@ -68,7 +110,7 @@ class Intake extends Subsystem implements Stoppable, Loggable {
 
 Methods declared in an interface are implicitly `public`, so implementations must be `public` too. Writing:
 
-```java
+```java norun
 @Override
 void stop() { }              // package-private — will not compile
 ```
@@ -117,6 +159,15 @@ interface Stoppable {
     }
 }
 
+class Intake implements Stoppable {
+    public void stop() { System.out.println("intake stopped"); }
+}
+
+class Camera implements Stoppable {
+    public void stop() { System.out.println("camera stopped"); }
+}
+
+List<Stoppable> everything = Arrays.asList(new Intake(), new Camera());
 Stoppable.stopAll(everything);
 ```
 
@@ -147,6 +198,8 @@ interface ReadingTest {
 }
 
 ReadingTest above100 = r -> r > 100;      // no class needed
+System.out.println("150 matches? " + above100.matches(150));
+System.out.println("50 matches? " + above100.matches(50));
 ```
 
 `default` and `static` methods do not count toward the "exactly one" rule — only abstract ones do. The `@FunctionalInterface` annotation is optional but makes the compiler reject a second abstract method, which would silently break every lambda written against it.

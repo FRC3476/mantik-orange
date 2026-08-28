@@ -124,6 +124,53 @@ public class Main {
     expect(wrapped.entryClass).toBe('Main');
     expect(wrapped.source.startsWith('import java.io.*;')).toBe(true);
   });
+
+  it('moves demo statements after a class into Main.main', () => {
+    const src = `public class Robot {
+    private final String name;
+    public Robot(String name) { this.name = name; }
+    public String toString() { return name; }
+}
+
+Robot[] team = new Robot[1];
+team[0] = new Robot("SpeedBot");
+System.out.println(team[0]);
+`;
+    const wrapped = wrapExampleSource(src);
+    expect(wrapped.entryClass).toBe('Main');
+    expect(wrapped.hasMain).toBe(true);
+    expect(wrapped.source).toContain('class Robot {');
+    expect(wrapped.source).not.toMatch(/public class Robot/);
+    expect(wrapped.source).toContain('public class Main');
+    expect(wrapped.source).toContain('team[0] = new Robot("SpeedBot");');
+  });
+
+  it('moves demo statements after two classes into Main.main', () => {
+    const src = `class Parent { String label = "parent"; }
+class Child extends Parent { String label = "child"; }
+
+Parent p = new Child();
+System.out.println(p.label);
+`;
+    const wrapped = wrapExampleSource(src);
+    expect(wrapped.entryClass).toBe('Main');
+    expect(wrapped.source).toContain('class Parent {');
+    expect(wrapped.source).toContain('class Child extends Parent');
+    expect(wrapped.source).toContain('Parent p = new Child();');
+  });
+
+  it('keeps a leading type annotation on the type, not in main', () => {
+    const src = `@FunctionalInterface
+interface ReadingTest {
+    boolean matches(int reading);
+}
+`;
+    const wrapped = wrapExampleSource(src);
+    expect(wrapped.hasMain).toBe(false);
+    expect(wrapped.source).toContain('@FunctionalInterface');
+    expect(wrapped.source).toContain('interface ReadingTest');
+    expect(wrapped.source).not.toContain('void main');
+  });
 });
 
 describe('exampleNeedsStdin', () => {

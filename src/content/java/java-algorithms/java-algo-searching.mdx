@@ -24,6 +24,10 @@ static int indexOf(int[] values, int target) {
     }
     return -1;                        // not found
 }
+
+public static void main(String[] args) {
+    System.out.println(indexOf(new int[]{10, 20, 30}, 20));
+}
 ```
 
 Returning `-1` for "not found" is the Java convention — `String.indexOf` and `List.indexOf` both do it. Whatever you choose, make it impossible to confuse with a valid answer.
@@ -52,6 +56,10 @@ static int binarySearch(int[] values, int target) {
     }
     return -1;
 }
+
+public static void main(String[] args) {
+    System.out.println(binarySearch(new int[]{10, 20, 30, 40, 50}, 30));
+}
 ```
 
 A sorted array of a million elements takes about 20 comparisons instead of a million.
@@ -78,8 +86,10 @@ For a plain lookup, Java already has it:
 int[] values = {10, 20, 30, 40, 50};
 int index = Arrays.binarySearch(values, 30);        // 2
 
-List<String> names = List.of("alice", "bob", "carol");
+List<String> names = Arrays.asList("alice", "bob", "carol");
 int i = Collections.binarySearch(names, "bob");     // 1
+
+System.out.println(index + " " + i);
 ```
 
 Both require sorted input. When the value is absent they return a negative number encoding where it *would* go, which is occasionally useful and often surprising — so check for `< 0` rather than `== -1`.
@@ -105,6 +115,10 @@ static int lowerBound(int[] values, int target) {
     }
     return low;
 }
+
+public static void main(String[] args) {
+    System.out.println(lowerBound(new int[]{10, 20, 30, 40}, 25));
+}
 ```
 
 The three differences from the exact-match version are deliberate and interlocking. This variant never "finds" anything — it narrows until `low` and `high` meet at the boundary. Changing one of the three without the others breaks it.
@@ -112,7 +126,7 @@ The three differences from the exact-match version are deliberate and interlocki
 `TreeSet` gives you the same thing with no code:
 
 ```java
-TreeSet<Integer> set = new TreeSet<>(List.of(10, 20, 30));
+TreeSet<Integer> set = new TreeSet<>(Arrays.asList(10, 20, 30));
 System.out.println(set.ceiling(15));   // 20 — smallest >= 15
 System.out.println(set.floor(15));     // 10 — largest <= 15
 ```
@@ -122,7 +136,7 @@ System.out.println(set.floor(15));     // 10 — largest <= 15
 When you only need "is this present" and order does not matter, a hash set beats both:
 
 ```java
-Set<Integer> seen = new HashSet<>(List.of(10, 20, 30));
+Set<Integer> seen = new HashSet<>(Arrays.asList(10, 20, 30));
 System.out.println(seen.contains(20));   // true, effectively instant
 ```
 

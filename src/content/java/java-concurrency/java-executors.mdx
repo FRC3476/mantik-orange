@@ -16,9 +16,22 @@ description: Submitting tasks to a managed pool instead of creating threads by h
 Creating a thread is expensive — it allocates a stack and asks the operating system for a scheduling resource. Doing it per task wastes most of the time on setup:
 
 ```java
-for (int i = 0; i < 1000; i++) {
-    new Thread(() -> handle(i)).start();     // 1000 threads — bad
+class Handler {
+    static void handle(int id) {
+        System.out.println("task " + id);
+    }
 }
+
+Thread[] workers = new Thread[4];           // a burst of 1000 would be bad
+for (int i = 0; i < workers.length; i++) {
+    final int id = i;
+    workers[i] = new Thread(() -> Handler.handle(id));
+    workers[i].start();
+}
+for (int i = 0; i < workers.length; i++) {
+    workers[i].join();
+}
+System.out.println("started " + workers.length + " threads");
 ```
 
 Beyond the cost, nothing limits how many exist at once. A thousand threads competing for a handful of processor cores mostly switch between each other rather than doing work, and memory use climbs sharply.
@@ -28,17 +41,25 @@ An **executor** separates *what to run* from *how it is run*. You submit tasks; 
 ```java
 import java.util.concurrent.*;
 
+class Handler {
+    static void handle(int id) {
+        System.out.println("task " + id);
+    }
+}
+
 ExecutorService pool = Executors.newFixedThreadPool(4);
 
-for (int i = 0; i < 1000; i++) {
+for (int i = 0; i < 8; i++) {
     final int id = i;
-    pool.submit(() -> handle(id));
+    pool.submit(() -> Handler.handle(id));
 }
 
 pool.shutdown();
+pool.awaitTermination(1, TimeUnit.SECONDS);
+System.out.println("pool finished");
 ```
 
-Four threads handle all thousand tasks, reusing themselves as each finishes.
+Four threads handle every submitted task, reusing themselves as each finishes.
 
 ### Choosing a pool
 
@@ -58,6 +79,9 @@ For work that keeps the processor busy, a fixed pool sized near the core count i
 ```java
 int cores = Runtime.getRuntime().availableProcessors();
 ExecutorService pool = Executors.newFixedThreadPool(cores);
+pool.submit(() -> System.out.println("pool size " + cores));
+pool.shutdown();
+pool.awaitTermination(1, TimeUnit.SECONDS);
 ```
 
 For work that mostly *waits* — network calls, file reads — more threads than cores is fine, since most are idle.
@@ -75,28 +99,45 @@ Prefer a fixed pool unless you know the task rate is bounded.
 `Runnable` returns nothing. `Callable<T>` returns a value, and `submit` hands you a `Future<T>` to collect it:
 
 ```java
+class Work {
+    static void doSomethingElse() {
+        System.out.println("other work");
+    }
+}
+
 ExecutorService pool = Executors.newFixedThreadPool(2);
 
 Future<Integer> future = pool.submit(() -> {
-    Thread.sleep(500);
+    Thread.sleep(50);
     return 42;
 });
 
-doSomethingElse();                    // runs while the task computes
+Work.doSomethingElse();                    // runs while the task computes
 
 int result = future.get();            // blocks until the value is ready
+pool.shutdown();
+pool.awaitTermination(1, TimeUnit.SECONDS);
+System.out.println(result);
 ```
 
 `get()` waits for completion. Two exceptions to handle:
 
 ```java
+ExecutorService pool = Executors.newSingleThreadExecutor();
+Future<Integer> future = pool.submit(() -> {
+    throw new IllegalStateException("task failed");
+});
 try {
     int result = future.get();
+    System.out.println(result);
 } catch (InterruptedException e) {
     Thread.currentThread().interrupt();
 } catch (ExecutionException e) {
     Throwable cause = e.getCause();   // the exception the task actually threw
+    System.out.println(cause);
 }
+pool.shutdown();
+pool.awaitTermination(1, TimeUnit.SECONDS);
 ```
 
 `ExecutionException` wraps whatever the task threw. Calling `getCause()` is how you see the real problem — a detail worth knowing, because the wrapper alone tells you almost nothing.
@@ -104,7 +145,12 @@ try {
 Use the timeout form to avoid waiting forever:
 
 ```java
+ExecutorService pool = Executors.newSingleThreadExecutor();
+Future<Integer> future = pool.submit(() -> 42);
 int result = future.get(2, TimeUnit.SECONDS);   // throws TimeoutException
+pool.shutdown();
+pool.awaitTermination(1, TimeUnit.SECONDS);
+System.out.println(result);
 ```
 
 <RulesBox title="Exceptions in submitted tasks are swallowed">
@@ -122,10 +168,17 @@ This makes silently-failing background work a common and confusing bug. Either c
 `invokeAll` submits a batch and waits for all of them:
 
 ```java
-List<Callable<Integer>> tasks = List.of(
-    () -> compute(1),
-    () -> compute(2),
-    () -> compute(3)
+class Compute {
+    static int compute(int n) {
+        return n * n;
+    }
+}
+
+ExecutorService pool = Executors.newFixedThreadPool(2);
+List<Callable<Integer>> tasks = Arrays.asList(
+    () -> Compute.compute(1),
+    () -> Compute.compute(2),
+    () -> Compute.compute(3)
 );
 
 List<Future<Integer>> results = pool.invokeAll(tasks);   // blocks until all done
@@ -133,6 +186,8 @@ List<Future<Integer>> results = pool.invokeAll(tasks);   // blocks until all don
 for (Future<Integer> f : results) {
     System.out.println(f.get());
 }
+pool.shutdown();
+pool.awaitTermination(1, TimeUnit.SECONDS);
 ```
 
 `invokeAny` returns as soon as *one* succeeds and cancels the rest — useful when several approaches could answer the same question.
@@ -140,13 +195,23 @@ for (Future<Integer> f : results) {
 ### Scheduled work
 
 ```java
+class Sensor {
+    static void pollSensor() {
+        System.out.println("poll");
+    }
+}
+
 ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
 // once, after a delay
-scheduler.schedule(() -> System.out.println("later"), 5, TimeUnit.SECONDS);
+scheduler.schedule(() -> System.out.println("later"), 20, TimeUnit.MILLISECONDS);
 
 // repeatedly, every 100 ms
-scheduler.scheduleAtFixedRate(this::pollSensor, 0, 100, TimeUnit.MILLISECONDS);
+scheduler.scheduleAtFixedRate(Sensor::pollSensor, 0, 100, TimeUnit.MILLISECONDS);
+
+Thread.sleep(250);
+scheduler.shutdown();
+scheduler.awaitTermination(1, TimeUnit.SECONDS);
 ```
 
 `scheduleAtFixedRate` targets a fixed start-to-start interval; `scheduleWithFixedDelay` waits a fixed gap *after* each run finishes. If a task can overrun its period, the second is usually what you want.
@@ -158,6 +223,8 @@ Note that if a repeating task throws, the repetition **stops silently**. Wrap th
 An executor's threads are non-daemon by default, so the program will not exit while a pool is alive.
 
 ```java
+ExecutorService pool = Executors.newFixedThreadPool(2);
+pool.submit(() -> System.out.println("task"));
 pool.shutdown();                       // no new tasks; finish what is queued
 
 try {
@@ -168,6 +235,7 @@ try {
     pool.shutdownNow();
     Thread.currentThread().interrupt();
 }
+System.out.println("terminated: " + pool.isTerminated());
 ```
 
 <ContentTable
@@ -187,11 +255,18 @@ try {
 For chaining work without blocking on `get()`:
 
 ```java
+class Sensor {
+    static int fetchReading() {
+        return 21;
+    }
+}
+
 CompletableFuture
-    .supplyAsync(() -> fetchReading())
+    .supplyAsync(() -> Sensor.fetchReading())
     .thenApply(reading -> reading * 2)
     .thenAccept(result -> System.out.println(result))
-    .exceptionally(error -> { error.printStackTrace(); return null; });
+    .exceptionally(error -> { error.printStackTrace(); return null; })
+    .join();
 ```
 
 Each stage runs after the previous one completes, without a thread sitting idle waiting. Worth knowing exists; a fixed pool with `Future` covers most needs.

@@ -36,6 +36,17 @@ static int[] bfs(int start, List<List<Integer>> adj, int n) {
     }
     return distance;
 }
+
+public static void main(String[] args) {
+    int n = 4;
+    List<List<Integer>> adj = Arrays.asList(
+        Arrays.asList(1, 2),
+        Arrays.asList(0, 3),
+        Arrays.asList(0),
+        Arrays.asList(1)
+    );
+    System.out.println(Arrays.toString(bfs(0, adj, n)));
+}
 ```
 
 `distance` doubles as the visited marker, so no separate array is needed.
@@ -49,8 +60,18 @@ This is the property [depth-first search](/java/java-algo-dfs) lacks. DFS reache
 <RulesBox title="Set the distance when you enqueue, not when you dequeue">
 
 ```java
+int[] distance = new int[3];
+Arrays.fill(distance, -1);
+Queue<Integer> queue = new ArrayDeque<>();
+distance[0] = 0;
+queue.offer(0);
+
+int node = 0;
+int neighbour = 1;
 distance[neighbour] = distance[node] + 1;
 queue.offer(neighbour);                    // both together
+
+System.out.println(Arrays.toString(distance));
 ```
 
 If you only record the distance after polling, the same node can be offered several times before it is first processed. The queue fills with duplicates, the search slows dramatically, and on large graphs it can exhaust memory.
@@ -96,6 +117,15 @@ static int shortestPath(char[][] grid, int startR, int startC, int endR, int end
     }
     return -1;                            // unreachable
 }
+
+public static void main(String[] args) {
+    char[][] grid = {
+        {'.', '.', '#'},
+        {'.', '.', '.'},
+        {'#', '.', '.'}
+    };
+    System.out.println(shortestPath(grid, 0, 0, 2, 2));
+}
 ```
 
 Storing coordinates as a two-element `int[]` avoids defining a class. Bounds checks come before reading the grid, as always.
@@ -105,15 +135,34 @@ Storing coordinates as a two-element `int[]` avoids defining a class. Bounds che
 Distance alone often is not the answer — you may need the actual route. Record where each node was first reached from:
 
 ```java
+int n = 4;
+int[] distance = new int[n];
+Arrays.fill(distance, -1);
 int[] parent = new int[n];
 Arrays.fill(parent, -1);
 
-// inside the neighbour loop:
-if (distance[neighbour] == -1) {
-    distance[neighbour] = distance[node] + 1;
-    parent[neighbour] = node;             // remember how we got here
-    queue.offer(neighbour);
+List<List<Integer>> adj = Arrays.asList(
+    Arrays.asList(1, 2),
+    Arrays.asList(0, 3),
+    Arrays.asList(0),
+    Arrays.asList(1)
+);
+
+Queue<Integer> queue = new ArrayDeque<>();
+distance[0] = 0;
+queue.offer(0);
+
+while (!queue.isEmpty()) {
+    int node = queue.poll();
+    for (int neighbour : adj.get(node)) {
+        if (distance[neighbour] == -1) {
+            distance[neighbour] = distance[node] + 1;
+            parent[neighbour] = node;             // remember how we got here
+            queue.offer(neighbour);
+        }
+    }
 }
+System.out.println(Arrays.toString(parent));
 ```
 
 Then walk backwards from the destination and reverse:
@@ -127,6 +176,11 @@ static List<Integer> pathTo(int target, int[] parent) {
     Collections.reverse(path);
     return path;
 }
+
+public static void main(String[] args) {
+    int[] parent = {-1, 0, 0, 1};        // 0 → 1 → 3, and 0 → 2
+    System.out.println(pathTo(3, parent));
+}
 ```
 
 If the target was never reached its parent is still `-1`, so check the distance before trusting the path.
@@ -136,11 +190,41 @@ If the target was never reached its parent is still `-1`, so check the distance 
 Sometimes you want the distance from the *nearest* of several starting points — how far each cell is from any exit, say. Rather than running BFS once per source, seed the queue with all of them at distance 0:
 
 ```java
+char[][] grid = {
+    {'.', '.', '#'},
+    {'.', '.', '.'},
+    {'#', '.', '.'}
+};
+int rows = grid.length, cols = grid[0].length;
+int[][] dist = new int[rows][cols];
+for (int[] row : dist) Arrays.fill(row, -1);
+
+int[] dr = {-1, 1, 0, 0};
+int[] dc = {0, 0, -1, 1};
+
+Queue<int[]> queue = new ArrayDeque<>();
+int[][] sources = {{0, 0}, {2, 2}};
+
 for (int[] source : sources) {
     dist[source[0]][source[1]] = 0;
     queue.offer(source);
 }
-// then the identical loop
+
+while (!queue.isEmpty()) {
+    int[] cell = queue.poll();
+    int r = cell[0], c = cell[1];
+    for (int d = 0; d < 4; d++) {
+        int nr = r + dr[d], nc = c + dc[d];
+        if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) continue;
+        if (grid[nr][nc] == '#' || dist[nr][nc] != -1) continue;
+        dist[nr][nc] = dist[r][c] + 1;
+        queue.offer(new int[]{nr, nc});
+    }
+}
+
+for (int[] row : dist) {
+    System.out.println(Arrays.toString(row));
+}
 ```
 
 Everything else is unchanged, and one pass gives every cell its distance to the closest source. This is a genuinely useful trick that is not obvious the first time.
@@ -150,14 +234,32 @@ Everything else is unchanged, and one pass gives every cell its distance to the 
 To know which "ring" you are processing, capture the queue size before draining it:
 
 ```java
+List<List<Integer>> adj = Arrays.asList(
+    Arrays.asList(1, 2),
+    Arrays.asList(0, 3),
+    Arrays.asList(0),
+    Arrays.asList(1)
+);
+Queue<Integer> queue = new ArrayDeque<>();
+boolean[] visited = new boolean[4];
+visited[0] = true;
+queue.offer(0);
+
 int steps = 0;
 while (!queue.isEmpty()) {
     int levelSize = queue.size();         // fixed before adding the next ring
 
     for (int i = 0; i < levelSize; i++) {
         int node = queue.poll();
-        // ... offer neighbours
+        System.out.print(node + " ");
+        for (int neighbour : adj.get(node)) {
+            if (!visited[neighbour]) {
+                visited[neighbour] = true;
+                queue.offer(neighbour);
+            }
+        }
     }
+    System.out.println("(distance " + steps + ")");
     steps++;
 }
 ```

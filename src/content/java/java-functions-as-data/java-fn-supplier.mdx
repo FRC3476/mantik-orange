@@ -42,7 +42,11 @@ static <T> List<T> filter(List<T> items, Predicate<T> test) {
     return result;
 }
 
-List<Integer> high = filter(readings, r -> r > 100);
+public static void main(String[] args) {
+    List<Integer> readings = Arrays.asList(40, 80, 120, 160);
+    List<Integer> high = filter(readings, r -> r > 100);
+    System.out.println(high);
+}
 ```
 
 Using the standard interface means it composes with everything else in the library, and any reader recognises it immediately.
@@ -52,7 +56,13 @@ Using the standard interface means it composes with everything else in the libra
 `Supplier` deserves its own treatment because it does something the others do not: it defers *when* a value is read.
 
 ```java
+class Sensor {
+    double getDistance() { return 1.5; }
+}
+
+Sensor sensor = new Sensor();
 Supplier<Double> reading = () -> sensor.getDistance();
+System.out.println(reading.get());
 ```
 
 Nothing has been read yet. The sensor is queried only when someone calls `reading.get()` — and every call reads it again, returning the current value.
@@ -60,8 +70,17 @@ Nothing has been read yet. The sensor is queried only when someone calls `readin
 Contrast passing the value itself:
 
 ```java
+class Sensor {
+    double value = 1.5;
+    double getDistance() { return value; }
+}
+
+Sensor sensor = new Sensor();
 double snapshot = sensor.getDistance();     // read once, frozen
 Supplier<Double> live = () -> sensor.getDistance();   // read on demand
+sensor.value = 3.0;
+System.out.println(snapshot);
+System.out.println(live.get());
 ```
 
 The first is a number from a moment in the past. The second is a way to ask "what is it now?".
@@ -71,6 +90,21 @@ The first is a number from a moment in the past. The second is a way to ask "wha
 Almost every value a robot cares about changes constantly — joystick positions, encoder counts, sensor distances. Code written when the robot starts must reference values that will not exist until later.
 
 ```java
+class Joystick {
+    double getY() { return 0.5; }
+}
+
+class DriveCommand {
+    DriveCommand(double y) {
+        System.out.println("frozen y: " + y);
+    }
+
+    DriveCommand(DoubleSupplier axis) {
+        System.out.println("live y: " + axis.getAsDouble());
+    }
+}
+
+Joystick joystick = new Joystick();
 // wrong: captures the joystick position at construction, once, forever
 new DriveCommand(joystick.getY());
 
@@ -85,8 +119,14 @@ This distinction is behind most "why does my robot only use the first value" con
 `DoubleSupplier` avoids boxing when the value is a primitive, which matters in a loop running fifty times a second:
 
 ```java
+class Sensor {
+    double getDistance() { return 1.5; }
+}
+
+Sensor sensor = new Sensor();
 DoubleSupplier reading = () -> sensor.getDistance();
 double now = reading.getAsDouble();
+System.out.println(now);
 ```
 
 ### Lazy and expensive work
@@ -94,16 +134,31 @@ double now = reading.getAsDouble();
 The second use for `Supplier`: skipping work that might not be needed.
 
 ```java
-// the message is built even when the condition is false
-log(isDebug, "state: " + buildExpensiveReport());
+static boolean isDebug = false;
 
-// the message is built only if the method decides to use it
-logLazy(isDebug, () -> "state: " + buildExpensiveReport());
+static String buildExpensiveReport() {
+    System.out.println("building report");
+    return "ok";
+}
+
+static void log(boolean enabled, String message) {
+    if (enabled) {
+        System.out.println(message);
+    }
+}
 
 static void logLazy(boolean enabled, Supplier<String> message) {
     if (enabled) {
         System.out.println(message.get());
     }
+}
+
+public static void main(String[] args) {
+    // the message is built even when the condition is false
+    log(isDebug, "state: " + buildExpensiveReport());
+
+    // the message is built only if the method decides to use it
+    logLazy(isDebug, () -> "state: " + buildExpensiveReport());
 }
 ```
 
@@ -112,8 +167,18 @@ Java evaluates arguments before calling a method, so the first version always pa
 The standard library uses this in `Optional`:
 
 ```java
-String name = maybeName.orElseGet(() -> computeDefault());   // lazy
-String name2 = maybeName.orElse(computeDefault());           // always computes
+static String computeDefault() {
+    System.out.println("computing default");
+    return "default";
+}
+
+public static void main(String[] args) {
+    Optional<String> maybeName = Optional.of("alice");
+    String name = maybeName.orElseGet(() -> computeDefault());   // lazy
+    String name2 = maybeName.orElse(computeDefault());           // always computes
+    System.out.println(name);
+    System.out.println(name2);
+}
 ```
 
 `orElseGet` takes a `Supplier` and only calls it when the `Optional` is empty. `orElse` takes a value, so the default is computed either way. When the default is expensive, that difference is real.

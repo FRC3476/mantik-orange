@@ -16,6 +16,7 @@ description: Naming an existing method instead of wrapping it in a lambda, the f
 Some lambdas do nothing but call an existing method with the same arguments:
 
 ```java
+List<String> names = Arrays.asList("intake", "drive", "shooter");
 names.forEach(name -> System.out.println(name));
 ```
 
@@ -24,6 +25,7 @@ The lambda takes `name` and passes it straight to `println`. The parameter adds 
 A method reference names the method directly:
 
 ```java
+List<String> names = Arrays.asList("intake", "drive", "shooter");
 names.forEach(System.out::println);
 ```
 
@@ -33,7 +35,7 @@ Same behaviour, and the noise is gone. This is sugar over a lambda, which is its
 
 Use a method reference when the lambda's entire body is a single call whose arguments are exactly the lambda's parameters, in the same order.
 
-```java
+```java norun
 x -> foo(x)              ->  becomes a reference
 (a, b) -> foo(a, b)      ->  becomes a reference
 
@@ -70,6 +72,8 @@ Compare these two:
 String prefix = "drive";
 Predicate<String> a = prefix::startsWith;   // specific object
 Function<String, Integer> b = String::length; // arbitrary instance
+System.out.println(a.test("dr"));
+System.out.println(b.apply("hello"));
 ```
 
 In the first, `prefix` is a particular object. Calling the predicate with `"x"` runs `prefix.startsWith("x")` — the object is fixed, the argument varies.
@@ -79,7 +83,7 @@ In the second, no object is named. Calling the function with `"hello"` runs `"he
 So `String::length` describes a function from a `String` to its length. The first parameter becomes the receiver.
 
 ```java
-List<String> names = List.of("intake", "drive", "shooter");
+List<String> names = Arrays.asList("intake", "drive", "shooter");
 
 names.stream()
      .map(String::length)          // each name becomes its length
@@ -93,6 +97,7 @@ Useful where something needs to create objects without knowing which type:
 ```java
 Supplier<List<String>> maker = ArrayList::new;
 List<String> fresh = maker.get();          // a new empty ArrayList
+System.out.println(fresh);
 ```
 
 With an argument, it maps to a matching constructor:
@@ -105,6 +110,7 @@ class Motor {
 
 Function<Integer, Motor> motorFactory = Motor::new;
 Motor m = motorFactory.apply(3);           // calls new Motor(3)
+System.out.println("created");
 ```
 
 Which constructor gets used is decided by the functional interface's shape. A `Supplier` needs a no-argument constructor; a `Function` needs a one-argument one. If no constructor matches, it will not compile.
@@ -112,28 +118,60 @@ Which constructor gets used is decided by the functional interface's shape. A `S
 ### Where they read well
 
 ```java
+class Motor {
+    private final int port;
+    Motor(int port) { this.port = port; }
+    int getPort() { return port; }
+}
+
+class Robot {
+    void periodic() {
+        System.out.println("periodic");
+    }
+}
+
 // parsing a list of strings into numbers
+List<String> raw = Arrays.asList("1", "2", "3");
 List<Integer> numbers = raw.stream()
                            .map(Integer::parseInt)
-                           .toList();
+                           .collect(Collectors.toList());
+System.out.println(numbers);
 
 // sorting by a field
+List<Motor> motors = new ArrayList<>();
+motors.add(new Motor(3));
+motors.add(new Motor(1));
 motors.sort(Comparator.comparingInt(Motor::getPort));
+for (Motor m : motors) {
+    System.out.println(m.getPort());
+}
 
-// filtering out blanks
-names.removeIf(String::isBlank);
+// filtering out empty strings
+List<String> names = new ArrayList<>(Arrays.asList("intake", "", "drive"));
+names.removeIf(String::isEmpty);
+System.out.println(names);
 
 // running an existing method as a thread body
-new Thread(this::periodic).start();
+Robot robot = new Robot();
+Thread t = new Thread(robot::periodic);
+t.start();
+t.join();
 ```
 
-That last one is common in robot code — `this::periodic` refers to a method on the current object, which is the "specific object" form with `this` as the object.
+That last one is common in robot code — `robot::periodic` refers to a method on a specific object, which is the "specific object" form. `this::periodic` is the same idea when you are already inside that object.
 
 <RulesBox title="Where they read badly">
 
 A method reference is only clearer when the method name explains itself. When the target is obscure, the explicit lambda is easier to follow:
 
 ```java
+class Helper {
+    static void process(String item) {
+        System.out.println(item);
+    }
+}
+
+List<String> list = Arrays.asList("intake", "drive");
 list.forEach(Helper::process);         // process what? how?
 list.forEach(item -> Helper.process(item));   // marginally clearer
 ```

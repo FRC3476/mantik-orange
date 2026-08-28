@@ -19,9 +19,12 @@ In real code you almost never write a sort. Java's is well-tested and faster tha
 int[] values = {5, 2, 9, 1};
 Arrays.sort(values);                  // {1, 2, 5, 9}
 
-List<String> names = new ArrayList<>(List.of("carol", "alice", "bob"));
+List<String> names = new ArrayList<>(Arrays.asList("carol", "alice", "bob"));
 Collections.sort(names);              // alphabetical
 names.sort(null);                     // same thing
+
+System.out.println(Arrays.toString(values));
+System.out.println(names);
 ```
 
 The algorithms below are worth understanding anyway — they explain *why* sorting costs what it does, and the ideas behind them reappear elsewhere.
@@ -44,6 +47,12 @@ static void selectionSort(int[] a) {
         a[smallest] = temp;
     }
 }
+
+public static void main(String[] args) {
+    int[] a = {5, 2, 9, 1};
+    selectionSort(a);
+    System.out.println(Arrays.toString(a));
+}
 ```
 
 Simple and easy to verify, but it always scans the whole remaining array, so it costs the same whether the input is already sorted or completely shuffled.
@@ -64,6 +73,12 @@ static void insertionSort(int[] a) {
         }
         a[j + 1] = value;
     }
+}
+
+public static void main(String[] args) {
+    int[] a = {5, 2, 9, 1};
+    insertionSort(a);
+    System.out.println(Arrays.toString(a));
 }
 ```
 
@@ -97,6 +112,12 @@ static void merge(int[] a, int low, int mid, int high) {
 
     System.arraycopy(merged, 0, a, low, merged.length);
 }
+
+public static void main(String[] args) {
+    int[] a = {5, 2, 9, 1};
+    mergeSort(a, 0, a.length - 1);
+    System.out.println(Arrays.toString(a));
+}
 ```
 
 The two trailing `while` loops matter — one side always runs out first, and its remainder must still be copied.
@@ -124,6 +145,12 @@ static void quickSort(int[] a, int low, int high) {
 
     quickSort(a, low, boundary - 1);
     quickSort(a, boundary + 1, high);
+}
+
+public static void main(String[] args) {
+    int[] a = {5, 2, 9, 1};
+    quickSort(a, 0, a.length - 1);
+    System.out.println(Arrays.toString(a));
 }
 ```
 
@@ -155,15 +182,21 @@ class Motor {
     String name;
     int port;
     Motor(String name, int port) { this.name = name; this.port = port; }
+    public String toString() { return name + ":" + port; }
 }
 
 List<Motor> motors = new ArrayList<>();
-// ...
+motors.add(new Motor("intake", 2));
+motors.add(new Motor("shooter", 1));
+motors.add(new Motor("arm", 1));
 
 motors.sort(Comparator.comparingInt(m -> m.port));                    // by port
+System.out.println(motors);
 motors.sort(Comparator.comparingInt((Motor m) -> m.port).reversed()); // descending
+System.out.println(motors);
 motors.sort(Comparator.comparing((Motor m) -> m.name)
                       .thenComparingInt(m -> m.port));                // tie-break
+System.out.println(motors);
 ```
 
 The explicit `(Motor m)` is required once you chain `.reversed()` or `.thenComparing` — Java can no longer infer the lambda's parameter type without it, and the error message when you omit it is unhelpful.
@@ -171,8 +204,20 @@ The explicit `(Motor m)` is required once you chain `.reversed()` or `.thenCompa
 <RulesBox title="Never subtract in a comparator">
 
 ```java
+class Motor {
+    String name;
+    int port;
+    Motor(String name, int port) { this.name = name; this.port = port; }
+    public String toString() { return name + ":" + port; }
+}
+
+List<Motor> motors = new ArrayList<>();
+motors.add(new Motor("intake", 2));
+motors.add(new Motor("shooter", 1));
+
 motors.sort((a, b) -> a.port - b.port);              // risky
 motors.sort((a, b) -> Integer.compare(a.port, b.port));  // correct
+System.out.println(motors);
 ```
 
 Subtraction overflows for large values and produces the wrong sign, silently reversing the order for some pairs. It can also throw `IllegalArgumentException: Comparison method violates its general contract`.
@@ -186,8 +231,21 @@ Subtraction overflows for large values and produces the wrong sign, silently rev
 A stable sort keeps equal elements in their original relative order. That lets you sort by several keys in stages:
 
 ```java
+class Motor {
+    String name;
+    int port;
+    Motor(String name, int port) { this.name = name; this.port = port; }
+    public String toString() { return name + ":" + port; }
+}
+
+List<Motor> motors = new ArrayList<>();
+motors.add(new Motor("shooter", 2));
+motors.add(new Motor("intake", 1));
+motors.add(new Motor("arm", 1));
+
 motors.sort(Comparator.comparing(m -> m.name));    // first by name
 motors.sort(Comparator.comparingInt(m -> m.port)); // then by port
+System.out.println(motors);
 // within equal ports, still ordered by name
 ```
 

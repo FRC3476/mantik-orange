@@ -52,6 +52,11 @@ System.out.println(tasks.size());    // 1
 Draining a queue completely:
 
 ```java
+Queue<String> tasks = new ArrayDeque<>();
+tasks.offer("calibrate");
+tasks.offer("driveForward");
+tasks.offer("shoot");
+
 while (!tasks.isEmpty()) {
     String task = tasks.poll();
     System.out.println("running: " + task);
@@ -94,12 +99,27 @@ class ActionScheduler {
 **Breadth-first search.** This is the big one. Exploring a grid or graph outward from a starting point, level by level, is a queue at its core — and it is what finds shortest paths in an unweighted graph. See [Graphs](/java/java-ds-graphs).
 
 ```java
+int startRow = 0, startCol = 0;
+int rows = 2, cols = 2;
+boolean[][] seen = new boolean[rows][cols];
+int[] dr = {-1, 1, 0, 0};
+int[] dc = {0, 0, -1, 1};
+
 Queue<int[]> frontier = new ArrayDeque<>();
 frontier.offer(new int[]{startRow, startCol});
+seen[startRow][startCol] = true;
 
 while (!frontier.isEmpty()) {
     int[] cell = frontier.poll();
-    // look at each neighbour and offer the unvisited ones
+    int r = cell[0], c = cell[1];
+    System.out.println(r + "," + c);
+    for (int d = 0; d < 4; d++) {
+        int nr = r + dr[d], nc = c + dc[d];
+        if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) continue;
+        if (seen[nr][nc]) continue;
+        seen[nr][nc] = true;
+        frontier.offer(new int[]{nr, nc});
+    }
 }
 ```
 
@@ -146,7 +166,19 @@ Use `Integer.compare(a, b)` rather than `a - b`. Subtraction can overflow for la
 For largest-first, reverse the comparison:
 
 ```java
-new PriorityQueue<>((a, b) -> Integer.compare(b.priority, a.priority));
+class Task {
+    String name;
+    int priority;
+    Task(String name, int priority) { this.name = name; this.priority = priority; }
+}
+
+PriorityQueue<Task> queue =
+    new PriorityQueue<>((a, b) -> Integer.compare(b.priority, a.priority));
+
+queue.offer(new Task("shoot", 3));
+queue.offer(new Task("stopMotors", 1));
+queue.offer(new Task("driveForward", 2));
+System.out.println(queue.poll().name);   // shoot
 ```
 
 <RulesBox title="A PriorityQueue is not sorted">

@@ -124,6 +124,20 @@ You can collect user input to populate arrays with objects. This is useful for c
 ```java
 import java.util.Scanner;
 
+class Robot {
+    private String name;
+    private int teamNumber;
+
+    Robot(String name, int teamNumber) {
+        this.name = name;
+        this.teamNumber = teamNumber;
+    }
+
+    public String toString() {
+        return name + " (Team " + teamNumber + ")";
+    }
+}
+
 public class RobotTeamBuilder {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);

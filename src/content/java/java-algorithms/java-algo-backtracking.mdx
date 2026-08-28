@@ -48,6 +48,11 @@ static void subsets(int[] values, int index) {
     subsets(values, index + 1);
     current.remove(current.size() - 1);          // undo
 }
+
+public static void main(String[] args) {
+    subsets(new int[]{1, 2, 3}, 0);
+    System.out.println(results);
+}
 ```
 
 <RulesBox title="Two lines that are easy to get wrong">
@@ -65,6 +70,9 @@ The symptom of a missing undo is output that is correct for the first branch and
 Here the state to undo is two things — the list and the used-markers.
 
 ```java
+static List<Integer> current = new ArrayList<>();
+static List<List<Integer>> results = new ArrayList<>();
+
 static void permute(int[] values, boolean[] used) {
     if (current.size() == values.length) {
         results.add(new ArrayList<>(current));
@@ -83,6 +91,12 @@ static void permute(int[] values, boolean[] used) {
         used[i] = false;                 // undo both
     }
 }
+
+public static void main(String[] args) {
+    int[] values = {1, 2, 3};
+    permute(values, new boolean[values.length]);
+    System.out.println(results);
+}
 ```
 
 Both mutations must be reversed. Undoing only one leaves the search in a corrupt state that is hard to diagnose.
@@ -94,6 +108,9 @@ Permutations grow as n factorial — 10 items is about 3.6 million arrangements,
 Passing a `start` index keeps combinations in increasing order, so each is produced once rather than in every possible ordering:
 
 ```java
+static List<Integer> current = new ArrayList<>();
+static List<List<Integer>> results = new ArrayList<>();
+
 static void choose(int[] values, int start, int k) {
     if (current.size() == k) {
         results.add(new ArrayList<>(current));
@@ -105,6 +122,11 @@ static void choose(int[] values, int start, int k) {
         choose(values, i + 1, k);        // i + 1, not start + 1
         current.remove(current.size() - 1);
     }
+}
+
+public static void main(String[] args) {
+    choose(new int[]{1, 2, 3, 4}, 0, 2);
+    System.out.println(results);
 }
 ```
 
@@ -123,6 +145,10 @@ static boolean canReachTarget(int[] values, int index, int sum, int target) {
     // take it, or skip it
     return canReachTarget(values, index + 1, sum + values[index], target)
         || canReachTarget(values, index + 1, sum, target);
+}
+
+public static void main(String[] args) {
+    System.out.println(canReachTarget(new int[]{3, 1, 7}, 0, 0, 8));
 }
 ```
 
@@ -155,6 +181,11 @@ static int countArrangements(int n, int row, boolean[] usedColumns) {
         usedColumns[col] = false;        // undo
     }
     return total;
+}
+
+public static void main(String[] args) {
+    int n = 4;
+    System.out.println(countArrangements(n, 0, new boolean[n]));
 }
 ```
 

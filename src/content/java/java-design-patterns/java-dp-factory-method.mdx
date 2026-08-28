@@ -15,7 +15,7 @@ description: Using a named method instead of a constructor to create objects, wh
 
 A constructor has to be named after its class. That is fine until you need two ways of building the same thing:
 
-```java
+```java norun
 class Angle {
     private final double radians;
 
@@ -43,14 +43,38 @@ class Angle {
     static Angle ofDegrees(double degrees) {
         return new Angle(Math.toRadians(degrees));
     }
+
+    double getRadians() { return radians; }
 }
+
+System.out.println("90 deg = " + Angle.ofDegrees(90).getRadians() + " rad");
+System.out.println("pi/2 = " + Angle.ofRadians(Math.PI / 2).getRadians() + " rad");
 ```
 
 Now the call says what it means:
 
 ```java
+class Angle {
+    private final double radians;
+
+    private Angle(double radians) {
+        this.radians = radians;
+    }
+
+    static Angle ofRadians(double radians) {
+        return new Angle(radians);
+    }
+
+    static Angle ofDegrees(double degrees) {
+        return new Angle(Math.toRadians(degrees));
+    }
+
+    double getRadians() { return radians; }
+}
+
 Angle a = Angle.ofDegrees(90);
 Angle b = Angle.ofRadians(Math.PI / 2);
+System.out.println("a=" + a.getRadians() + " b=" + b.getRadians());
 ```
 
 Compare that with `new Angle(90)`, where a reader has to check the constructor to learn which unit is expected. Unit confusion is a real source of robot bugs, and naming the method removes the ambiguity.
@@ -72,6 +96,16 @@ A **static factory** belongs to the class being created, as above. `Angle.ofDegr
 An **instance factory method** belongs to some other object, and that object's state influences what gets built:
 
 ```java
+class Motor {
+    final int port;
+    boolean inverted;
+    double maxOutput = 1.0;
+
+    Motor(int port) { this.port = port; }
+    void setInverted(boolean inverted) { this.inverted = inverted; }
+    void setMaxOutput(double maxOutput) { this.maxOutput = maxOutput; }
+}
+
 class MotorFactory {
     private final boolean inverted;
     private final double maxOutput;
@@ -88,13 +122,44 @@ class MotorFactory {
         return m;
     }
 }
+
+Motor sample = new MotorFactory(true, 0.8).create(1);
+System.out.println("motor " + sample.port + " inverted=" + sample.inverted + " max=" + sample.maxOutput);
 ```
 
 ```java
+class Motor {
+    final int port;
+    boolean inverted;
+    double maxOutput = 1.0;
+
+    Motor(int port) { this.port = port; }
+    void setInverted(boolean inverted) { this.inverted = inverted; }
+    void setMaxOutput(double maxOutput) { this.maxOutput = maxOutput; }
+}
+
+class MotorFactory {
+    private final boolean inverted;
+    private final double maxOutput;
+
+    MotorFactory(boolean inverted, double maxOutput) {
+        this.inverted = inverted;
+        this.maxOutput = maxOutput;
+    }
+
+    Motor create(int port) {
+        Motor m = new Motor(port);
+        m.setInverted(inverted);
+        m.setMaxOutput(maxOutput);
+        return m;
+    }
+}
+
 MotorFactory driveMotors = new MotorFactory(true, 0.8);
 
 Motor left  = driveMotors.create(1);
 Motor right = driveMotors.create(2);
+System.out.println("left port=" + left.port + " right port=" + right.port);
 ```
 
 The shared configuration lives in the factory, so you set it once rather than repeating it at every creation site. Add a third motor later and it is automatically configured the same way.
@@ -110,8 +175,19 @@ abstract class Drivetrain {
     abstract void drive(double speed, double rotation);
 }
 
-class TankDrive extends Drivetrain { ... }
-class SwerveDrive extends Drivetrain { ... }
+class TankDrive extends Drivetrain {
+    @Override
+    void drive(double speed, double rotation) {
+        System.out.println("tank drive speed=" + speed + " rotation=" + rotation);
+    }
+}
+
+class SwerveDrive extends Drivetrain {
+    @Override
+    void drive(double speed, double rotation) {
+        System.out.println("swerve drive speed=" + speed + " rotation=" + rotation);
+    }
+}
 
 class DrivetrainFactory {
     static Drivetrain forRobot(String config) {
@@ -121,11 +197,44 @@ class DrivetrainFactory {
         return new TankDrive();
     }
 }
+
+Drivetrain swerve = DrivetrainFactory.forRobot("swerve");
+Drivetrain tank = DrivetrainFactory.forRobot("tank");
+swerve.drive(0.5, 0.0);
+tank.drive(0.5, 0.0);
 ```
 
 Callers get a `Drivetrain` and never learn which kind:
 
 ```java
+abstract class Drivetrain {
+    abstract void drive(double speed, double rotation);
+}
+
+class TankDrive extends Drivetrain {
+    @Override
+    void drive(double speed, double rotation) {
+        System.out.println("tank drive speed=" + speed + " rotation=" + rotation);
+    }
+}
+
+class SwerveDrive extends Drivetrain {
+    @Override
+    void drive(double speed, double rotation) {
+        System.out.println("swerve drive speed=" + speed + " rotation=" + rotation);
+    }
+}
+
+class DrivetrainFactory {
+    static Drivetrain forRobot(String config) {
+        if (config.equals("swerve")) {
+            return new SwerveDrive();
+        }
+        return new TankDrive();
+    }
+}
+
+String config = "swerve";
 Drivetrain drive = DrivetrainFactory.forRobot(config);
 drive.drive(0.5, 0.0);            // whichever implementation, same call
 ```
@@ -137,26 +246,51 @@ drive.drive(0.5, 0.0);            // whichever implementation, same call
 **Validate before constructing.** A constructor that throws leaves callers with an awkward failure; a factory can return an `Optional` or a sensible fallback.
 
 ```java
-static Optional<Angle> parse(String text) {
-    try {
-        return Optional.of(ofDegrees(Double.parseDouble(text)));
-    } catch (NumberFormatException e) {
-        return Optional.empty();
+class Angle {
+    private final double radians;
+
+    private Angle(double radians) { this.radians = radians; }
+
+    static Angle ofDegrees(double degrees) {
+        return new Angle(Math.toRadians(degrees));
+    }
+
+    double getRadians() { return radians; }
+
+    static Optional<Angle> parse(String text) {
+        try {
+            return Optional.of(ofDegrees(Double.parseDouble(text)));
+        } catch (NumberFormatException e) {
+            return Optional.empty();
+        }
     }
 }
+
+Optional<Angle> ok = Angle.parse("90");
+Optional<Angle> bad = Angle.parse("nope");
+System.out.println(ok.isPresent() ? "parsed " + ok.get().getRadians() : "empty");
+System.out.println(bad.isPresent() ? "parsed" : "empty");
 ```
 
 **Reuse instances.** A constructor must produce a new object every time. A factory may hand back a cached one:
 
 ```java
 class Angle {
+    private final double radians;
     static final Angle ZERO = new Angle(0);
+
+    private Angle(double radians) { this.radians = radians; }
 
     static Angle ofRadians(double radians) {
         if (radians == 0) return ZERO;         // no new object
         return new Angle(radians);
     }
 }
+
+Angle a = Angle.ofRadians(0);
+Angle b = Angle.ofRadians(0);
+System.out.println(a == b);            // true — same cached instance
+System.out.println(a == Angle.ZERO);
 ```
 
 This is why `Integer.valueOf(5)` is preferred over `new Integer(5)` — the factory caches small values, and the constructor cannot.
@@ -165,8 +299,10 @@ This is why `Integer.valueOf(5)` is preferred over `new Integer(5)` — the fact
 
 ```java
 // the standard library does exactly this
-List<String> names = List.of("a", "b", "c");
-Map<String, Integer> ports = Map.of("intake", 3);
+List<String> names = Arrays.asList("a", "b", "c");
+Map<String, Integer> ports = Collections.singletonMap("intake", 3);
+System.out.println(names);
+System.out.println(ports);
 ```
 
 <ContentTable

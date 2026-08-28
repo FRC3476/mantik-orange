@@ -27,6 +27,7 @@ const UTIL_TYPES = [
   'List',
   'Map',
   'Set',
+  'Comparator',
 ];
 
 const FUNCTION_TYPES = [
@@ -35,20 +36,34 @@ const FUNCTION_TYPES = [
   'Supplier',
   'Predicate',
   'BiFunction',
+  'BiConsumer',
+  'BiPredicate',
   'UnaryOperator',
   'BinaryOperator',
+  'DoubleSupplier',
+  'IntSupplier',
+  'BooleanSupplier',
+  'IntFunction',
+  'ToIntFunction',
 ];
 
 const CONCURRENT_TYPES = [
   'ExecutorService',
   'Executors',
   'Future',
+  'Callable',
   'CountDownLatch',
   'ConcurrentHashMap',
   'CopyOnWriteArrayList',
   'Semaphore',
   'ThreadPoolExecutor',
+  'TimeUnit',
+  'CompletableFuture',
+  'ScheduledExecutorService',
+  'ScheduledFuture',
 ];
+
+const STREAM_TYPES = ['Stream', 'Collectors', 'IntStream', 'LongStream', 'DoubleStream'];
 
 const ATOMIC_TYPES = ['AtomicInteger', 'AtomicBoolean', 'AtomicLong'];
 
@@ -214,18 +229,73 @@ interface TypeDecl {
 }
 
 function findTypeDeclaration(source: string): TypeDecl | null {
+  return collectTypeSpans(source)[0]?.decl ?? null;
+}
+
+interface TypeSpan {
+  decl: TypeDecl;
+  /** Exclusive index after the type's closing brace. */
+  end: number;
+}
+
+function braceDepthAt(masked: string, index: number): number {
+  let depth = 0;
+  for (let i = 0; i < index; i += 1) {
+    if (masked[i] === '{') depth += 1;
+    else if (masked[i] === '}') depth -= 1;
+  }
+  return depth;
+}
+
+function matchingBraceEnd(masked: string, start: number): number {
+  let i = start;
+  while (i < masked.length && masked[i] !== '{') i += 1;
+  if (i >= masked.length) return masked.length;
+  let depth = 0;
+  for (; i < masked.length; i += 1) {
+    if (masked[i] === '{') depth += 1;
+    else if (masked[i] === '}') {
+      depth -= 1;
+      if (depth === 0) return i + 1;
+    }
+  }
+  return masked.length;
+}
+
+function collectTypeSpans(source: string): TypeSpan[] {
   const masked = maskComments(source);
   const re =
     /(?:^|\n)[ \t]*(public\s+)?(?:(?:abstract|final|strictfp)\s+)*(class|interface|enum)\s+([A-Za-z_]\w*)/g;
-  const match = re.exec(masked);
-  if (!match) return null;
-  const newline = match[0].startsWith('\n') ? 1 : 0;
-  return {
-    isPublic: Boolean(match[1]),
-    kind: match[2] as TypeDecl['kind'],
-    name: match[3],
-    index: match.index + newline,
-  };
+  const spans: TypeSpan[] = [];
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(masked))) {
+    if (braceDepthAt(masked, match.index) !== 0) continue;
+    const newline = match[0].startsWith('\n') ? 1 : 0;
+    const decl: TypeDecl = {
+      isPublic: Boolean(match[1]),
+      kind: match[2] as TypeDecl['kind'],
+      name: match[3],
+      index: match.index + newline,
+    };
+    const end = matchingBraceEnd(masked, decl.index);
+    spans.push({ decl, end });
+    re.lastIndex = end;
+  }
+  return spans;
+}
+
+function isAnnotationOnly(text: string): boolean {
+  const body = withoutComments(text).trim();
+  if (!body) return false;
+  return /^(?:@[\w.]+(?:\([^;]*\))?\s*)+$/.test(body);
+}
+
+/** Lesson snippets often mix types with a demo. Java allows only one public type per file. */
+function demotePublicTypes(source: string): string {
+  return source.replace(
+    /(^|\n)([ \t]*)public\s+((?:(?:abstract|final|strictfp)\s+)*)(class|interface|enum)\b/g,
+    '$1$2$3$4',
+  );
 }
 
 function splitPreamble(source: string): { preamble: string; body: string } {
@@ -323,6 +393,12 @@ function ensureCommonImports(source: string): string {
     extras.push('import java.util.concurrent.*;');
   }
   if (
+    !/import\s+java\.util\.stream\./.test(masked) &&
+    STREAM_TYPES.some((name) => usesType(masked, name))
+  ) {
+    extras.push('import java.util.stream.*;');
+  }
+  if (
     !/import\s+java\.util\.concurrent\.atomic\./.test(masked) &&
     ATOMIC_TYPES.some((name) => usesType(masked, name))
   ) {
@@ -352,7 +428,7 @@ function wrapAsStatements(preamble: string, body: string): WrappedExample {
       preamble,
       [
         'public class Main {',
-        '    public static void main(String[] args) {',
+        '    public static void main(String[] args) throws Exception {',
         indentBlock(body.replace(/\s+$/, ''), 8),
         '    }',
         '}',
@@ -374,21 +450,52 @@ function wrapAsStatements(preamble: string, body: string): WrappedExample {
 export function wrapExampleSource(raw: string): WrappedExample {
   const source = raw.replace(/\r\n/g, '\n');
   const { preamble, body } = splitPreamble(source);
-  const type = findTypeDeclaration(body);
+  const spans = collectTypeSpans(body);
 
-  if (type) {
-    const leading = maskComments(body.slice(0, type.index)).trim();
-    const unitBody = leading ? body.slice(type.index) : body;
-    const unit = joinParts(preamble, unitBody) + (source.endsWith('\n') ? '\n' : '');
+  if (spans.length > 0) {
+    const first = spans[0];
+    const last = spans[spans.length - 1];
+    const leading = body.slice(0, first.decl.index);
+    const types = body.slice(first.decl.index, last.end);
+    const trailing = body.slice(last.end);
+    const annotationLead = isAnnotationOnly(leading);
+    const keepLeading =
+      Boolean(maskComments(leading).trim()) && !hasTopLevelMember(leading) && !annotationLead;
+    const typeBlock = annotationLead ? joinParts(leading.trim(), types) : types;
+    const extra = joinParts(keepLeading ? leading : '', trailing);
+    const extraCode = withoutComments(extra).trim();
+
+    if (extraCode) {
+      const combined = joinParts(
+        preamble,
+        demotePublicTypes(typeBlock),
+        [
+          'public class Main {',
+          '    public static void main(String[] args) throws Exception {',
+          indentBlock(extra.replace(/\s+$/, ''), 8),
+          '    }',
+          '}',
+        ].join('\n'),
+      );
+      const withImports = ensureCommonImports(combined.endsWith('\n') ? combined : `${combined}\n`);
+      return {
+        source: withImports,
+        entryClass: 'Main',
+        hasMain: true,
+        wrapped: true,
+      };
+    }
+
+    const unit = joinParts(preamble, typeBlock) + (source.endsWith('\n') ? '\n' : '');
     const withImports = ensureCommonImports(unit.endsWith('\n') ? unit : `${unit}\n`);
     const publicName = publicClassName(withImports);
-    const entryClass = publicName ?? type.name;
-    const kind = findTypeDeclaration(withImports)?.kind ?? type.kind;
+    const entryClass = publicName ?? first.decl.name;
+    const kind = findTypeDeclaration(withImports)?.kind ?? first.decl.kind;
     return {
       source: withImports,
       entryClass,
       hasMain: kind === 'class' && hasMainMethod(withImports),
-      wrapped: Boolean(leading),
+      wrapped: Boolean(maskComments(leading).trim()),
     };
   }
 

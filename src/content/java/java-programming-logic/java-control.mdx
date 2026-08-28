@@ -60,12 +60,21 @@ for (int i = 0; i < motorPowers.length; i++) {
 ### Loops - While Loop:
 
 ```java
+class Sensor {
+    static int reads = 0;
+
+    static boolean checkSensor() {
+        reads++;
+        return reads >= 3;
+    }
+}
+
 // While loop - repeat based on a condition
 int attempts = 0;
 boolean sensorDetected = false;
 
 while (!sensorDetected && attempts < 10) {
-    sensorDetected = checkSensor();
+    sensorDetected = Sensor.checkSensor();
     attempts++;
     System.out.println("Attempt " + attempts);
 }
@@ -80,12 +89,32 @@ while (!sensorDetected && attempts < 10) {
 #### Examples:
 
 ```java
+class Robot {
+    void startDriving() {
+        System.out.println("Driving");
+    }
+
+    void activateClaw() {
+        System.out.println("Claw activated");
+    }
+}
+
+class Gamepad {
+    boolean a = true;
+    boolean b = false;
+}
+
+double batteryLevel = 75;
+double motorTemperature = 45;
+Robot robot = new Robot();
+Gamepad gamepad1 = new Gamepad();
+
 // AND example
 if (batteryLevel > 20 && motorTemperature < 80) {
     robot.startDriving();
 }
 
-// OR example  
+// OR example
 if (gamepad1.a || gamepad1.b) {
     robot.activateClaw();
 }

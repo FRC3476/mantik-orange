@@ -31,6 +31,12 @@ static List<Integer> evenOnly(List<Integer> readings) {
     }
     return result;
 }
+
+public static void main(String[] args) {
+    List<Integer> readings = Arrays.asList(40, 80, 120, 160);
+    System.out.println(above100(readings));
+    System.out.println(evenOnly(readings));
+}
 ```
 
 These methods are identical except for one line. Everything else — creating the list, looping, adding, returning — is duplicated.
@@ -50,28 +56,64 @@ interface ReadingTest {
 Now the loop is written once, and the differing line becomes a parameter:
 
 ```java
-static List<Integer> filter(List<Integer> readings, ReadingTest test) {
-    List<Integer> result = new ArrayList<>();
-    for (int r : readings) {
-        if (test.matches(r)) {      // the caller decides what this means
-            result.add(r);
-        }
+class Main {
+    interface ReadingTest {
+        boolean matches(int reading);
     }
-    return result;
+
+    static List<Integer> filter(List<Integer> readings, ReadingTest test) {
+        List<Integer> result = new ArrayList<>();
+        for (int r : readings) {
+            if (test.matches(r)) {      // the caller decides what this means
+                result.add(r);
+            }
+        }
+        return result;
+    }
+
+    public static void main(String[] args) {
+        List<Integer> readings = Arrays.asList(40, 80, 120, 160);
+        List<Integer> high = filter(readings, new ReadingTest() {
+            @Override
+            public boolean matches(int reading) {
+                return reading > 100;
+            }
+        });
+        System.out.println(high);
+    }
 }
 ```
 
 Calling it means supplying an implementation:
 
 ```java
-ReadingTest above100 = new ReadingTest() {
-    @Override
-    public boolean matches(int reading) {
-        return reading > 100;
+class Main {
+    interface ReadingTest {
+        boolean matches(int reading);
     }
-};
 
-List<Integer> high = filter(readings, above100);
+    static List<Integer> filter(List<Integer> readings, ReadingTest test) {
+        List<Integer> result = new ArrayList<>();
+        for (int r : readings) {
+            if (test.matches(r)) result.add(r);
+        }
+        return result;
+    }
+
+    public static void main(String[] args) {
+        List<Integer> readings = Arrays.asList(40, 80, 120, 160);
+
+        ReadingTest above100 = new ReadingTest() {
+            @Override
+            public boolean matches(int reading) {
+                return reading > 100;
+            }
+        };
+
+        List<Integer> high = filter(readings, above100);
+        System.out.println(high);
+    }
+}
 ```
 
 That block is an **anonymous class** — a class with no name, defined and instantiated in one expression. It is verbose, and [Lambda Expressions](/java/java-fn-lambdas) exist precisely to shorten it. But this is what is really happening underneath, and seeing it once makes lambdas much less mysterious.
@@ -89,13 +131,34 @@ So "passing a function" in Java is really "passing an object with one interestin
 The `filter` method now works with tests that did not exist when it was written:
 
 ```java
-List<Integer> even = filter(readings, new ReadingTest() {
-    @Override public boolean matches(int r) { return r % 2 == 0; }
-});
+class Main {
+    interface ReadingTest {
+        boolean matches(int reading);
+    }
 
-List<Integer> inRange = filter(readings, new ReadingTest() {
-    @Override public boolean matches(int r) { return r >= 50 && r <= 150; }
-});
+    static List<Integer> filter(List<Integer> readings, ReadingTest test) {
+        List<Integer> result = new ArrayList<>();
+        for (int r : readings) {
+            if (test.matches(r)) result.add(r);
+        }
+        return result;
+    }
+
+    public static void main(String[] args) {
+        List<Integer> readings = Arrays.asList(40, 80, 120, 160);
+
+        List<Integer> even = filter(readings, new ReadingTest() {
+            @Override public boolean matches(int r) { return r % 2 == 0; }
+        });
+
+        List<Integer> inRange = filter(readings, new ReadingTest() {
+            @Override public boolean matches(int r) { return r >= 50 && r <= 150; }
+        });
+
+        System.out.println(even);
+        System.out.println(inRange);
+    }
+}
 ```
 
 One loop, any number of behaviours. The pattern generalises beyond filtering — anywhere you find near-identical methods differing by a line or two, the difference can usually become a parameter.
@@ -105,9 +168,21 @@ One loop, any number of behaviours. The pattern generalises beyond filtering —
 An interface with exactly one abstract method is called a **functional interface**, and it is the shape Java uses for this everywhere.
 
 ```java
-@FunctionalInterface
-interface ReadingTest {
-    boolean matches(int reading);
+class Main {
+    @FunctionalInterface
+    interface ReadingTest {
+        boolean matches(int reading);
+    }
+
+    public static void main(String[] args) {
+        ReadingTest above100 = new ReadingTest() {
+            @Override
+            public boolean matches(int reading) {
+                return reading > 100;
+            }
+        };
+        System.out.println(above100.matches(150));
+    }
 }
 ```
 
@@ -137,6 +212,15 @@ class ActionQueue {
         }
     }
 }
+
+ActionQueue queue = new ActionQueue();
+queue.schedule(new Action() {
+    @Override public void run() { System.out.println("first"); }
+});
+queue.schedule(new Action() {
+    @Override public void run() { System.out.println("second"); }
+});
+queue.runAll();
 ```
 
 The action is created at one point in the program and executed at another. That separation is the foundation of event handlers, callbacks, and the [Command Pattern](/java/java-dp-command) — and it is how FRC's command-based framework schedules robot behaviour.
@@ -155,17 +239,36 @@ Both use the same mechanism. Recognising which one you need helps you name thing
 A method can also hand back an implementation, which lets you build behaviour from parameters:
 
 ```java
-static ReadingTest greaterThan(int threshold) {
-    return new ReadingTest() {
-        @Override
-        public boolean matches(int reading) {
-            return reading > threshold;      // captures threshold
-        }
-    };
-}
+class Main {
+    interface ReadingTest {
+        boolean matches(int reading);
+    }
 
-List<Integer> high = filter(readings, greaterThan(100));
-List<Integer> veryHigh = filter(readings, greaterThan(500));
+    static List<Integer> filter(List<Integer> readings, ReadingTest test) {
+        List<Integer> result = new ArrayList<>();
+        for (int r : readings) {
+            if (test.matches(r)) result.add(r);
+        }
+        return result;
+    }
+
+    static ReadingTest greaterThan(int threshold) {
+        return new ReadingTest() {
+            @Override
+            public boolean matches(int reading) {
+                return reading > threshold;      // captures threshold
+            }
+        };
+    }
+
+    public static void main(String[] args) {
+        List<Integer> readings = Arrays.asList(40, 80, 120, 160, 600);
+        List<Integer> high = filter(readings, greaterThan(100));
+        List<Integer> veryHigh = filter(readings, greaterThan(500));
+        System.out.println(high);
+        System.out.println(veryHigh);
+    }
+}
 ```
 
 The returned object remembers `threshold` — a captured variable. Note the restriction: a captured local variable must be effectively final, meaning you cannot reassign it after capture. Java enforces this at compile time.

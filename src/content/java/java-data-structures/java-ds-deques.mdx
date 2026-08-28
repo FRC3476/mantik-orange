@@ -105,6 +105,9 @@ It rejects `null`, which is deliberate: the `poll` and `peek` methods use `null`
 **A sliding window.** Keeping the maximum of the last K values needs removal from both ends — new values push in at the back, stale ones drop off the front.
 
 ```java
+int[] values = {1, 3, -1, -3, 5, 3, 6, 7};
+int k = 3;
+
 // indices of candidates for the maximum in each window of width k
 Deque<Integer> window = new ArrayDeque<>();
 
@@ -134,14 +137,22 @@ Both ends are used for different purposes: the front discards expired entries, t
 **A bounded buffer of recent readings.** Add at the back, and drop from the front once you exceed the limit.
 
 ```java
-Deque<Double> recent = new ArrayDeque<>();
+class RecentReadings {
+    Deque<Double> recent = new ArrayDeque<>();
 
-void record(double reading) {
-    recent.addLast(reading);
-    if (recent.size() > 50) {
-        recent.removeFirst();      // discard the oldest
+    void record(double reading) {
+        recent.addLast(reading);
+        if (recent.size() > 50) {
+            recent.removeFirst();      // discard the oldest
+        }
     }
 }
+
+RecentReadings buf = new RecentReadings();
+for (int i = 0; i < 55; i++) {
+    buf.record(i * 0.1);
+}
+System.out.println(buf.recent.size());
 ```
 
 That last pattern is genuinely common in robot code, where you want a rolling average of the last N sensor values without letting the buffer grow forever.

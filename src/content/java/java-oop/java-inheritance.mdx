@@ -84,6 +84,11 @@ class Intake extends Subsystem {
 Constructors are **not** inherited. Each subclass declares its own, and its first job is to construct the parent portion of the object.
 
 ```java
+class Subsystem {
+    protected String name;
+    Subsystem(String name) { this.name = name; }
+}
+
 class Intake extends Subsystem {
     private int port;
 
@@ -92,6 +97,9 @@ class Intake extends Subsystem {
         this.port = port;
     }
 }
+
+Intake intake = new Intake(3);
+System.out.println(intake.name + " created");
 ```
 
 <RulesBox title="Rules that trip people up">
@@ -110,17 +118,21 @@ A subclass can replace an inherited method:
 
 ```java
 class Subsystem {
+    protected String name = "base";
     void describe() {
         System.out.println("subsystem: " + name);
     }
 }
 
 class Intake extends Subsystem {
+    private int port = 3;
     @Override
     void describe() {
         System.out.println("intake on port " + port);
     }
 }
+
+new Intake().describe();
 ```
 
 Always write `@Override`. It is optional to the compiler but it verifies you really are overriding something — misspell the name and you have silently created a new method that nothing calls.
@@ -128,11 +140,24 @@ Always write `@Override`. It is optional to the compiler but it verifies you rea
 To extend the parent's behaviour rather than replace it, call `super`:
 
 ```java
-@Override
-void describe() {
-    super.describe();                    // do the parent's version first
-    System.out.println("  port: " + port);
+class Subsystem {
+    protected String name = "intake";
+    void describe() {
+        System.out.println("subsystem: " + name);
+    }
 }
+
+class Intake extends Subsystem {
+    private int port = 3;
+
+    @Override
+    void describe() {
+        super.describe();                    // do the parent's version first
+        System.out.println("  port: " + port);
+    }
+}
+
+new Intake().describe();
 ```
 
 Which version actually runs is decided at runtime by the real object, not the declared type. That is [runtime polymorphism](/java/java-runtime-polymorphism), and it is the reason inheritance is useful rather than merely tidy.
@@ -179,7 +204,7 @@ This is field hiding and it is almost always a mistake. Keep fields private and 
 
 A class may extend exactly one class:
 
-```java
+```java norun
 class Intake extends Subsystem, Loggable { }   // does not compile
 ```
 
@@ -190,13 +215,19 @@ This avoids the ambiguity that arises when two parents define the same method di
 Inheritance is often reached for too quickly. The test is whether the subclass genuinely **is a** kind of the parent, in every context where the parent is used.
 
 ```java
+class Subsystem { }
+
 class Drivetrain extends Subsystem { }     // a drivetrain IS a subsystem — fine
 class Robot extends Drivetrain { }         // a robot is not a drivetrain — wrong
+
+System.out.println(new Drivetrain() instanceof Subsystem);
 ```
 
 The second should be composition — a `Robot` **has a** `Drivetrain`:
 
 ```java
+class Drivetrain { }
+
 class Robot {
     private final Drivetrain drivetrain;   // has-a, not is-a
 
@@ -204,6 +235,9 @@ class Robot {
         this.drivetrain = drivetrain;
     }
 }
+
+Robot robot = new Robot(new Drivetrain());
+System.out.println("robot has a drivetrain");
 ```
 
 <RulesBox title="Prefer composition when you are unsure">

@@ -20,6 +20,10 @@ static int fib(int n) {
     if (n <= 1) return n;
     return fib(n - 1) + fib(n - 2);
 }
+
+public static void main(String[] args) {
+    System.out.println(fib(10));
+}
 ```
 
 Trace `fib(5)` and the reason appears. `fib(3)` is computed twice, `fib(2)` three times, `fib(1)` five times. The tree of calls roughly doubles at each level, so `fib(40)` makes over a billion calls — nearly all of them recomputing values already known.
@@ -40,9 +44,10 @@ static long fib(int n) {
     return memo[n];
 }
 
-// caller:
-memo = new long[50];
-System.out.println(fib(45));
+public static void main(String[] args) {
+    memo = new long[50];
+    System.out.println(fib(45));
+}
 ```
 
 Each value is now computed exactly once, so `fib(45)` takes 45 steps instead of billions. The change is three lines.
@@ -54,10 +59,21 @@ Using `0` to mean "not computed" works for Fibonacci only because no result is 0
 Prefer an impossible value:
 
 ```java
-long[] memo = new long[n + 1];
-Arrays.fill(memo, -1);                  // -1 cannot be a valid count
+static long[] memo;
 
-if (memo[n] != -1) return memo[n];
+static long fib(int n) {
+    if (n <= 1) return n;
+    if (memo[n] != -1) return memo[n];
+    memo[n] = fib(n - 1) + fib(n - 2);
+    return memo[n];
+}
+
+public static void main(String[] args) {
+    int n = 10;
+    memo = new long[n + 1];
+    Arrays.fill(memo, -1);                  // -1 cannot be a valid count
+    System.out.println(fib(n));
+}
 ```
 
 Or use a `HashMap`, where `containsKey` answers the question directly and no sentinel is needed.
@@ -97,6 +113,10 @@ static long fibTable(int n) {
     }
     return table[n];
 }
+
+public static void main(String[] args) {
+    System.out.println(fibTable(10));
+}
 ```
 
 Same results, same amount of work, no recursion — so no stack-depth limit.
@@ -131,6 +151,10 @@ static long fibTwoVars(int n) {
     }
     return current;
 }
+
+public static void main(String[] args) {
+    System.out.println(fibTwoVars(10));
+}
 ```
 
 The table is gone entirely. This only works because each value depends on exactly the two before it — check that dependency before discarding rows.
@@ -152,6 +176,10 @@ static long countWays(int n) {
         ways[i] = ways[i - 1] + ways[i - 2] + ways[i - 3];
     }
     return ways[n];
+}
+
+public static void main(String[] args) {
+    System.out.println(countWays(5));
 }
 ```
 
@@ -180,6 +208,15 @@ static long countPaths(char[][] grid) {
         }
     }
     return paths[rows - 1][cols - 1];
+}
+
+public static void main(String[] args) {
+    char[][] grid = {
+        {'.', '.', '.'},
+        {'.', '#', '.'},
+        {'.', '.', '.'}
+    };
+    System.out.println(countPaths(grid));
 }
 ```
 

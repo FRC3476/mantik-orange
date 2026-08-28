@@ -58,6 +58,28 @@ When you assign one object variable to another, you're not creating a new object
 ### Reference Assignment Example:
 
 ```java
+class FRCRobot {
+    private String teamName;
+    private int teamNumber;
+    private double batteryLevel;
+
+    FRCRobot(String name, int number) {
+        this.teamName = name;
+        this.teamNumber = number;
+        this.batteryLevel = 100.0;
+    }
+
+    void useBattery(double amount) {
+        this.batteryLevel -= amount;
+        if (this.batteryLevel < 0) this.batteryLevel = 0;
+    }
+
+    public String toString() {
+        return teamName + " (Team " + teamNumber + ") - Battery: " +
+               String.format("%.1f", batteryLevel) + "%";
+    }
+}
+
 FRCRobot robot1 = new FRCRobot("Thunder Bot", 54321);
 System.out.println("Original: " + robot1);
 
@@ -81,6 +103,28 @@ A reference variable can be set to `null`, which means it doesn't point to any o
 ### Working with null References:
 
 ```java
+class FRCRobot {
+    private String teamName;
+    private int teamNumber;
+    private double batteryLevel;
+
+    FRCRobot(String name, int number) {
+        this.teamName = name;
+        this.teamNumber = number;
+        this.batteryLevel = 100.0;
+    }
+
+    void useBattery(double amount) {
+        this.batteryLevel -= amount;
+        if (this.batteryLevel < 0) this.batteryLevel = 0;
+    }
+
+    public String toString() {
+        return teamName + " (Team " + teamNumber + ") - Battery: " +
+               String.format("%.1f", batteryLevel) + "%";
+    }
+}
+
 FRCRobot robot = new FRCRobot("Storm Bot", 98765);
 System.out.println(robot);  // Works fine
 
@@ -121,6 +165,30 @@ Objects can be passed as parameters to methods, just like primitive values. Sinc
 ### Objects as Parameters:
 
 ```java
+class FRCRobot {
+    private String teamName;
+    private int teamNumber;
+    private double batteryLevel;
+
+    FRCRobot(String name, int number) {
+        this.teamName = name;
+        this.teamNumber = number;
+        this.batteryLevel = 100.0;
+    }
+
+    void useBattery(double amount) {
+        this.batteryLevel -= amount;
+        if (this.batteryLevel < 0) this.batteryLevel = 0;
+    }
+
+    double getBatteryLevel() { return this.batteryLevel; }
+
+    public String toString() {
+        return teamName + " (Team " + teamNumber + ") - Battery: " +
+               String.format("%.1f", batteryLevel) + "%";
+    }
+}
+
 public class RobotMaintenance {
     
     // Method that takes a robot as a parameter
@@ -193,6 +261,20 @@ Methods can also return objects. This is useful for creating factory methods, cl
 ### Methods Returning Objects:
 
 ```java
+class FRCRobot {
+    private String teamName;
+    private int teamNumber;
+
+    FRCRobot(String name, int number) {
+        this.teamName = name;
+        this.teamNumber = number;
+    }
+
+    public String toString() {
+        return teamName + " (Team " + teamNumber + ")";
+    }
+}
+
 public class RobotFactory {
     private String manufacturer;
     private int robotsBuilt;
@@ -348,6 +430,29 @@ The `equals()` method is crucial when working with collections like ArrayList. M
 
 ```java
 import java.util.ArrayList;
+
+class FRCRobot {
+    private String teamName;
+    private int teamNumber;
+
+    FRCRobot(String name, int number) {
+        this.teamName = name;
+        this.teamNumber = number;
+    }
+
+    @Override
+    public boolean equals(Object compared) {
+        if (this == compared) return true;
+        if (compared == null || !(compared instanceof FRCRobot)) return false;
+        FRCRobot other = (FRCRobot) compared;
+        return teamName.equals(other.teamName) && teamNumber == other.teamNumber;
+    }
+
+    @Override
+    public String toString() {
+        return teamName + " (Team " + teamNumber + ")";
+    }
+}
 
 public class TeamRoster {
     public static void main(String[] args) {

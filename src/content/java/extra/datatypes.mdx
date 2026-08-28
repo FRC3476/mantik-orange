@@ -19,13 +19,20 @@ Java has 8 primitive data types that store simple values:
 ### Reference Data Types
 
 ```java
+class Robot {
+}
+
 // String - sequence of characters
 String sensorName = "rev_color_sensor";
 
-// Arrays - collection of same-type elements  
+// Arrays - collection of same-type elements
 int[] driveMotors = {1, 4, 7, 10};
 
 // Objects - instances of classes
 Robot myRobot = new Robot();
+
+System.out.println(sensorName);
+System.out.println("Drive motors: " + driveMotors.length);
+System.out.println("Created a Robot: " + myRobot);
 ```
 

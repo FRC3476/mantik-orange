@@ -22,6 +22,13 @@ A **class** defines the attributes of objects (the information related to them) 
 ### Real-World Example:
 
 ```java
+class FRCRobot {
+    private final String name;
+    FRCRobot(String name) { this.name = name; }
+    void initializeHardware() { System.out.println(name + " hardware ready"); }
+    void startAutonomous() { System.out.println(name + " autonomous started"); }
+}
+
 // Just like ArrayList is a class provided by Java:
 ArrayList<Integer> integers = new ArrayList<>();
 integers.add(15);

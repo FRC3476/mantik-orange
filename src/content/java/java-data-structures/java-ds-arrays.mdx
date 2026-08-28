@@ -54,9 +54,11 @@ int[] readings = new int[5];
 If you need a sixth value, you have to create a bigger array and copy everything across:
 
 ```java
+int[] readings = {120, 118, 125, 130, 122};
 int[] bigger = new int[10];
 System.arraycopy(readings, 0, bigger, 0, readings.length);
 readings = bigger;
+System.out.println(readings.length);
 ```
 
 That copy touches every element, so it costs time proportional to the size. Doing it once is fine. Doing it every time you add a value is slow, and it is the reason [ArrayLists](/java/java-ds-arraylists) exist.
@@ -95,24 +97,32 @@ Every element after the removal point has to move. Inserting in the middle is th
 A common pattern when you know the maximum size but not the actual count: allocate for the maximum and track how many slots are in use.
 
 ```java
-int[] readings = new int[100];
-int count = 0;
+class ReadingBuffer {
+    int[] readings = new int[100];
+    int count = 0;
 
-void addReading(int value) {
-    if (count < readings.length) {
-        readings[count] = value;
-        count++;
+    void addReading(int value) {
+        if (count < readings.length) {
+            readings[count] = value;
+            count++;
+        }
+    }
+
+    int average() {
+        if (count == 0) return 0;
+        int total = 0;
+        for (int i = 0; i < count; i++) {   // loop to count, not readings.length
+            total += readings[i];
+        }
+        return total / count;
     }
 }
 
-int average() {
-    if (count == 0) return 0;
-    int total = 0;
-    for (int i = 0; i < count; i++) {   // loop to count, not readings.length
-        total += readings[i];
-    }
-    return total / count;
-}
+ReadingBuffer buf = new ReadingBuffer();
+buf.addReading(120);
+buf.addReading(118);
+buf.addReading(125);
+System.out.println(buf.average());
 ```
 
 The important detail is looping to `count` rather than `readings.length`. The unused slots still hold zeros, and including them would drag the average down.

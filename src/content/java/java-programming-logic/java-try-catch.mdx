@@ -21,7 +21,7 @@ In FRC robotics, your program must be robust and handle unexpected situations. W
 
 ### Basic Try-Catch Structure:
 
-```java
+```java norun
 // Basic try-catch syntax
 try {
     // Code that might throw an exception
@@ -30,7 +30,9 @@ try {
     // Code to handle the exception
     // This runs if an exception occurs
 }
+```
 
+```java
 // Simple example with division
 try {
     int result = 10 / 0;  // This will throw ArithmeticException
@@ -51,8 +53,8 @@ Understanding common exceptions helps you write better error handling code. Here
 
 ```java
 // 1. NumberFormatException - Invalid string to number conversion
+String userInput = "abc";  // Invalid number
 try {
-    String userInput = "abc";  // Invalid number
     int number = Integer.parseInt(userInput);
 } catch (NumberFormatException e) {
     System.out.println("Invalid number format: " + userInput);

@@ -45,6 +45,12 @@ export default function JavaPlayground({ id }: Props) {
       tabSize: 4,
       automaticLayout: true,
       renderLineHighlight: 'line' as const,
+      quickSuggestions: false,
+      suggestOnTriggerCharacters: false,
+      wordBasedSuggestions: 'off' as const,
+      parameterHints: { enabled: false },
+      snippetSuggestions: 'none' as const,
+      hover: { enabled: false },
     }),
     [],
   );
@@ -140,8 +146,9 @@ export default function JavaPlayground({ id }: Props) {
                 theme={monacoTheme}
                 value={code}
                 onChange={(value) => setCode(value ?? '')}
-                onMount={(editor) => {
+                onMount={(editor, monaco) => {
                   editor.layout();
+                  editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Space, () => {});
                 }}
                 options={editorOptions}
               />

@@ -44,6 +44,12 @@ abstract class Subsystem {
 An abstract method declares a signature and ends with a semicolon instead of a body. Any concrete subclass must implement it:
 
 ```java
+abstract class Subsystem {
+    protected final String name;
+    Subsystem(String name) { this.name = name; }
+    abstract void periodic();
+}
+
 class Intake extends Subsystem {
     Intake() { super("intake"); }
 
@@ -52,13 +58,16 @@ class Intake extends Subsystem {
         System.out.println("checking intake sensor");
     }
 }
+
+Intake intake = new Intake();
+intake.periodic();
 ```
 
 Omit `periodic` in `Intake` and the code will not compile. The requirement is enforced rather than hoped for.
 
 ### Abstract classes cannot be instantiated
 
-```java
+```java norun
 Subsystem s = new Subsystem("thing");   // compile error
 Subsystem s = new Intake();             // fine
 ```
@@ -114,6 +123,14 @@ Marking `update` as `final` means subclasses cannot change that ordering — the
 An abstract class may extend another abstract class and implement only some of the inherited abstract methods, leaving the rest for further subclasses:
 
 ```java
+class Motor {
+    private double power;
+    void set(double power) {
+        this.power = power;
+        System.out.println("motor power: " + power);
+    }
+}
+
 abstract class Subsystem {
     abstract void periodic();
     abstract void stop();
@@ -137,6 +154,10 @@ class Intake extends MotorSubsystem {
     @Override
     void periodic() { motor.set(0.6); }
 }
+
+Intake intake = new Intake(new Motor());
+intake.periodic();
+intake.stop();
 ```
 
 `MotorSubsystem` is still abstract because `periodic` remains unimplemented — but it has removed duplication for everything below it.

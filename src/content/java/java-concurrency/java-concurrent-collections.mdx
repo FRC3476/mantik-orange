@@ -19,14 +19,22 @@ description: Why ArrayList and HashMap break under concurrent use, which thread-
 List<Integer> shared = new ArrayList<>();
 
 Runnable adder = () -> {
-    for (int i = 0; i < 10_000; i++) shared.add(i);
+    try {
+        for (int i = 0; i < 10_000; i++) shared.add(i);
+    } catch (RuntimeException e) {
+        System.out.println("corrupt: " + e.getClass().getSimpleName());
+    }
 };
 
 Thread a = new Thread(adder);
 Thread b = new Thread(adder);
 a.start(); b.start(); a.join(); b.join();
 
-System.out.println(shared.size());     // rarely 20000; may throw
+try {
+    System.out.println(shared.size());     // rarely 20000; may throw
+} catch (RuntimeException e) {
+    System.out.println("size failed: " + e.getClass().getSimpleName());
+}
 ```
 
 `add` reads a size, writes an element, and updates the size. Two threads interleaving those steps can lose elements, overwrite each other, or leave the list in a state that throws `ArrayIndexOutOfBoundsException` from a later, innocent-looking call.
@@ -55,16 +63,22 @@ The one you will use most.
 ```java
 import java.util.concurrent.ConcurrentHashMap;
 
-Map<String, Integer> counts = new ConcurrentHashMap<>();
+ConcurrentHashMap<String, Integer> counts = new ConcurrentHashMap<>();
 
 counts.put("intake", 1);
 counts.merge("intake", 1, Integer::sum);        // atomic increment
 counts.computeIfAbsent("shooter", k -> 0);      // atomic
+System.out.println(counts);
 ```
 
 Individual operations are atomic and safe. But **combining two operations is not**:
 
 ```java
+import java.util.concurrent.ConcurrentHashMap;
+
+ConcurrentHashMap<String, Integer> counts = new ConcurrentHashMap<>();
+String key = "intake";
+
 // BROKEN — another thread can act between the get and the put
 if (!counts.containsKey(key)) {
     counts.put(key, 0);
@@ -72,6 +86,7 @@ if (!counts.containsKey(key)) {
 
 // CORRECT — one atomic operation
 counts.putIfAbsent(key, 0);
+System.out.println(counts);
 ```
 
 <RulesBox title="Atomic per operation, not per sequence">
@@ -96,32 +111,44 @@ The best tool for concurrency, because it lets threads hand work to each other r
 ```java
 import java.util.concurrent.*;
 
+class FrameProcessor {
+    static void process(String item) {
+        System.out.println("processed " + item);
+    }
+}
+
 BlockingQueue<String> queue = new ArrayBlockingQueue<>(100);
 
 // producer
-new Thread(() -> {
+Thread producer = new Thread(() -> {
     try {
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 8; i++) {
             queue.put("frame " + i);       // blocks if the queue is full
         }
         queue.put("DONE");
     } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
     }
-}).start();
+});
 
 // consumer
-new Thread(() -> {
+Thread consumer = new Thread(() -> {
     try {
         while (true) {
             String item = queue.take();    // blocks until something arrives
             if (item.equals("DONE")) break;
-            process(item);
+            FrameProcessor.process(item);
         }
     } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
     }
-}).start();
+});
+
+producer.start();
+consumer.start();
+producer.join();
+consumer.join();
+System.out.println("done");
 ```
 
 `put` and `take` handle the waiting for you. No polling, no sleeping, and no shared variable that either thread writes.
@@ -159,7 +186,20 @@ Choose deliberately. Using `add` on a full queue throws; `offer` silently return
 Safe for concurrent use, but every write copies the entire backing array:
 
 ```java
+class Listener {
+    private final String name;
+
+    Listener(String name) {
+        this.name = name;
+    }
+
+    void onEvent() {
+        System.out.println(name + " notified");
+    }
+}
+
 List<Listener> listeners = new CopyOnWriteArrayList<>();
+Listener listener = new Listener("dashboard");
 listeners.add(listener);              // copies the whole array
 
 for (Listener l : listeners) {        // never throws ConcurrentModificationException
@@ -177,13 +217,20 @@ The older approach still appears in existing code:
 
 ```java
 List<Integer> list = Collections.synchronizedList(new ArrayList<>());
+list.add(1);
+System.out.println(list.size());
 ```
 
 Every method is individually synchronized, but iteration is **not** — you must lock manually:
 
 ```java
+List<Integer> list = Collections.synchronizedList(new ArrayList<>());
+list.add(1);
+list.add(2);
 synchronized (list) {
-    for (int v : list) { ... }
+    for (int v : list) {
+        System.out.println(v);
+    }
 }
 ```
 

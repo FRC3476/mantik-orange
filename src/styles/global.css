@@ -4033,6 +4033,43 @@ html[data-theme="dark"] .astro-code span {
     word-wrap: break-word;
 }
 
+/* Runnable Java examples: border lives on the wrapper so Run/output stay attached */
+.lesson-content .jp-example,
+.exercise-box-body .jp-example,
+.rules-box-content .jp-example,
+.steps-box-content .jp-example,
+#furo-main-content .lesson-content .jp-example {
+    margin: 1.5rem 0;
+    border: 1px solid var(--color-background-border);
+    background: var(--color-code-background);
+}
+
+.lesson-content .jp-example > pre.astro-code,
+.exercise-box-body .jp-example > pre.astro-code,
+.rules-box-content .jp-example > pre.astro-code,
+.steps-box-content .jp-example > pre.astro-code,
+#furo-main-content .lesson-content .jp-example > pre.astro-code {
+    background: var(--color-code-background) !important;
+    border: none !important;
+    border-radius: 0;
+    box-shadow: none;
+    color: var(--color-code-foreground);
+    display: block;
+    font-family: var(--font-stack--monospace);
+    font-size: var(--code-font-size);
+    line-height: 1.6;
+    margin: 0;
+    max-height: calc(100vh - var(--header-height) - 2rem);
+    max-width: 100%;
+    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: auto;
+    padding: 1.5rem;
+    position: relative;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
 /* Inner Shiki pre inside tab panels — outer .code-tabs-container carries the border */
 .code-tabs-container pre.astro-code {
     background: var(--color-code-background) !important;
@@ -4107,12 +4144,26 @@ html[data-theme="dark"] .lesson-content > pre.astro-code,
 html[data-theme="dark"] .exercise-box-body > pre.astro-code,
 html[data-theme="dark"] .rules-box-content > pre.astro-code,
 html[data-theme="dark"] .steps-box-content > pre.astro-code,
-html[data-theme="dark"] #furo-main-content .lesson-content > pre.astro-code {
+html[data-theme="dark"] #furo-main-content .lesson-content > pre.astro-code,
+html[data-theme="dark"] .lesson-content .jp-example > pre.astro-code,
+html[data-theme="dark"] .exercise-box-body .jp-example > pre.astro-code,
+html[data-theme="dark"] .rules-box-content .jp-example > pre.astro-code,
+html[data-theme="dark"] .steps-box-content .jp-example > pre.astro-code,
+html[data-theme="dark"] #furo-main-content .lesson-content .jp-example > pre.astro-code {
     background: var(--color-code-background) !important;
     border-color: var(--color-background-border) !important;
     /* Shiki inlines the light theme's foreground on the pre; any token without its own
        span colour would otherwise render dark-on-dark. */
     color: var(--color-code-foreground) !important;
+}
+
+html[data-theme="dark"] .lesson-content .jp-example,
+html[data-theme="dark"] .exercise-box-body .jp-example,
+html[data-theme="dark"] .rules-box-content .jp-example,
+html[data-theme="dark"] .steps-box-content .jp-example,
+html[data-theme="dark"] #furo-main-content .lesson-content .jp-example {
+    border-color: var(--color-background-border);
+    background: var(--color-code-background);
 }
 
 html[data-theme="dark"] .code-tabs-container pre.astro-code {
@@ -4124,6 +4175,10 @@ html[data-theme="dark"] .code-tabs-container pre.astro-code {
     .exercise-box-body > pre.astro-code,
     .rules-box-content > pre.astro-code,
     .steps-box-content > pre.astro-code,
+    .lesson-content .jp-example > pre.astro-code,
+    .exercise-box-body .jp-example > pre.astro-code,
+    .rules-box-content .jp-example > pre.astro-code,
+    .steps-box-content .jp-example > pre.astro-code,
     .code-tabs-container pre.astro-code,
     .lesson-content > pre:not(.astro-code),
     .exercise-box-body pre:not(.astro-code),

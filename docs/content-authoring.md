@@ -100,6 +100,48 @@ System.out.println("Hello");
 
 Legacy prop style still works (`items={[]}`, `tasks={[]}`) but prefer slots for new content.
 
+### JavaPlayground
+
+In-browser Java editor for Java coding lessons. Students compile and run `Main.java` in the page, then Check against hidden console-output tests.
+
+Do not use it for open-ended prompts such as “print your name,” Git lessons, or the Java intro/setup pages. Point it at a catalog id instead of pasting starter code in MDX:
+
+```mdx
+<JavaPlayground id="java-conditionals" />
+```
+
+The `id` must match a lesson id in `src/lib/java-playground/catalog/` (merged in `exercises.ts`). Keep the existing `ExerciseBox` after the playground.
+
+The first Run downloads a Java runtime (CheerpJ) and the Eclipse compiler jar from `public/java-playground/ecj.jar` (fetched by `scripts/fetch-java-playground-assets.mjs` on `npm run dev` / `npm run build`).
+
+### Runnable Java examples
+
+Fenced `java` blocks on Java course pages get a **Run** control automatically. Students can run the snippet in the browser and click **Edit** to change it.
+
+You do not wrap examples in a component. Write a normal fence:
+
+````mdx
+```java
+System.out.println("Hello world!");
+```
+````
+
+Snippets without a class are wrapped in `Main` at run time. Complete programs keep their class name. Class-only examples compile but explain that nothing runs until `main` is added.
+
+Keep an example static with the `norun` fence flag:
+
+````mdx
+```java norun
+public class SketchOnly {
+    // shown as code, not runnable
+}
+```
+````
+
+Do not use this for Git snippets (those pages are skipped) or for robot-library code you know cannot compile in the browser. Incomplete FRC/FTC types will show a compiler error, which is expected.
+
+The end-of-lesson `<JavaPlayground>` is separate: that is the graded Check exercise, not the in-lesson examples.
+
 ### LinkGrid
 
 For internal lesson links:

@@ -1,0 +1,10 @@
+---
+import '@/styles/java-playground.css';
+---
+
+<script>
+  import { hydrateJavaExamples } from '@/lib/java-playground/hydrateJavaExamples';
+
+  hydrateJavaExamples();
+  document.addEventListener('astro:page-load', hydrateJavaExamples);
+</script>

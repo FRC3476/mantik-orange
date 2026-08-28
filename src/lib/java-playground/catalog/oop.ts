@@ -111,7 +111,7 @@ public class Main {
   pg(
     'java-inheritance',
     'Practice: inheritance',
-    `NeoMotor should extend Motor and inherit type. Print new NeoMotor().type
+    `Make NeoMotor extend Motor so it inherits type. Print new NeoMotor().type
 
 Expected:
 
@@ -120,12 +120,13 @@ motor`,
     String type = "motor";
 }
 
-class NeoMotor extends Motor {
+class NeoMotor {
+    // TODO: extend Motor
 }
 
 public class Main {
     public static void main(String[] args) {
-        System.out.println(new NeoMotor().type);
+        // print new NeoMotor().type
     }
 }
 `,

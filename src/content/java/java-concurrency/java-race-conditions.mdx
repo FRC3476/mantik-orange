@@ -11,6 +11,12 @@ duration: 35 min
 description: How two threads corrupt shared data, what synchronized and volatile actually guarantee, and why avoiding shared state beats protecting it.
 ---
 
+<RulesBox title="Optional later">
+
+Same caution as [Threads](/java/java-threads-basics): prefer sharing nothing with the robot loop. Locking around motors is usually the wrong instinct. A vision thread updating a pose field is a real case.
+
+</RulesBox>
+
 ### A counter that loses count
 
 This program looks obviously correct and is not:

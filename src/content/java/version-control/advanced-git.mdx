@@ -7,56 +7,82 @@ groupLabel: "Version Control with Git & GitHub"
 groupOrder: 10
 order: 10
 difficulty: advanced
-duration: 30 min
-description: ""
+duration: 25 min
+description: Safer undo on shared branches, stash, and tags for an inspection-ready robot — not Git Flow
 ---
 
-### Advanced Version Control Techniques
+### Tools that can delete work
 
-Advanced Git concepts help teams maintain clean history and handle complex scenarios. This lesson covers undoing changes, stashing, rebasing, and other advanced techniques useful for experienced users.
+This page is optional. Use a **throwaway repo**, never `main` on the competition robot, while you try these commands.
 
-### Key Concepts
+On a branch other people already pulled, prefer **revert**. `reset --hard` throws away uncommitted work and can drop commits. Do not run it because a web page said to.
 
-Git reset allows you to undo commits and changes at different levels, from keeping changes staged to completely discarding them. Git revert creates new commits that undo previous changes, which is safer for shared repositories. Stashing temporarily saves work without committing, allowing you to switch contexts quickly. Rebasing rewrites commit history for cleaner logs by moving commits to a new base. These advanced techniques require careful use to avoid data loss, so it's important to understand when and how to use them properly.
+### revert vs reset
 
-### Undoing Changes
+- **`git revert HEAD`** — makes a **new** commit that undoes the last one. Safe on `main` the team shares
+- **`git reset`** — moves this branch pointer. Fine for a commit you have **not** pushed. After you push, reset rewrites history others may have cloned
 
-Use these commands to undo changes safely:
-
-
-
-```java
-git reset --soft HEAD~1    # Undo commit, keep changes staged
-git reset --mixed HEAD~1   # Undo commit, unstage changes
-git reset --hard HEAD~1     # Undo commit, discard all changes
-git revert HEAD            # Create new commit that undoes previous
-git checkout -- filename   # Discard changes in working directory
+```
+git revert HEAD
 ```
 
-### Stashing Work
+To throw away **uncommitted** edits in one file (keep the last commit):
 
-`Git stash` allows you to save work without committing, which is useful when you need to switch to a different task temporarily. Use `git stash` to save your current work, `git stash pop` to apply and remove the most recent stash, and `git stash list` to view all your stashes. You can apply a specific stash without removing it using `git stash apply`, and remove individual stashes with `git stash drop`. Stashing is particularly useful when you need to pull the latest changes but have uncommitted work that isn't ready to commit yet.
+```
+git restore notes.txt
+```
 
-### Rebasing for Clean History
+Older docs say `git checkout -- notes.txt`. Same idea; `restore` is the current name.
 
-Git rebase rewrites commit history by moving commits to a new base, creating a linear history that's easier to follow. Interactive rebasing with `git rebase -i` allows you to squash commits, reorder them, or edit commit messages during the rebase process. Squashing commits combines multiple small commits into one larger commit, while reordering allows you to organize your commit history logically. You can also edit commit messages during rebase to improve clarity and consistency.
+`git reset --hard` discards uncommitted changes **and** can drop commits. If you need it, run `git status` first and be sure you can lose what you see.
 
-### Tags and Releases
+### stash
 
-Git tags mark important commits such as competition versions or major milestones in your robot's development. Annotated tags created with `git tag -a v1.0 -m "Competition ready"` include additional metadata and are recommended for important releases. GitHub releases can be created from tags, providing a way to package and distribute specific versions of your robot code. Version your robot code for different competitions to maintain clear separation between competition-ready code and development work. Document release notes for each version to help team members understand what changed and why.
+Unfinished work that is not ready to commit, but you need a clean tree (to pull, or to switch branches):
 
-### Advanced Branching Strategies
+```
+git stash
+git status
+git stash pop
+```
 
-Git flow is a branching strategy that uses feature, develop, release, and hotfix branches to organize development work systematically. Trunk-based development works directly on the main branch, which is simpler but requires more discipline. Feature flags allow for gradual rollouts of new features by enabling or disabling code paths without deploying new versions. Environment-specific branches like dev, staging, and prod help manage code across different deployment environments. Choose your branching strategy based on team size, experience level, and the complexity of your project.
+`stash list` shows saved piles. Practice this on the throwaway folder from [Local Git Workflow](/java/local-workflow).
 
-### Mastering Advanced Git for Robotics Teams
+### rebase vs merge
 
-Advanced Git techniques become valuable as robotics teams grow more experienced and their projects become more complex. Understanding when to use reset versus revert, how to manage work with stashing, and when to rebase versus merge helps teams maintain clean, professional repositories. These skills are particularly important for teams that work on multiple features simultaneously or need to maintain different versions of their robot code for different competitions. The key is to choose the right tool for each situation while always prioritizing code safety and team collaboration.
+**Merge** adds a merge commit and keeps both histories. **Rebase** replays your commits on top of another branch and **rewrites** those commits.
+
+Do not rebase `main` (or any branch teammates already pulled). If you rebase, do it only on a local feature branch that only you use. [Branching and Merging](/java/branching-merging) is enough for most teams.
+
+### Tags for a frozen robot
+
+A **tag** names a commit, for example the code you inspected with.
+
+```
+git tag -a inspect-ready -m "Code at inspection"
+```
+
+Push tags only when the team agrees (`git push origin inspect-ready`). GitHub **releases** can point at a tag. That is more useful than Git Flow, environment branches, or feature flags for a high-school robot.
+
+<RulesBox title="Safety">
+
+- Shared `main`: revert, not hard reset
+- Unpushed local commit you regret: reset is possible; ask a mentor the first time
+- Never `--hard` on a dirty robot repo “to see what happens”
+- Rebase is optional. Merge is the default
+
+</RulesBox>
+
+<ExerciseBox title="Throwaway repo only">
+
+1. In a practice repo, make a commit, then `git stash` after a new edit. Confirm `git status` is clean. `git stash pop` and confirm the edit returns.
+2. Make a commit whose message you are willing to undo. `git revert HEAD`. Confirm `git log` shows the revert commit and the old files match the earlier snapshot.
+
+Do not practice `reset --hard` on team code.
+
+</ExerciseBox>
 
 <LinkGrid links={[
-    {"label":"Git Documentation: Advanced Topics","url":"https://git-scm.com/book/en/v2/Git-Tools-Reset-Demystified"},
-    {"label":"GitHub Guides: Git Handbook","url":"https://guides.github.com/introduction/git-handbook/"},
-    {"label":"Git Flow Workflow","url":"https://nvie.com/posts/a-successful-git-branching-model/"},
-    {"label":"Git Rebase Tutorial","url":"https://git-scm.com/book/en/v2/Git-Branching-Rebasing"}
-  ]} title="Further Reading Resources" section="java" />
-
+    {"label":"Reset explained","url":"https://git-scm.com/book/en/v2/Git-Tools-Reset-Demystified"},
+    {"label":"Rebasing","url":"https://git-scm.com/book/en/v2/Git-Branching-Rebasing"}
+  ]} title="Further reading" section="java" />

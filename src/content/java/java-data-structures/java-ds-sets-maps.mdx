@@ -13,9 +13,11 @@ description: Membership tests and key-value lookups in O(1), when a plain array 
 
 ### The problem they solve
 
-Checking "have I seen this value before" by scanning an array is O(N). Doing that inside a loop makes the whole solution O(N<sup>2</sup>), which fails once N passes a few thousand.
+Checking whether you have already seen a tag ID, or looking up a motor by name, should not mean scanning a long list every time.
 
-A hash set answers the same question in O(1) average time. That single change turns many O(N<sup>2</sup>) solutions into O(N).
+A **set** answers “have I already seen this?” A **map** answers “what value goes with this key?” Hash-based sets and maps do that quickly for typical robot-sized data.
+
+Cost shorthand (`O(1)`, `O(N²)`) is optional later. Use the idea: scanning a list inside a loop gets slow as the list grows.
 
 ### HashSet
 

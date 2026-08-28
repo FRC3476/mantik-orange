@@ -153,24 +153,22 @@ Call stack visualization:
 */
 ```
 
-### Basic Method Examples:
+### Static methods from main
+
+Write `public static` on methods in this lesson so you can call them from `main` without building an object. `public` and `static` get a real definition in [Java Classes](/java/java-classes). `void` means the method does not `return` a value.
 
 ```java
-public class Calculator {
-    
-    // Method that returns a value
-    public int add(int a, int b) {
+public class Main {
+    public static int add(int a, int b) {
         return a + b;
     }
-    
-    // Method that doesn't return a value (void)
-    public void printResult(int result) {
+
+    public static void printResult(int result) {
         System.out.println("Result: " + result);
     }
-    
-    // Method with no parameters
-    public void sayHello() {
-        System.out.println("Hello!");
+
+    public static void main(String[] args) {
+        printResult(add(2, 3));
     }
 }
 ```

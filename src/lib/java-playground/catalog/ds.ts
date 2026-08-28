@@ -69,18 +69,19 @@ public class Main {
   pg(
     'java-ds-stacks',
     'Practice: stack',
-    `Push 1, then 2, then 3. Pop and print until empty (last in first).
+    `Push 1, then 2, then 3 on an ArrayDeque used as a stack. Pop and print until empty (last in first).
 
 Expected:
 
 3
 2
 1`,
-    `import java.util.Stack;
+    `import java.util.ArrayDeque;
+import java.util.Deque;
 
 public class Main {
     public static void main(String[] args) {
-        Stack<Integer> stack = new Stack<Integer>();
+        Deque<Integer> stack = new ArrayDeque<Integer>();
         // push 1, 2, 3 then pop and print
     }
 }
@@ -90,19 +91,19 @@ public class Main {
   pg(
     'java-ds-queues',
     'Practice: queue',
-    `Offer 1, then 2, then 3. Poll and print until empty (first in first).
+    `Offer 1, then 2, then 3 on an ArrayDeque used as a Queue. Poll and print until empty (first in first).
 
 Expected:
 
 1
 2
 3`,
-    `import java.util.LinkedList;
+    `import java.util.ArrayDeque;
 import java.util.Queue;
 
 public class Main {
     public static void main(String[] args) {
-        Queue<Integer> queue = new LinkedList<Integer>();
+        Queue<Integer> queue = new ArrayDeque<Integer>();
         // offer 1, 2, 3 then poll and print
     }
 }
@@ -133,22 +134,23 @@ public class Main {
   pg(
     'java-ds-sets-maps',
     'Practice: map',
-    `Put "kP" -> 4 in the map. Print get("kP").
+    `Put "kP" -> 4. Print get("kP"), then print getOrDefault("kI", 0) for a missing key.
 
 Expected:
 
-4`,
+4
+0`,
     `import java.util.HashMap;
 import java.util.Map;
 
 public class Main {
     public static void main(String[] args) {
         Map<String, Integer> gains = new HashMap<String, Integer>();
-        // put kP, then print it
+        // put kP, print it, then print getOrDefault for kI
     }
 }
 `,
-    [{ name: 'Map get', stdout: '4' }],
+    [{ name: 'Get and missing key', stdout: '4\n0' }],
   ),
   pg(
     'java-ds-trees',

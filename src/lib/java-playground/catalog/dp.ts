@@ -48,7 +48,7 @@ class Drive {
     Motor motor;
 
     Drive(Motor motor) {
-        this.motor = motor;
+        // store the motor this Drive should use
     }
 }
 
@@ -64,7 +64,7 @@ public class Main {
   pg(
     'java-dp-command',
     'Practice: command',
-    `Run the PrintCmd through a Cmd variable. Print go.
+    `Store a Cmd in a variable, then run it later. Print go.
 
 Expected:
 
@@ -73,19 +73,13 @@ go`,
     void run();
 }
 
-class PrintCmd implements Cmd {
-    public void run() {
-        // print go
-    }
-}
-
 public class Main {
     public static void main(String[] args) {
-        Cmd cmd = new PrintCmd();
-        cmd.run();
+        Cmd cmd = null;
+        // create a Cmd that prints go, store it, then call run()
     }
 }
 `,
-    [{ name: 'Run command', stdout: 'go' }],
+    [{ name: 'Store then run', stdout: 'go' }],
   ),
 ];

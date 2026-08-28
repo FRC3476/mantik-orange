@@ -11,6 +11,14 @@ duration: 30 min
 description: Running more than one piece of code at a time, starting and joining threads, and why concurrent programs are harder to reason about.
 ---
 
+<RulesBox title="Optional later">
+
+Lambdas in `new Thread(() -> …)` come from [Lambda Expressions](/java/java-fn-lambdas). An anonymous `Runnable` (as in the Check) is enough if you skipped that module.
+
+The FTC/FRC loop already *is* the concurrency model. Extra threads are for work that cannot live in that loop (for example a vision pipeline). Do not start threads that touch motors.
+
+</RulesBox>
+
 ### Doing two things at once
 
 Everything you have written so far runs one statement after another. A **thread** is an independent line of execution — with several, parts of your program run at the same time.
@@ -46,8 +54,12 @@ The short `sleep` pauses give the other thread a chance to run. Without a pause,
 ```java
 Thread worker = new Thread(() -> System.out.println("work"));
 worker.start();      // runs on a NEW thread
-worker.run();        // runs on the CURRENT thread — just a normal method call
 worker.join();
+```
+
+```java
+Thread worker = new Thread(() -> System.out.println("work"));
+worker.run();        // runs on the CURRENT thread — just a normal method call
 ```
 
 Calling `run()` compiles and executes the code, but sequentially, with no second thread. Nothing appears wrong; you simply do not get concurrency. This is the single most common beginner mistake here.

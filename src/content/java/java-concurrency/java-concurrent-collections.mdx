@@ -11,6 +11,12 @@ duration: 30 min
 description: Why ArrayList and HashMap break under concurrent use, which thread-safe collections to reach for, and passing work between threads with a blocking queue.
 ---
 
+<RulesBox title="Optional later">
+
+Queue *data* (camera frames) between a vision thread and the loop. Do not put hardware objects in a `ConcurrentHashMap`. Lambdas such as `Integer::sum` are from [Functions as Data](/java/java-fn-functions-as-data).
+
+</RulesBox>
+
 ### Ordinary collections are not thread-safe
 
 `ArrayList`, `HashMap`, and `ArrayDeque` assume one thread at a time. Used concurrently they do not merely lose an update — they can corrupt their internal structure.

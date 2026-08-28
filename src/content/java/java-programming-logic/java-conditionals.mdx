@@ -11,26 +11,19 @@ duration: 75 min
 description: ""
 ---
 
-### Introduction to Conditional Statements
+### Choosing which lines run
 
-Programs often need to make decisions based on conditions. Conditional statements allow your program to execute different code paths depending on whether certain conditions are true or false.
-
-### Basic If Statement:
+A program often needs two different actions: drive if the path is clear, stop if it is not. An `if` statement runs a block only when a condition is true.
 
 ```java
-// Simple conditional statement
-System.out.println("Starting robot check...");
-
-if (true) {
-    System.out.println("This code always runs!");
-}
-
-// Conditional with comparison
 int batteryLevel = 85;
 if (batteryLevel > 50) {
-    System.out.println("Battery level is sufficient");
+    System.out.println("Battery is high enough to drive");
 }
+System.out.println("Check finished");
 ```
+
+If `batteryLevel` were `20`, the inner print would not run. `Check finished` always runs.
 
 ### Code Blocks and Indentation
 
@@ -61,6 +54,8 @@ motorSpeed = 100;
 - `&lt;=` - Less than or equal to
 - `==` - Equal to
 - `!=` - Not equal to
+
+`=` assigns a value (`battery = 85`). `==` asks whether two values are equal (`battery == 85`). Using `=` inside `if (...)` is a compile error for `int` and a logic bug you do not want.
 
 </RulesBox>
 

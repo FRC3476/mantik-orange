@@ -2,85 +2,70 @@
 title: Java Programming Fundamentals
 lessonId: overview
 section: java
-description: Comprehensive Java programming training for robotics teams
+description: Java lessons for FIRST robotics teams, from first program through collaboration with Git
 isOverview: true
 order: 0
 ---
 
-### Welcome to Java Training
+### Java for robotics teams
 
-Welcome to the comprehensive Java programming training section! This curriculum is designed to take you from complete beginner to confident Java programmer, with a focus on practical applications in robotics and programming.
+This course teaches Java from the first program onward. You do not need prior programming experience.
 
-<RulesBox title="Why Learn Java?" subtitle="Java is an excellent choice for robotics programming because:">
+FTC and FRC robot code is written in Java. The same language works for both programs, so what you learn here carries into OnBot Java, Android Studio, and WPILib.
 
-- It's the primary language for FTC (FIRST Tech Challenge) robotics
-- Strong object-oriented programming principles
-- Excellent for learning programming fundamentals
-- Wide industry adoption and community support
-- Cross-platform compatibility
-- Robust error handling and debugging tools
+<RulesBox title="Why Java on a robotics team">
 
-</RulesBox>
-
-### Learning Path Overview
-
-This Java training is organized into nine modules, each building upon the previous knowledge:
-
-### Curriculum Structure
-
-- **Java Basics:** Start with fundamental concepts like variables, data types, printing, calculations, and arrays. This is where you'll learn the building blocks of Java programming.
-- **Programming Logic:** Master decision-making with conditionals, create reusable code with methods, understand control structures, and learn to handle errors with exception handling.
-- **Loops and Iteration:** Learn to repeat code efficiently with while loops, for loops, and understand when and how to use different loop types. Includes best practices for writing clean, efficient loops.
-- **Object-Oriented Programming:** Classes, objects, references, and method overloading, then inheritance in depth — abstract classes and methods, interfaces, and runtime polymorphism. This is where you'll learn to think like a programmer and create well-structured code.
-- **Data Structures:** Choose the right way to store your data — arrays, ArrayLists, linked lists, stacks, queues, deques, trees, and graphs — and understand what each one is fast and slow at.
-- **Common Algorithms:** Recursion, searching and sorting, tree traversals, depth-first and breadth-first search, backtracking, and dynamic programming — the techniques that operate on those structures.
-- **Functions as Data:** Treat behaviour as a value you can store and pass around, using lambda expressions, method references, and Java's standard functional interfaces.
-- **Design Patterns:** Factory methods, dependency injection, and the command pattern — the structures behind testable, reusable robot code.
-- **Concurrency and Multithreading:** Running work on more than one thread, the race conditions that follow, thread pools, and the collections that are safe to share.
-- **Version Control with Git & GitHub:** Track your changes, collaborate with your team, and manage code across a season.
-
-### How to Use This Training
-
-Each lesson includes practical examples, exercises, and real-world applications. We recommend:
-
-- Complete lessons in order - each builds on previous concepts
-- Practice with the provided code examples
-- Complete the exercises at the end of each lesson
-- Apply concepts to your own projects when possible
-- Use the search function to find specific topics quickly
-
-<RulesBox title="Prerequisites" subtitle="This training assumes:">
-
-- No prior programming experience required
-- Basic computer literacy (using a web browser, text editor)
-- Access to a computer for practice
-- Willingness to experiment and learn through trial and error
+- FTC and FRC both use Java for robot code
+- The ideas (variables, methods, classes) show up in every subsystem you write
+- You can practice in the browser on these pages, then use the same language in your team project
 
 </RulesBox>
 
-### Getting Started
+### How the course is organized
 
-Ready to begin your Java programming journey? Start with the first lesson in Java Basics: **Introduction to Java**. This will teach you about the Java programming language, its history, and how to write your first Java program.
+Ten modules. Complete them in order unless a later page says it is optional.
+
+- **Java Basics:** Printing, variables, types, calculations, and arrays
+- **Programming Logic:** Decisions with `if`, reusable methods, and handling errors
+- **Loops and Iteration:** Repeating work with `while` and `for`
+- **Object-Oriented Programming:** Classes, objects, references, inheritance, interfaces
+- **Data Structures:** Choosing how to store data, and what each choice is fast or slow at
+- **Common Algorithms:** Recursion, searching, sorting, and graph search
+- **Functions as Data:** Passing behavior as a value (lambdas and related types)
+- **Design Patterns:** Named structures you will see in WPILib and team code
+- **Concurrency and Multithreading:** Extra threads — optional later, and easy to misuse on a robot
+- **Version Control with Git & GitHub:** History, branches, and sharing code with your team
+
+Later modules (algorithms after searching, design patterns, concurrency) are stretch. They stay in the sidebar so you can return to them. You do not need them to write a first teleop.
+
+Git sits last in this list on purpose. Jump to [Introduction to Version Control](/java/intro-version-control) as soon as two people share a robot repo. You do not need to finish concurrency first.
+
+### How to use a lesson
+
+1. Read the idea, then the short example.
+2. Click **Run** on examples to see output. Click **Edit** if you want to change them.
+3. Complete the playground Check when a lesson has one.
+4. Use Try It Yourself for extra practice. Show Answers only after you have tried.
+
+Each Java lesson builds on the ones before it. If a page uses a word you do not know, go back one lesson rather than skipping ahead.
+
+<RulesBox title="What you need">
+
+- No prior programming experience
+- A computer and a web browser
+- Time to type the examples, not only read them
+
+If you cannot install software on a school machine, use the in-page Run button. Local install is covered in [Setting Up Java Locally](/java/java-setup) and is optional for the first lessons.
+
+</RulesBox>
+
+### Start here
+
+Begin with **Introduction to Java**. That page is the first lesson, not this map.
 
 <LinkGrid links={[
     {"label":"Introduction to Java","id":"java-intro"},
-    {"label":"Printing and Output","id":"java-printing"},
-    {"label":"Variables and Data Types","id":"java-variables"},
-    {"label":"Calculations and Math","id":"java-calculations"}
-  ]} title="Quick Navigation" section="java" />
-
-<ExerciseBox title="Pre-Assessment" description="Before starting the lessons, take a moment to assess your current knowledge:">
-
-- Do you have any prior programming experience?
-- What do you hope to achieve with Java programming?
-- Are you planning to use Java for robotics (FTC/FRC) or general programming?
-- How much time can you dedicate to learning each week?
-
-```java
-// This is where your Java journey begins!
-// In the next lesson, you'll write your first Java program
-// and learn about the basic structure of Java code.
-```
-
-</ExerciseBox>
-
+    {"label":"Setting Up Java Locally","id":"java-setup"},
+    {"label":"Java Printing","id":"java-printing"},
+    {"label":"Java Variables","id":"java-variables"}
+  ]} title="Java Basics" section="java" />

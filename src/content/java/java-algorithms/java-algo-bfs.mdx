@@ -11,6 +11,12 @@ duration: 30 min
 description: Exploring outward in rings from a starting point, why that finds shortest paths, and how to recover the route rather than just the distance.
 ---
 
+<RulesBox title="Optional later">
+
+You need [Queues](/java/java-ds-queues) and [Graphs](/java/java-ds-graphs). BFS is how you get fewest steps on an unweighted grid — useful later for path ideas, not for first teleop.
+
+</RulesBox>
+
 ### Spreading outward
 
 Breadth-first search visits everything one step away, then everything two steps away, and so on. It uses a [queue](/java/java-ds-queues) rather than recursion, which is what makes it spread sideways instead of diving deep.

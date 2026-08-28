@@ -1,5 +1,5 @@
 ---
-title: Java Training Overview
+title: Introduction to Java
 lessonId: java-intro
 section: java
 group: java-basics
@@ -8,77 +8,71 @@ groupOrder: 1
 order: 1
 difficulty: beginner
 duration: 15 min
-description: ""
+description: What Java is, why FTC and FRC teams use it, and a first program that prints one line
 ---
 
-### Welcome to Java Training
+### What Java is
 
-Welcome to the comprehensive Java programming training section! This curriculum is designed to take you from complete beginner to confident Java programmer, with a focus on practical applications in robotics and programming.
+Java is a programming language. You write instructions. The computer (or the robot) follows them, one step at a time.
 
-<RulesBox title="Why Learn Java?" subtitle="Java is an excellent choice for robotics programming because:">
+A **program** is a list of those instructions saved in a file. Java programs are made of **classes**. Every program you write in this course starts in a method named `main`. When you run the program, Java looks for `main` and starts there.
 
-- It's the primary language for FTC (FIRST Tech Challenge) robotics
-- Strong object-oriented programming principles
-- Excellent for learning programming fundamentals
-- Wide industry adoption and community support
-- Cross-platform compatibility
-- Robust error handling and debugging tools
+You do not need to memorize what `public`, `static`, and `void` mean yet. Copy the structure. Later lessons name each word.
 
-</RulesBox>
+### Why robotics teams use Java
 
-### Learning Path Overview
+FTC robot code is Java. FRC robot code is Java. Mentors, sample projects, and vendor libraries are written for this language, so the team shares one set of skills.
 
-This Java training is organized into four main sections, each building upon the previous knowledge:
+This course uses small examples you can run in the browser. When you move to robot code, the language is the same. The libraries change (OnBot Java or Android Studio for FTC, WPILib VS Code for FRC).
 
-### Curriculum Structure
+The [course map](/java) lists every module. Come back to it when you need to find a topic. This page is the first lesson.
 
-- **Java Basics:** Start with fundamental concepts like variables, data types, printing, calculations, and arrays. This is where you'll learn the building blocks of Java programming.
-- **Programming Logic:** Master decision-making with conditionals, create reusable code with methods, understand control structures, and learn to handle errors with exception handling.
-- **Loops and Iteration:** Learn to repeat code efficiently with while loops, for loops, and understand when and how to use different loop types. Includes best practices for writing clean, efficient loops.
-- **Object-Oriented Programming:** Dive into classes, objects, references, and method overloading. This is where you'll learn to think like a programmer and create well-structured code.
+### Your first program
 
-### How to Use This Training
-
-Each lesson includes practical examples, exercises, and real-world applications. We recommend:
-
-- Complete lessons in order - each builds on previous concepts
-- Practice with the provided code examples
-- Complete the exercises at the end of each lesson
-- Apply concepts to your own projects when possible
-- Use the search function to find specific topics quickly
-
-<RulesBox title="Prerequisites" subtitle="This training assumes:">
-
-- No prior programming experience required
-- Basic computer literacy (using a web browser, text editor)
-- Access to a computer for practice
-- Willingness to experiment and learn through trial and error
-
-</RulesBox>
-
-### Getting Started
-
-Ready to begin your Java programming journey? Start with the first lesson in Java Basics: **Introduction to Java**. This will teach you about the Java programming language, its history, and how to write your first Java program.
-
-<LinkGrid links={[
-    {"label":"Introduction to Java","id":"java-intro"},
-    {"label":"Printing and Output","id":"java-printing"},
-    {"label":"Variables and Data Types","id":"java-variables"},
-    {"label":"Calculations and Math","id":"java-calculations"}
-  ]} title="Quick Navigation" section="java" />
-
-<ExerciseBox title="Pre-Assessment" description="Before starting the lessons, take a moment to assess your current knowledge:">
-
-- Do you have any prior programming experience?
-- What do you hope to achieve with Java programming?
-- Are you planning to use Java for robotics (FTC/FRC) or general programming?
-- How much time can you dedicate to learning each week?
+This program prints one line, then stops.
 
 ```java
-// This is where your Java journey begins!
-// In the next lesson, you'll write your first Java program
-// and learn about the basic structure of Java code.
+public class Main {
+    public static void main(String[] args) {
+        System.out.println("Hello, Java!");
+    }
+}
+```
+
+Click **Run**. The console below the editor should show:
+
+```
+Hello, Java!
+```
+
+`System.out.println` sends a line of text to that console. The next lesson, [Java Printing](/java/java-printing), is about this command in more detail.
+
+The class is named `Main` so it matches the file the playground compiles. Keep that name on these pages.
+
+<RulesBox title="If Run does nothing">
+
+The first Run on a page downloads a Java engine. That can take a moment. After it loads, later clicks are faster.
+
+If you cannot install a JDK on this computer, stay in the browser. [Setting Up Java Locally](/java/java-setup) is the next lesson if you want `javac` on your own machine.
+
+</RulesBox>
+
+<ExerciseBox title="Try it">
+
+Change the text inside the quotes and Run again. The console should show your new line.
+
+```java
+public class Main {
+    public static void main(String[] args) {
+        System.out.println("Hello, Java!");
+    }
+}
 ```
 
 </ExerciseBox>
 
+<LinkGrid links={[
+    {"label":"Course map","url":"/java"},
+    {"label":"Setting Up Java Locally","id":"java-setup"},
+    {"label":"Java Printing","id":"java-printing"}
+  ]} title="Next" section="java" />

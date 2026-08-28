@@ -25,15 +25,15 @@ Expected:
   pg(
     'java-algo-searching',
     'Practice: search',
-    `Find index of 7 in the array. Print that index.
+    `Find the index of 14 in a sorted array. If it is missing, print -1.
 
 Expected:
 
-1`,
-    main(`        int[] values = {3, 7, 9};
-        int target = 7;
-        // print the index of target`),
-    [{ name: 'Index of 7', stdout: '1' }],
+-1`,
+    main(`        int[] values = {2, 5, 8, 11, 17, 20};
+        int target = 14;
+        // print the index of target, or -1`),
+    [{ name: 'Not found', stdout: '-1' }],
   ),
   pg(
     'java-algo-sorting',
@@ -87,12 +87,13 @@ public class Main {
   pg(
     'java-algo-dfs',
     'Practice: DFS',
-    `The graph is a line 0-1-2. Recurse from 0 along index 0 of each neighbor list. Print each node when you first visit it.
+    `Neighbors of 0 are 1 then 2. Neighbors of 1 are 3. DFS from 0, print each node when you first visit it (mark before recurse).
 
 Expected:
 
 0
 1
+3
 2`,
     `import java.util.ArrayList;
 
@@ -106,27 +107,30 @@ public class Main {
         g.add(new ArrayList<Integer>());
         g.add(new ArrayList<Integer>());
         g.add(new ArrayList<Integer>());
+        g.add(new ArrayList<Integer>());
         g.get(0).add(1);
-        g.get(1).add(2);
-        boolean[] seen = new boolean[3];
+        g.get(0).add(2);
+        g.get(1).add(3);
+        boolean[] seen = new boolean[4];
         dfs(g, seen, 0);
     }
 }
 `,
-    [{ name: 'Line DFS', stdout: '0\n1\n2' }],
+    [{ name: 'DFS visit order', stdout: '0\n1\n3\n2' }],
   ),
   pg(
     'java-algo-bfs',
     'Practice: BFS',
-    `The graph is a line 0-1-2. Start a queue at 0. Print each node when you first visit it.
+    `Same graph as you would use for DFS: 0 connects to 1 then 2, 1 connects to 3. BFS from 0. Print each node when you first visit it.
 
 Expected:
 
 0
 1
-2`,
-    `import java.util.ArrayList;
-import java.util.LinkedList;
+2
+3`,
+    `import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Queue;
 
 public class Main {
@@ -135,15 +139,17 @@ public class Main {
         g.add(new ArrayList<Integer>());
         g.add(new ArrayList<Integer>());
         g.add(new ArrayList<Integer>());
+        g.add(new ArrayList<Integer>());
         g.get(0).add(1);
-        g.get(1).add(2);
-        boolean[] seen = new boolean[3];
-        Queue<Integer> q = new LinkedList<Integer>();
+        g.get(0).add(2);
+        g.get(1).add(3);
+        boolean[] seen = new boolean[4];
+        Queue<Integer> q = new ArrayDeque<Integer>();
         // BFS from 0, print visit order
     }
 }
 `,
-    [{ name: 'Line BFS', stdout: '0\n1\n2' }],
+    [{ name: 'BFS visit order', stdout: '0\n1\n2\n3' }],
   ),
   pg(
     'java-algo-backtracking',

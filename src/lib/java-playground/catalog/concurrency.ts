@@ -18,7 +18,7 @@ done`,
                 System.out.println("worker");
             }
         });
-        // start, join, then print done
+        // start t (not run), join, then print done
     }
 }
 `,
@@ -27,39 +27,51 @@ done`,
   pg(
     'java-race-conditions',
     'Practice: synchronized',
-    `Increment the counter 10 times through inc(). Print the value.
+    `Two threads should each call inc() 1000 times on the same Counter. Make inc() safe (synchronized). Join both, then print the total.
 
 Expected:
 
-10`,
+2000`,
     `class Counter {
     int value;
 
-    synchronized void inc() {
+    void inc() {
         value++;
     }
 }
 
 public class Main {
-    public static void main(String[] args) {
-        Counter c = new Counter();
-        for (int i = 0; i < 10; i++) {
-            c.inc();
-        }
-        System.out.println(c.value);
+    public static void main(String[] args) throws Exception {
+        final Counter c = new Counter();
+        Thread a = new Thread(new Runnable() {
+            public void run() {
+                for (int i = 0; i < 1000; i++) {
+                    c.inc();
+                }
+            }
+        });
+        Thread b = new Thread(new Runnable() {
+            public void run() {
+                for (int i = 0; i < 1000; i++) {
+                    c.inc();
+                }
+            }
+        });
+        // start both, join both, print c.value
     }
 }
 `,
-    [{ name: 'Ten increments', stdout: '10' }],
+    [{ name: 'Two threads, 2000', stdout: '2000' }],
   ),
   pg(
     'java-executors',
     'Practice: executor',
-    `Submit a task that prints pool, shut down the executor, then wait for it.
+    `Submit a task that prints pool. After shutdown and wait, print done.
 
 Expected:
 
-pool`,
+pool
+done`,
     `import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -69,33 +81,44 @@ public class Main {
         ExecutorService ex = Executors.newSingleThreadExecutor();
         ex.submit(new Runnable() {
             public void run() {
-                // print pool
+                // print pool from this task
             }
         });
         ex.shutdown();
         ex.awaitTermination(2, TimeUnit.SECONDS);
+        System.out.println("done");
     }
 }
 `,
-    [{ name: 'Single task', stdout: 'pool' }],
+    [{ name: 'Task then done', stdout: 'pool\ndone' }],
   ),
   pg(
     'java-concurrent-collections',
     'Practice: ConcurrentHashMap',
-    `Put "a" -> 1 in the map. Print get("a").
+    `Two threads each put one key into the same ConcurrentHashMap. Join both, then print the size.
 
 Expected:
 
-1`,
+2`,
     `import java.util.concurrent.ConcurrentHashMap;
 
 public class Main {
-    public static void main(String[] args) {
-        ConcurrentHashMap<String, Integer> map = new ConcurrentHashMap<String, Integer>();
-        // put and print
+    public static void main(String[] args) throws Exception {
+        final ConcurrentHashMap<String, Integer> map = new ConcurrentHashMap<String, Integer>();
+        Thread a = new Thread(new Runnable() {
+            public void run() {
+                map.put("a", 1);
+            }
+        });
+        Thread b = new Thread(new Runnable() {
+            public void run() {
+                map.put("b", 1);
+            }
+        });
+        // start both, join both, print map.size()
     }
 }
 `,
-    [{ name: 'Map get', stdout: '1' }],
+    [{ name: 'Two puts', stdout: '2' }],
   ),
 ];

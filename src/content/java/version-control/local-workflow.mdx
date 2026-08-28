@@ -7,46 +7,74 @@ groupLabel: "Version Control with Git & GitHub"
 groupOrder: 10
 order: 3
 difficulty: beginner
-duration: 10 min
-description: ""
+duration: 20 min
+description: init, status, add, commit, and log on this computer — a commit is not a push
 ---
 
-### Working with Git Locally
+### Three places Git cares about
 
-Learn the fundamental Git commands for tracking changes in your robot code. This lesson covers the basic workflow of initializing repositories, tracking files, and saving changes.
+1. **Working tree** — the files you edit
+2. **Staging area** — the exact changes you chose for the next snapshot
+3. **Repository** — the commits, stored in a hidden `.git` folder
 
-### Key Concepts
+A **commit** is a snapshot in the repository on **this computer**. It does not publish anything. Sending commits to GitHub is **push**, in [GitHub and Remote Repositories](/java/github-remotes).
 
-Git repositories store project history and metadata in a hidden .git folder. The working directory contains your current files that you can see and edit. The staging area prepares changes for commit by allowing you to select which modifications to include. The repository history contains all committed changes and serves as a complete timeline of your project. Each commit creates a snapshot of your code at that specific moment in time.
+**Clone** (copy an existing GitHub repo) also waits until remotes. This lesson starts from an empty folder.
 
-### Basic Git Workflow
+### One throwaway repo
 
-The typical Git workflow starts with initializing a repository using git init or cloning an existing one with git clone. You then check the status of your files with git status to see which files have been modified. When you're ready to save changes, you stage them using git add to prepare files for commit. Finally, you commit changes with `git commit -m "descriptive message"` and can view the history with git log.
+In a terminal, pick a folder that is **not** your competition robot.
 
-### Essential Commands
-
-Here are the most important Git commands you'll use:
-
-
-
-```java
-git init          # Create new repository
-git clone         # Copy existing repository
-git status        # Check file states
-git add           # Stage files for commit
-git commit        # Save staged changes
-git log           # View commit history
-git diff          # See changes between commits
+```
+mkdir git-practice
+cd git-practice
+git init
 ```
 
-### Understanding the Three Areas of Git
+Create a file named `notes.txt` with one line of text (any editor). Then:
 
-Git operates in three main areas that work together to manage your code. The working directory is where you actually edit your files - this is your normal file system where you make changes to your robot code. The staging area (also called the index) is where you prepare changes for commit by selecting which modifications to include in your next commit. The repository contains all the committed snapshots of your project, creating a complete history of your development work. Understanding how these three areas interact is crucial for effective version control.
+```
+git status
+git add notes.txt
+git status
+git commit -m "Add practice notes"
+git log
+```
+
+After `git add`, status shows the file as staged. After `commit`, status is clean and `git log` shows your message.
+
+`git add .` stages every change in the folder. Prefer naming the file until you know what `.` will include.
+
+```
+git diff
+```
+
+shows unstaged edits. `git diff --staged` shows what is already staged.
+
+<RulesBox title="Commit vs save vs push">
+
+- Save in the editor: the file on disk changed. Git does not know yet
+- `git add` then `git commit`: Git recorded a snapshot locally
+- `git push`: that snapshot goes to GitHub. You have not done this yet
+
+If you only save, teammates cannot see the change, and you have no commit to revert to.
+
+</RulesBox>
+
+<ExerciseBox title="Practice on a throwaway folder">
+
+1. `git init` in a new folder.
+2. Add a file, `git add` it, `git commit -m "First commit"`.
+3. Change the file, run `git status`. You should see it modified.
+4. Commit again. `git log` should show two commits.
+5. After the second commit, `git status` should say there is nothing to commit.
+
+Do not run this on the team robot repo until you are comfortable.
+
+</ExerciseBox>
 
 <LinkGrid links={[
-    {"label":"GitHub Guides","url":"https://guides.github.com/introduction/flow/"},
-    {"label":"HubSpot Git Tutorial: Basic Commands","url":"https://product.hubspot.com/blog/git-and-github-tutorial-for-beginners"},
-    {"label":"Git Documentation: Getting Started","url":"https://git-scm.com/book/en/v2/Getting-Started-About-Version-Control"},
-    {"label":"Git Cheat Sheet","url":"https://education.github.com/git-cheat-sheet-education.pdf"}
-  ]} title="Further Reading Resources" section="java" />
-
+    {"label":"Branching and Merging","id":"branching-merging"},
+    {"label":"GitHub and Remote Repositories","id":"github-remotes"},
+    {"label":"Git cheat sheet","url":"https://education.github.com/git-cheat-sheet-education.pdf"}
+  ]} title="Next" section="java" />

@@ -77,9 +77,7 @@ Length: 6
 16
 23
 42
-Sum: 108
-
-You can use the input box below when you click Run (for Scanner practice). Check uses the hidden test, not that box.`,
+Sum: 108`,
     main(`        int[] values = {4, 8, 15, 16, 23, 42};
         // Print length, each element, then the sum`),
     [
@@ -88,6 +86,5 @@ You can use the input box below when you click Run (for Scanner practice). Check
         stdout: 'Length: 6\n4\n8\n15\n16\n23\n42\nSum: 108',
       },
     ],
-    true,
   ),
 ];

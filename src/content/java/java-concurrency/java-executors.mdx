@@ -11,6 +11,12 @@ duration: 30 min
 description: Submitting tasks to a managed pool instead of creating threads by hand, collecting results with Future, and shutting down cleanly.
 ---
 
+<RulesBox title="Optional later">
+
+A pool in teleop is the same smell as a raw `Thread`. Prefer the framework loop. A pool is for off-loop work such as image processing, not motor output. `newVirtualThreadPerTaskExecutor()` is Java 21+ and will not compile in this playground (Java 8).
+
+</RulesBox>
+
 ### The problem with new Thread()
 
 Creating a thread is expensive — it allocates a stack and asks the operating system for a scheduling resource. Doing it per task wastes most of the time on setup:

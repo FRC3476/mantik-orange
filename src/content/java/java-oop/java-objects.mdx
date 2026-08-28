@@ -7,436 +7,100 @@ groupLabel: Object-Oriented Programming
 groupOrder: 4
 order: 2
 difficulty: intermediate
-duration: 40 min
-description: ""
+duration: 25 min
+description: Creating more than one object from a class, each with its own field values
 ---
 
-### Creating and Using Objects
+### More than one from the same class
 
-Objects are **instances** of classes - they are the actual entities created from the class blueprint. You create objects using the `new` keyword followed by a constructor call. Each object has its own unique state (variable values) but shares the same behavior (methods) defined by its class.
+A class is the recipe. Each `new` makes a **different** object. Two robots can share the same methods and still hold different names and battery values.
 
-### Object Instantiation:
+That is the reason to use objects: you are not copying a new set of variables for every robot.
 
 ```java
-class FRCRobot {
-    private String name;
-    private int teamNumber;
-    private double batteryLevel = 100.0;
-    private boolean active = false;
+class Bot {
+    String name;
+    int battery = 100;
 
-    FRCRobot(String name, int teamNumber) {
+    Bot(String name) {
         this.name = name;
-        this.teamNumber = teamNumber;
     }
 
-    void setBatteryLevel(double level) { batteryLevel = level; }
-    void activate() {
-        active = true;
-        System.out.println(name + " activated");
-    }
-    void runDiagnostics() {
-        System.out.println(name + " diagnostics: battery " + batteryLevel + "%");
-    }
-    public String toString() {
-        return name + " (Team " + teamNumber + ") battery " + batteryLevel
-            + "%" + (active ? " active" : " inactive");
+    void drain(int amount) {
+        battery = battery - amount;
     }
 }
 
-// Creating objects from a class
-FRCRobot robot1 = new FRCRobot("CompetitionBot", 12345);
-FRCRobot robot2 = new FRCRobot("PracticeBot", 67890);
-FRCRobot robot3 = new FRCRobot("BackupBot", 11111);
-
-// Each object has its own state
-robot1.setBatteryLevel(95.0);
-robot2.setBatteryLevel(60.0);
-robot3.setBatteryLevel(100.0);
-
-// All objects share the same methods
-robot1.activate();
-robot2.activate();
-robot3.runDiagnostics();
-
-System.out.println(robot1);  // Uses toString method
-System.out.println(robot2);
-System.out.println(robot3);
-```
-
-### Object State and Behavior
-
-Each object maintains its own **state** through its instance variables, while all objects of the same class share the same **behavior** through their methods. Think of it like multiple robots built from the same blueprint - they all have the same capabilities, but each has its own current settings and status.
-
-### Multiple Objects Example:
-
-```java
-class FRCRobot {
-    private String name;
-    private int teamNumber;
-    private double batteryLevel = 100.0;
-    private int maxSpeed = 50;
-    private int liftCapacity = 0;
-    private boolean precisionMode = false;
-    private boolean active = false;
-
-    FRCRobot(String name, int teamNumber) {
-        this.name = name;
-        this.teamNumber = teamNumber;
-    }
-
-    void setMaxSpeed(int speed) { maxSpeed = speed; }
-    void setBatteryLevel(double level) { batteryLevel = level; }
-    void setLiftCapacity(int capacity) { liftCapacity = capacity; }
-    void enablePrecisionMode(boolean enabled) { precisionMode = enabled; }
-    void activate() {
-        active = true;
-        System.out.println(name + " activated");
-    }
-    void moveForward(int distance) {
-        System.out.println(name + " moving forward " + distance + " at speed " + maxSpeed);
-    }
-    void liftObject() {
-        System.out.println(name + " lifting with capacity " + liftCapacity);
-    }
-    void moveToCoordinate(double x, double y) {
-        System.out.println(name + " moving to (" + x + ", " + y + ")"
-            + (precisionMode ? " (precision)" : ""));
-    }
-    public String toString() {
-        return name + " (Team " + teamNumber + ") battery " + batteryLevel
-            + "% speed " + maxSpeed + (active ? " active" : " inactive");
-    }
-}
-
-public class RobotDemo {
+public class Main {
     public static void main(String[] args) {
-        // Create three different robot objects
-        FRCRobot speedBot = new FRCRobot("SpeedBot", 1001);
-        FRCRobot strongBot = new FRCRobot("StrongBot", 1002);
-        FRCRobot precisionBot = new FRCRobot("PrecisionBot", 1003);
-        
-        // Each robot can have different configurations
-        speedBot.setMaxSpeed(100);
-        speedBot.setBatteryLevel(85);
-        
-        strongBot.setMaxSpeed(60);
-        strongBot.setBatteryLevel(95);
-        strongBot.setLiftCapacity(50);
-        
-        precisionBot.setMaxSpeed(40);
-        precisionBot.setBatteryLevel(90);
-        precisionBot.enablePrecisionMode(true);
-        
-        // All robots can perform the same actions
-        speedBot.activate();
-        strongBot.activate();
-        precisionBot.activate();
-        
-        // But their behavior might differ based on their state
-        speedBot.moveForward(10);    // Moves fast
-        strongBot.liftObject();      // Uses high lift capacity
-        precisionBot.moveToCoordinate(15.5, 22.3);  // Precise movement
-        
-        // Display each robot's current state
-        System.out.println(speedBot);
-        System.out.println(strongBot);
-        System.out.println(precisionBot);
+        Bot alpha = new Bot("Alpha");
+        Bot beta = new Bot("Beta");
+
+        alpha.drain(20);
+
+        System.out.println(alpha.name + " " + alpha.battery);
+        System.out.println(beta.name + " " + beta.battery);
     }
 }
 ```
 
-### Understanding Object References
+`alpha.drain(20)` changes only Alpha. Beta still has 100. Same class, two states.
 
-In Java, variables don't actually contain objects - they contain **references** to objects. A reference is like a remote control that points to an object in memory. This means multiple variables can reference the same object, and changing the object through one reference affects all other references to that same object.
+### What to print
 
-### Object References Explained:
+`System.out.println(alpha)` without extra work prints a class name and a memory id, which is not useful. Print fields (`alpha.name`) or write a method that returns a string of those fields. `toString` is a later convenience, not required here.
 
-```java
-class FRCRobot {
-    private String name;
-    private int teamNumber;
-    private double batteryLevel = 100.0;
-    private int maxSpeed = 50;
-    private boolean active = false;
+<RulesBox title="Stay on this lesson">
 
-    FRCRobot(String name, int teamNumber) {
-        this.name = name;
-        this.teamNumber = teamNumber;
-    }
-
-    void setBatteryLevel(double level) { batteryLevel = level; }
-    double getBatteryLevel() { return batteryLevel; }
-    void setMaxSpeed(int speed) { maxSpeed = speed; }
-    int getMaxSpeed() { return maxSpeed; }
-    void activate() { active = true; }
-}
-
-// Create one robot object
-FRCRobot mainRobot = new FRCRobot("TeamBot", 12345);
-
-// Create another reference to the SAME robot object
-FRCRobot robotAlias = mainRobot;
-
-// Both variables point to the same object
-mainRobot.setBatteryLevel(75);
-System.out.println(robotAlias.getBatteryLevel());  // Prints 75!
-
-// Changes through either reference affect the same object
-robotAlias.setMaxSpeed(80);
-System.out.println(mainRobot.getMaxSpeed());  // Prints 80!
-
-// Comparing references vs. creating new objects
-FRCRobot robot1 = new FRCRobot("Bot1", 1111);
-FRCRobot robot2 = new FRCRobot("Bot2", 2222);
-FRCRobot robot3 = robot1;  // Same reference as robot1
-
-System.out.println(robot1 == robot2);  // false (different objects)
-System.out.println(robot1 == robot3);  // true (same object)
-System.out.println(robot2 == robot3);  // false (different objects)
-
-// null reference - doesn't point to any object
-FRCRobot nullRobot = null;
-if (nullRobot != null) {
-    nullRobot.activate();  // This would cause NullPointerException!
-} else {
-    System.out.println("Robot reference is null");
-}
-```
-
-<RulesBox title="Object Reference Rules:" subtitle="Important Concepts to Remember:">
-
-- **References vs Objects:** Variables store references, not the actual objects
-- **Multiple References:** Many variables can reference the same object
-- **Null References:** A reference can be null (not pointing to any object)
-- **== vs .equals():** == compares references, .equals() compares object content
-- **Shared State:** Changes through any reference affect the same object
+- Two (or three) objects, change one, print both
+- Do not worry yet whether two variables point at the **same** object. That is [Objects and References](/java/java-objects-references)
+- `==` on objects compares identity, not “same name.” Wait for the references lesson
 
 </RulesBox>
 
-### Objects as Method Parameters
-
-Objects can be passed as parameters to methods. When you pass an object to a method, you're actually passing a reference to that object. This means the method can modify the object's state, and those changes will be visible outside the method.
-
-### Objects as Parameters:
-
-```java
-class FRCRobot {
-    private String name;
-    private double batteryLevel = 100.0;
-    private int maxSpeed = 50;
-    private boolean active = false;
-
-    FRCRobot(String name, int teamNumber) { this.name = name; }
-
-    String getName() { return name; }
-    void setBatteryLevel(double level) { batteryLevel = level; }
-    double getBatteryLevel() { return batteryLevel; }
-    void setMaxSpeed(int speed) { maxSpeed = speed; }
-    void enableCompetitionMode(boolean enabled) { }
-    void enableSafetyLimits(boolean enabled) { }
-    void activate() { active = true; }
-    boolean isActive() { return active; }
-    void returnToBase() { System.out.println(name + " returning to base"); }
-}
-
-public class RobotManager {
-    
-    // Method that takes robot objects as parameters
-    public void initializeRobot(FRCRobot robot, String configuration) {
-        System.out.println("Initializing " + robot.getName() + " with " + configuration);
-        
-        robot.setBatteryLevel(100);  // Modify the robot object
-        robot.activate();
-        
-        if (configuration.equals("competition")) {
-            robot.setMaxSpeed(90);
-            robot.enableCompetitionMode(true);
-        } else if (configuration.equals("practice")) {
-            robot.setMaxSpeed(60);
-            robot.enableSafetyLimits(true);
-        }
-        
-        System.out.println("Robot initialization complete");
-    }
-    
-    // Method that compares two robot objects
-    public void compareRobots(FRCRobot robot1, FRCRobot robot2) {
-        System.out.println("Comparing robots:");
-        System.out.println(robot1.getName() + " vs " + robot2.getName());
-        
-        if (robot1.getBatteryLevel() > robot2.getBatteryLevel()) {
-            System.out.println(robot1.getName() + " has higher battery");
-        } else if (robot1.getBatteryLevel() < robot2.getBatteryLevel()) {
-            System.out.println(robot2.getName() + " has higher battery");
-        } else {
-            System.out.println("Both robots have equal battery levels");
-        }
-    }
-    
-    // Method that works with an array of robot objects
-    public void manageRobotTeam(FRCRobot[] robotTeam) {
-        System.out.println("Managing team of " + robotTeam.length + " robots:");
-        
-        for (int i = 0; i < robotTeam.length; i++) {
-            FRCRobot robot = robotTeam[i];
-            
-            if (robot != null) {
-                if (robot.getBatteryLevel() < 30) {
-                    System.out.println("⚠️ " + robot.getName() + " needs charging!");
-                    robot.returnToBase();
-                } else if (!robot.isActive()) {
-                    System.out.println("▶️ Activating " + robot.getName());
-                    robot.activate();
-                } else {
-                    System.out.println("✅ " + robot.getName() + " is ready");
-                }
-            } else {
-                System.out.println("❌ Robot slot " + i + " is empty (null)");
-            }
-        }
-    }
-}
-
-RobotManager manager = new RobotManager();
-FRCRobot alpha = new FRCRobot("Alpha", 1);
-FRCRobot beta = new FRCRobot("Beta", 2);
-alpha.setBatteryLevel(20);
-beta.setBatteryLevel(80);
-manager.initializeRobot(alpha, "competition");
-manager.initializeRobot(beta, "practice");
-manager.compareRobots(alpha, beta);
-manager.manageRobotTeam(new FRCRobot[] { alpha, beta, null });
-```
-
 <JavaPlayground id="java-objects" />
 
-<ExerciseBox title="Practice">
+<ExerciseBox title="Practice" answers={[{"task":"Two bots","content":"class Bot {\n    String name;\n\n    Bot(String name) {\n        this.name = name;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Bot a = new Bot(\"Alpha\");\n        Bot b = new Bot(\"Beta\");\n        System.out.println(a.name);\n        System.out.println(b.name);\n    }\n}"},{"task":"Change one battery","content":"class Bot {\n    String name;\n    int battery = 100;\n\n    Bot(String name) {\n        this.name = name;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Bot a = new Bot(\"Alpha\");\n        Bot b = new Bot(\"Beta\");\n        a.battery = 40;\n        System.out.println(a.name + \" \" + a.battery);\n        System.out.println(b.name + \" \" + b.battery);\n    }\n}"}]}>
 
-Fill in each starter, click Run, then compare with the hints if you get stuck.
+Fill in each starter, click Run, then open Show Answers when you want to compare.
 
-1. Write a Robot class with a name. Create two and print both names.
+- Create two Bot objects named Alpha and Beta. Print each name.
 
 ```java
-class Robot {
+class Bot {
     String name;
 
-    Robot(String name) {
-        // TODO: store the name
+    Bot(String name) {
+        // Store the name
     }
 }
 
 public class Main {
     public static void main(String[] args) {
-        Robot a = new Robot("Alpha");
-        Robot b = new Robot("Beta");
-        System.out.println(a.name);
-        System.out.println(b.name);
+        // Two Bot objects. Print both names.
     }
 }
 ```
 
-2. Write activate(Robot r) that prints the name; call it twice.
+- Give each Bot a battery field. Change only Alpha’s battery. Print both.
 
 ```java
-class Robot {
+class Bot {
     String name;
+    int battery = 100;
 
-    Robot(String name) {
-        this.name = name;
-    }
-}
-
-public class Main {
-    static void activate(Robot r) {
-        // TODO: print the robot's name
-    }
-
-    public static void main(String[] args) {
-        Robot a = new Robot("Alpha");
-        Robot b = new Robot("Beta");
-        activate(a);
-        activate(b);
-    }
-}
-```
-
-3. Store three robots in an array; loop and print names.
-
-```java
-class Robot {
-    String name;
-
-    Robot(String name) {
+    Bot(String name) {
         this.name = name;
     }
 }
 
 public class Main {
     public static void main(String[] args) {
-        Robot a = new Robot("Alpha");
-        Robot b = new Robot("Beta");
-        Robot c = new Robot("Gamma");
-        Robot[] team = new Robot[3];
-        // TODO: store all three in the array, then loop and print names
+        Bot a = new Bot("Alpha");
+        Bot b = new Bot("Beta");
+        // Change only a.battery, then print both names and batteries
     }
 }
 ```
-
-4. Put null in one slot and skip it safely.
-
-```java
-class Robot {
-    String name;
-
-    Robot(String name) {
-        this.name = name;
-    }
-}
-
-public class Main {
-    public static void main(String[] args) {
-        Robot[] team = new Robot[3];
-        team[0] = new Robot("Alpha");
-        team[1] = null;
-        team[2] = new Robot("Gamma");
-        // TODO: loop and print names, skipping null slots
-    }
-}
-```
-
-5. Print whether two robots are the same object (`==`) vs same name.
-
-```java
-class Robot {
-    String name;
-
-    Robot(String name) {
-        this.name = name;
-    }
-}
-
-public class Main {
-    public static void main(String[] args) {
-        Robot a = new Robot("Alpha");
-        Robot b = new Robot("Alpha");
-        Robot same = a;
-        // TODO: print a == b
-        // TODO: print a == same
-        // TODO: print whether a and b have the same name
-    }
-}
-```
-
-<details>
-<summary>Hints</summary>
-
-1. The constructor should assign `this.name`. Main already prints both objects.
-2. Use the parameter `r` inside `activate`. Main already calls it twice.
-3. `team[0] = a;` and so on, then a `for` loop over `team`.
-4. Check `team[i] != null` before you print.
-5. `==` tests the same object in memory. Compare names with `.equals`.
-
-</details>
 
 </ExerciseBox>
-

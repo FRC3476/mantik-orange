@@ -7,32 +7,47 @@ groupLabel: "Version Control with Git & GitHub"
 groupOrder: 10
 order: 1
 difficulty: beginner
-duration: 10 min
-description: ""
+duration: 15 min
+description: Why a robotics team records history of the code, and how Git differs from GitHub
 ---
 
-### What is Version Control?
+### A history of the robot code
 
-Version control is a system that tracks changes to files over time, allowing you to recall specific versions later. Think of it as a time machine for your code that saves snapshots of your work at different points.
+**Version control** is a record of snapshots of your files. Each snapshot is a **commit**. You can see what changed, go back to a working teleop, and work next to someone else without emailing zip files.
 
-### Key Concepts
+This module sits last in the Java sidebar so it does not interrupt learning the language. If two people already share a robot repo, start here now. You do not need concurrency first.
 
-Version control tracks file changes and maintains a history of all modifications. It enables collaboration between multiple developers by allowing them to work on the same project simultaneously. The system allows you to undo mistakes and revert to previous versions when something goes wrong. It also provides a backup system for your code, ensuring that your work is never lost. Version control is essential for team-based software development and is used by virtually every professional development team.
+### A short story
 
-<RulesBox title="Why Version Control Matters for FTC">
+Two programmers edit autonomous. One change breaks the park. Yesterday’s code still worked. With version control you check out yesterday’s commit and the robot parks again. Without it, you hope someone has a copy on a laptop.
 
-Version control is especially important for FTC teams because it enables multiple team members to work on robot code simultaneously, track changes to autonomous routines and teleop programs, revert to working code if new changes break functionality, maintain a history of robot improvements over the season, and collaborate on code reviews and improvements.
+That is the purpose: undo, history, and sharing.
+
+### Git vs GitHub
+
+- **Git** runs on your computer. It stores the history in a hidden `.git` folder.
+- **GitHub** is a website that hosts a copy of that history so the team can push, pull, and review.
+
+You can use Git with no GitHub. You cannot use GitHub as a substitute for Git — the site talks to Git.
+
+**Commit** saves a snapshot on **this** computer. **Push** (next lessons) sends commits to GitHub. Saving in your editor is not a commit.
+
+<RulesBox title="FTC and FRC">
+
+The same Git workflow applies to both. FTC Android Studio and FRC WPILib VS Code are editors on top of a Git repo. This course teaches the Git ideas; your team’s IDE has buttons for the same commands.
+
+If your team already cloned a GitHub organization repo, you are already using this. The next lessons name the commands.
 
 </RulesBox>
 
-### Understanding Version Control Systems
+<ExerciseBox title="Before you install Git">
 
-Version control systems work by creating a complete history of changes to your files. Every time you make a change and commit it, the system stores a snapshot of your entire project at that moment. This creates a timeline of your development process, allowing you to see exactly what changed, when it changed, and who made the changes. Modern version control systems like Git are distributed, meaning every team member has a complete copy of the project history, making collaboration much more efficient and reliable.
+- If the laptop with robot code were lost tonight, what would the team still have?
+- Open the team repo on GitHub if you have one. Find the newest commit message. That message is the history you are about to learn to write.
+
+</ExerciseBox>
 
 <LinkGrid links={[
-    {"label":"GitHub Guides: Getting Started","url":"https://guides.github.com/activities/hello-world/"},
-    {"label":"HubSpot Git Tutorial for Beginners","url":"https://product.hubspot.com/blog/git-and-github-tutorial-for-beginners"},
-    {"label":"GitHub Education Student Pack","url":"https://education.github.com/pack"},
-    {"label":"FTC Programming Resources","url":"https://ftc-docs.firstinspires.org/en/latest/programming_resources/index.html"}
-  ]} title="Further Reading Resources" section="java" />
-
+    {"label":"Installing and Setting Up Git","id":"install-git"},
+    {"label":"Local Git Workflow","id":"local-workflow"}
+  ]} title="Next" section="java" />

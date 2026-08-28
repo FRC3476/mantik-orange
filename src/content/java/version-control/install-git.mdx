@@ -7,47 +7,80 @@ groupLabel: "Version Control with Git & GitHub"
 groupOrder: 10
 order: 2
 difficulty: beginner
-duration: 30 min
-description: ""
+duration: 25 min
+description: Installing Git, checking the version, and setting the name and email on commits
 ---
 
-### Getting Git on Your System
+### Install Git, then identify yourself
 
-Before you can start using version control, you need to install Git on your computer. This lesson will guide you through the installation process for Windows, Mac, and Linux systems.
+Git must be on the computer before you can commit. After install you set a **name** and **email**. Every commit records those, so the team can see who changed auto.
 
-### Key Concepts
+Use the email on your GitHub account if you have one. GitHub matches commits to you that way.
 
-Git installation varies by operating system, with different installation methods for Windows, Mac, and Linux. Initial configuration requires setting up your user identity so Git knows who is making changes. GitHub Desktop provides a graphical alternative for those who prefer a visual interface over command line tools. Command line Git offers more advanced features and is the standard for professional development. Proper setup ensures smooth collaboration and prevents authentication issues later.
+If this computer cannot install software, ask a mentor for GitHub Desktop on a team laptop, or use a machine that already has Git. Chromebooks and locked lab PCs often cannot run Git locally — use a different computer for this module.
 
-### Installation Steps
+### Check, then install
 
-- Check if Git is already installed (`git --version`)
-- Download Git from the official website for your OS
-- Install with default settings for beginners
-- Verify installation with `git --version` command
-- Install GitHub Desktop for GUI alternative
+In a terminal:
 
-### Initial Git Configuration
-
-After installing Git, you need to configure your identity. Use these commands to set up your username and email:
-
-
-
-```java
-git config <code>--global</code> user.name "Your Name"
-git config <code>--global</code> user.email "your.email@example.com"
-<code>git config --list</code>
+```
+git --version
 ```
 
-### Git Configuration Explained
+If you see a version number, skip to configuration.
 
-Git configuration is essential because it tells Git who you are when you make commits. The user.name and user.email settings are used to identify the author of each commit in the project history. The `--global` flag applies these settings to all your Git repositories on this computer. You can also set repository-specific configurations using the same commands without the `--global` flag. The `git config --list` command shows all your current Git settings, helping you verify that everything is configured correctly.
+<StepsBox title="Windows">
+
+1. Download the installer from [git-scm.com](https://git-scm.com/download/win).
+2. Run it. Default options are fine for this course. If you see “Git from the command line,” keep that enabled.
+3. Close and reopen the terminal. Run `git --version` again.
+
+</StepsBox>
+
+<StepsBox title="macOS">
+
+1. Open Terminal and run `git --version`. macOS may prompt to install developer tools. Accept that, or install Git from [git-scm.com](https://git-scm.com/download/mac).
+2. Confirm `git --version` prints a number.
+
+</StepsBox>
+
+<StepsBox title="Linux">
+
+Use your package manager, for example `sudo apt install git` on Debian/Ubuntu. Then `git --version`.
+
+</StepsBox>
+
+### Name and email
+
+These commands set identity for **all** repos on this computer (`--global`):
+
+```
+git config --global user.name "Your Name"
+git config --global user.email "you@example.com"
+git config --list
+```
+
+`--list` should show the name and email you just set. To set identity for one repo only, leave off `--global` and run the commands inside that repo.
+
+<RulesBox title="HTTPS first">
+
+When you talk to GitHub from school networks, **HTTPS** is usually easier than SSH keys. SSH is optional later. [GitHub and Remote Repositories](/java/github-remotes) covers remotes.
+
+[GitHub Desktop](/java/github-desktop) is a click-based alternative to the terminal. It still uses real Git commits. You can install it after this lesson if you prefer a GUI.
+
+Students with a school `.edu` address can use the [GitHub Student Developer Pack](https://education.github.com/pack) for private repos. That is optional.
+
+</RulesBox>
+
+<ExerciseBox title="Check your setup">
+
+1. Run `git --version`. Write down the version.
+2. Run `git config user.name` and `git config user.email`. Confirm they are your name and GitHub email, not empty and not a teammate’s.
+
+</ExerciseBox>
 
 <LinkGrid links={[
-    {"label":"Git Installation Guide","url":"https://git-scm.com/book/en/v2/Getting-Started-Installing-Git"},
-    {"label":"GitHub Desktop Download","url":"https://desktop.github.com/"},
-    {"label":"GitHub Education Student Pack","url":"https://education.github.com/pack"},
-    {"label":"Git Configuration Documentation","url":"https://git-scm.com/book/en/v2/Customizing-Git-Git-Configuration"},
-    {"label":"FTC Android Studio Setup","url":"https://ftc-docs.firstinspires.org/en/latest/programming_resources/android_studio/index.html"}
-  ]} title="Further Reading Resources" section="java" />
-
+    {"label":"Local Git Workflow","id":"local-workflow"},
+    {"label":"Using GitHub Desktop","id":"github-desktop"},
+    {"label":"Git install docs","url":"https://git-scm.com/book/en/v2/Getting-Started-Installing-Git"}
+  ]} title="Next" section="java" />

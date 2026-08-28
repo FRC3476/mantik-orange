@@ -5,29 +5,32 @@ export const FUNCTIONS: JavaPlaygroundExercise[] = [
   pg(
     'java-fn-functions-as-data',
     'Practice: functions as data',
-    `Store a Printer in a variable and call print(). Print hello.
+    `Print numbers from the list that pass a Test (value greater than 5). Use an anonymous class that implements Test. Do not use a lambda.
 
 Expected:
 
-hello`,
-    `interface Printer {
-    void print();
-}
-
-class HelloPrinter implements Printer {
-    public void print() {
-        // print hello
-    }
+12
+8`,
+    `interface Test {
+    boolean ok(int n);
 }
 
 public class Main {
+    static void printPassing(int[] values, Test test) {
+        for (int i = 0; i < values.length; i++) {
+            if (test.ok(values[i])) {
+                System.out.println(values[i]);
+            }
+        }
+    }
+
     public static void main(String[] args) {
-        Printer p = new HelloPrinter();
-        p.print();
+        int[] values = {3, 12, 8};
+        // pass an anonymous Test that is true when n > 5
     }
 }
 `,
-    [{ name: 'Call through interface', stdout: 'hello' }],
+    [{ name: 'Filter through Test', stdout: '12\n8' }],
   ),
   pg(
     'java-fn-lambdas',
@@ -68,8 +71,8 @@ public class Main {
     }
 
     public static void main(String[] args) {
-        Fn f = Main::hello;
-        f.run();
+        Fn f = null;
+        // TODO: point f at Main.hello with a method reference, then f.run()
     }
 }
 `,
@@ -78,20 +81,26 @@ public class Main {
   pg(
     'java-fn-supplier',
     'Practice: Supplier',
-    `Make a Supplier<String> that returns ready. Print get().
+    `Make a Supplier that reads box.n each time get() is called. Set box.n to 2, then print s.get().
 
 Expected:
 
-ready`,
+2`,
     `import java.util.function.Supplier;
+
+class Box {
+    int n = 1;
+}
 
 public class Main {
     public static void main(String[] args) {
+        final Box box = new Box();
         Supplier<String> s = () -> "";
+        box.n = 2;
         System.out.println(s.get());
     }
 }
 `,
-    [{ name: 'Supplier get', stdout: 'ready' }],
+    [{ name: 'Live supplier', stdout: '2' }],
   ),
 ];

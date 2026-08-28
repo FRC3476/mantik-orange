@@ -135,6 +135,14 @@ FRCRobot robot3 = new FRCRobot("PowerBot", 67890, "Swerve", 85.5);
 
 </RulesBox>
 
+<RulesBox title="Overload vs override">
+
+**Overload:** same class, same method name, **different** parameter lists. The compiler picks which one. That is this lesson.
+
+**Override:** a subclass replaces a method that already has the **same** name and parameters. That is [Inheritance](/java/java-inheritance).
+
+</RulesBox>
+
 ### Method Overloading
 
 Just like constructors, methods can be overloaded to provide different ways of performing the same operation. This is extremely useful in robotics for creating flexible movement, sensor reading, and control methods.
@@ -280,16 +288,8 @@ public class FRCDrivetrain {
     public void driveForTime(double forward, double strafe, double rotate, double seconds) {
         System.out.printf("Driving for %.1f seconds...\n", seconds);
         this.drive(forward, strafe, rotate);
-        
-        // Simulate time delay
-        try {
-            Thread.sleep((long)(seconds * 1000));
-        } catch (InterruptedException e) {
-            System.out.println("Drive interrupted");
-        }
-        
-        this.drive(0, 0, 0);  // Stop
-        System.out.println("✅ Timed drive complete");
+        System.out.println("Would wait " + seconds + " seconds, then stop");
+        this.drive(0, 0, 0);
     }
 }
 

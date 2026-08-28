@@ -7,96 +7,97 @@ groupLabel: Object-Oriented Programming
 groupOrder: 4
 order: 1
 difficulty: intermediate
-duration: 20 min
-description: ""
+duration: 25 min
+description: A class as a recipe for objects, fields, constructors, and this
 ---
 
-### Introduction to Object-Oriented Programming
+### A recipe, not the robot
 
-Object-oriented programming is concerned with isolating concepts of a problem domain into separate entities and then using those entities to solve problems. In FRC robotics, we can think of concepts like 'Robot', 'Motor', 'Sensor', and 'GameController' as separate entities that work together to create a complete robot system.
+A **class** is a recipe. It lists the data an object will hold (**fields**) and the actions it can take (**methods**).
 
-### Classes and Objects: The Blueprint Analogy
+An **object** is one thing built from that recipe. `new` is how you build it.
 
-A **class** defines the attributes of objects (the information related to them) and their commands (their methods). Think of a class as a blueprint for a house. The blueprint specifies what kinds of houses can be built from it - the number of rooms, the materials, the layout. Similarly, a class specifies what kinds of objects can be created from it.
-
-### Real-World Example:
+You already used classes Java provides (`String`, later `ArrayList`). Here you write your own so related data stays together — a team member’s name and role, a counter’s value — instead of a pile of loose variables.
 
 ```java
-class FRCRobot {
-    private final String name;
-    FRCRobot(String name) { this.name = name; }
-    void initializeHardware() { System.out.println(name + " hardware ready"); }
-    void startAutonomous() { System.out.println(name + " autonomous started"); }
+class Counter {
+    int value;
+
+    Counter() {
+        value = 0;
+    }
+
+    void add(int n) {
+        value = value + n;
+    }
+
+    int get() {
+        return value;
+    }
 }
 
-// Just like ArrayList is a class provided by Java:
-ArrayList<Integer> integers = new ArrayList<>();
-integers.add(15);
-integers.add(34);
-integers.add(65);
-integers.add(111);
-System.out.println(integers.size());
-
-// We can create our own classes for robotics:
-FRCRobot competitionBot = new FRCRobot("TeamBot");
-competitionBot.initializeHardware();
-competitionBot.startAutonomous();
-```
-
-### The Relationship Between a Class and an Object
-
-Individual objects are all created based on the same class blueprint - they're **instances** of the same class. The states of individual objects (their attributes like motor power, sensor readings, team number) may all vary, however. Each object has its own unique state while sharing the same structure defined by the class.
-
-### Creating Our Own Classes
-
-A class specifies what objects instantiated from it are like. The object's **instance variables** specify the internal state of the object, and the object's **methods** specify what the object does. Let's create a class to represent an FRC robot team member.
-
-### Basic Class Structure:
-
-```java
-public class TeamMember {
-    // Instance variables (attributes)
-    private String name;
-    private int age;
-    private String role;
-    
-    // Constructor
-    public TeamMember(String memberName) {
-        this.name = memberName;
-        this.age = 0;
-        this.role = "Student";
-    }
-    
-    // Methods (behaviors)
-    public void assignRole(String newRole) {
-        this.role = newRole;
-        System.out.println(name + " is now the " + newRole);
-    }
-    
-    public String getName() {
-        return this.name;
+public class Main {
+    public static void main(String[] args) {
+        Counter c = new Counter();
+        c.add(1);
+        c.add(2);
+        System.out.println(c.get());
     }
 }
 ```
 
-### Instance Variables and Encapsulation
+The class is `Counter`. `c` is one object. `c.add(1)` runs `add` on **that** object’s `value`.
 
-Variables defined inside a class are called **instance variables**, object fields, or object attributes. Each variable is preceded by the keyword `private`, which means the variables are 'hidden' inside the object. This is known as **encapsulation** - a fundamental principle of object-oriented programming.
+### Constructors
 
-<JavaPlayground id="java-classes" />
+A **constructor** is the method that runs when you write `new Counter()`. Its name matches the class. It has no return type.
 
-<ExerciseBox title="Practice">
+Use it to give fields their first values.
 
-Fill in each starter, click Run, then compare with the hints if you get stuck.
+### this
 
-1. Write a TeamMember class with a name field and constructor. Create one and print the name.
+Inside the class, `this` means **the object on the left of the dot**.
+
+You need it when a parameter has the same name as a field:
 
 ```java
 class TeamMember {
     String name;
 
     TeamMember(String name) {
-        // TODO: store the name
+        this.name = name;  // field = parameter
+    }
+}
+```
+
+Without `this`, `name = name` would assign the parameter to itself and leave the field untouched.
+
+<RulesBox title="Class vs object">
+
+The class is shared. Each `new` makes a **separate** object with its own field values. Two `TeamMember` objects can have different names.
+
+Methods you write on a class are **instance** methods. They are not `static`. Call them on an object: `member.getName()`, not `TeamMember.getName()`.
+
+`private` on a field means other classes must use methods to read or change it. That is **encapsulation**. The playground `Counter` uses `private int value` so `main` cannot say `c.value = 99`.
+
+</RulesBox>
+
+[Java Objects](/java/java-objects) is the next lesson: several objects from one class. [ArrayLists](/java/java-ds-arraylists) come later, when you need a growing list.
+
+<JavaPlayground id="java-classes" />
+
+<ExerciseBox title="Practice" answers={[{"task":"Store the name in the constructor","content":"class TeamMember {\n    String name;\n\n    TeamMember(String name) {\n        this.name = name;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        TeamMember member = new TeamMember(\"Ada\");\n        System.out.println(member.name);\n    }\n}"},{"task":"Two members, independent roles","content":"class TeamMember {\n    String name;\n    String role;\n\n    TeamMember(String name) {\n        this.name = name;\n        this.role = \"Student\";\n    }\n\n    void setRole(String role) {\n        this.role = role;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        TeamMember a = new TeamMember(\"Ada\");\n        TeamMember b = new TeamMember(\"Ben\");\n        a.setRole(\"Driver\");\n        System.out.println(a.name + \" \" + a.role);\n        System.out.println(b.name + \" \" + b.role);\n    }\n}"}]}>
+
+Fill in each starter, click Run, then open Show Answers when you want to compare.
+
+- Write a TeamMember class with a name field and constructor. Create one and print the name.
+
+```java
+class TeamMember {
+    String name;
+
+    TeamMember(String name) {
+        // Store the name
     }
 }
 
@@ -108,87 +109,16 @@ public class Main {
 }
 ```
 
-2. Add private role with getter/setter. Change role and print it.
+- Create two TeamMember objects. Change only one role. Print both.
 
 ```java
 class TeamMember {
-    private String name;
-    // TODO: private String role
-
-    TeamMember(String name) {
-        this.name = name;
-    }
-
-    String getName() {
-        return name;
-    }
-
-    // TODO: getRole() and setRole(String)
-}
-
-public class Main {
-    public static void main(String[] args) {
-        TeamMember member = new TeamMember("Ada");
-        System.out.println(member.getName());
-        // TODO: change the role, then print it
-    }
-}
-```
-
-3. Add assignRole that updates role and prints confirmation.
-
-```java
-class TeamMember {
-    private String name;
-    private String role;
+    String name;
+    String role;
 
     TeamMember(String name) {
         this.name = name;
         this.role = "Student";
-    }
-
-    String getName() {
-        return name;
-    }
-
-    String getRole() {
-        return role;
-    }
-
-    void setRole(String role) {
-        this.role = role;
-    }
-
-    // TODO: assignRole(String newRole) — update role and print a confirmation
-}
-
-public class Main {
-    public static void main(String[] args) {
-        TeamMember member = new TeamMember("Ada");
-        // TODO: call assignRole, then print getRole()
-        System.out.println(member.getName() + " — " + member.getRole());
-    }
-}
-```
-
-4. Create two TeamMember objects; change one; print both to show independent state.
-
-```java
-class TeamMember {
-    private String name;
-    private String role;
-
-    TeamMember(String name) {
-        this.name = name;
-        this.role = "Student";
-    }
-
-    String getName() {
-        return name;
-    }
-
-    String getRole() {
-        return role;
     }
 
     void setRole(String role) {
@@ -198,55 +128,9 @@ class TeamMember {
 
 public class Main {
     public static void main(String[] args) {
-        // TODO: create two TeamMember objects
-        // TODO: change only one member's role
-        // TODO: print both names and roles
+        // Two members. Change only one role. Print both names and roles.
     }
 }
 ```
-
-5. From main, try to read a private field (commented failing line) to see the compile error.
-
-```java
-class TeamMember {
-    private String name;
-    private String role;
-
-    TeamMember(String name) {
-        this.name = name;
-        this.role = "Student";
-    }
-
-    String getName() {
-        return name;
-    }
-
-    String getRole() {
-        return role;
-    }
-}
-
-public class Main {
-    public static void main(String[] args) {
-        TeamMember member = new TeamMember("Ada");
-        System.out.println(member.getName());
-        System.out.println(member.getRole());
-        // Uncomment and click Run to see the error:
-        // System.out.println(member.name);
-    }
-}
-```
-
-<details>
-<summary>Hints</summary>
-
-1. The constructor should assign `this.name`. Main already prints the field.
-2. `private String role;`, then `getRole` / `setRole`. Call the setter from main.
-3. `assignRole` sets the field, then prints a confirmation line.
-4. `new TeamMember(...)` twice. Change only one. Print both.
-5. Uncomment the private-field access and read the compiler message.
-
-</details>
 
 </ExerciseBox>
-

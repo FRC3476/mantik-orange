@@ -5,17 +5,16 @@ export const LOGIC: JavaPlaygroundExercise[] = [
   pg(
     'java-conditionals',
     'Practice: conditionals',
-    `Read one integer from System.in. Print LOW if it is less than 50, otherwise print OK.
+    `first is 40 and second is 80. For each, print LOW if the value is less than 50, otherwise print OK.
 
-Check runs two hidden inputs. The input box is only used when you click Run.`,
-    main(`        java.util.Scanner in = new java.util.Scanner(System.in);
-        int percent = in.nextInt();
-        // Print LOW or OK`),
-    [
-      { name: 'Below 50', stdin: '40\n', stdout: 'LOW' },
-      { name: 'At least 50', stdin: '80\n', stdout: 'OK' },
-    ],
-    true,
+Expected:
+
+LOW
+OK`,
+    main(`        int first = 40;
+        int second = 80;
+        // Print LOW or OK for first, then for second`),
+    [{ name: 'Two readings', stdout: 'LOW\nOK' }],
   ),
   pg(
     'java-methods',
@@ -39,17 +38,31 @@ Expected output:
   pg(
     'java-control',
     'Practice: control flow',
-    `distance is already set. Print one line:
+    `Write zone(int distance) so it returns:
 - FAR if distance is greater than 20
 - NEAR if distance is greater than 5
 - STOP otherwise
 
-The hidden check uses distance = 12, so the line should be:
+From main, print zone(25), zone(12), and zone(3), each on its own line.
 
-NEAR`,
-    main(`        int distance = 12;
-        // Print FAR, NEAR, or STOP`),
-    [{ name: 'Mid range', stdout: 'NEAR' }],
+Expected:
+
+FAR
+NEAR
+STOP`,
+    `public class Main {
+    public static String zone(int distance) {
+        return "";
+    }
+
+    public static void main(String[] args) {
+        System.out.println(zone(25));
+        System.out.println(zone(12));
+        System.out.println(zone(3));
+    }
+}
+`,
+    [{ name: 'Three distances', stdout: 'FAR\nNEAR\nSTOP' }],
   ),
   pg(
     'java-try-catch',

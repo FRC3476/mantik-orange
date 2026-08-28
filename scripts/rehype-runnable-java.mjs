@@ -45,6 +45,15 @@ function extractPreCode(pre) {
 }
 
 function looksLikeRunnableJava(source) {
+  if (/runs forever/i.test(source)) return false;
+  const stripped = source.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/.*$/gm, ' ');
+  if (
+    /while\s*\(\s*true\s*\)/.test(stripped) &&
+    !/\bbreak\b/.test(stripped) &&
+    !/\.(?:nextLine|nextInt|readLine)\s*\(/.test(stripped)
+  ) {
+    return false;
+  }
   if (/<code>|&lt;code/.test(source)) return false;
   const body = source.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/.*$/gm, ' ').trim();
   if (!body) return false;

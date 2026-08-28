@@ -1,5 +1,5 @@
 import { compileAndRunExample } from './cheerpjRunner';
-import { exampleNeedsStdin, looksLikeRunnableJava } from './exampleSource';
+import { exampleNeedsStdin, looksLikeRunnableJava, suggestExampleStdin } from './exampleSource';
 
 const NO_MAIN_MESSAGE =
   'This example compiled. It has no main method, so nothing printed. Click Edit to add main and try it.';
@@ -31,7 +31,11 @@ function mountExample(root: HTMLElement) {
   } catch {
     return;
   }
-  if (!looksLikeRunnableJava(original)) return;
+  if (!looksLikeRunnableJava(original)) {
+    const pre = root.querySelector('pre');
+    if (pre) root.replaceWith(pre);
+    return;
+  }
 
   root.dataset.jpHydrated = 'true';
 
@@ -47,14 +51,16 @@ function mountExample(root: HTMLElement) {
   edit.rows = Math.min(18, Math.max(6, original.split('\n').length + 1));
 
   let stdin: HTMLTextAreaElement | null = null;
+  const sampleStdin = suggestExampleStdin(original);
   if (exampleNeedsStdin(original)) {
     const stdinWrap = document.createElement('label');
     stdinWrap.className = 'jp-stdin jp-example-stdin';
-    stdinWrap.append('Standard input');
+    stdinWrap.append('Sample input');
     stdin = document.createElement('textarea');
-    stdin.rows = 3;
+    stdin.rows = Math.min(8, Math.max(3, sampleStdin.split('\n').length + 1));
     stdin.spellcheck = false;
-    stdin.setAttribute('aria-label', 'Standard input');
+    stdin.value = sampleStdin;
+    stdin.setAttribute('aria-label', 'Sample input for this example');
     stdinWrap.append(stdin);
     tools.append(stdinWrap);
   }
@@ -120,7 +126,7 @@ function mountExample(root: HTMLElement) {
 
   resetBtn.addEventListener('click', () => {
     edit.value = original;
-    if (stdin) stdin.value = '';
+    if (stdin) stdin.value = sampleStdin;
     consoleWrap.hidden = true;
     consolePre.textContent = '';
     status.textContent = '';

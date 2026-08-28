@@ -59,12 +59,6 @@ System.out.println("The sum of the numbers is " + sum);
 ### Basic While Loop Structure:
 
 ```java
-while (condition) {
-    // Code to repeat
-    // This block executes while condition is true
-}
-
-// Simple counting example
 int count = 1;
 while (count <= 5) {
     System.out.println("Count: " + count);
@@ -72,15 +66,11 @@ while (count <= 5) {
 }
 ```
 
+The `condition` is checked before each pass. If it is true, the block runs again. If it is false, the program continues after the loop.
+
 ### While Loop Syntax:
 
 ```java
-while (condition) {
-    // Code to repeat
-    // This block executes while condition is true
-}
-
-// Simple counting example
 int count = 1;
 while (count <= 5) {
     System.out.println("Count: " + count);
@@ -94,13 +84,18 @@ Using `while (true)` creates an infinite loop that runs forever unless explicitl
 
 ### Infinite Loop Examples:
 
-```java
+A `while (true)` loop with no `break` never stops. Do not run this as-is in the browser.
+
+```java norun
 // This runs forever (until break is encountered)
 while (true) {
     System.out.println("I can program!");
 }
+```
 
-// Practical infinite loop with break condition
+Stop the loop with `break` when a condition is met:
+
+```java
 int robotSpeed = 0;
 while (true) {
     robotSpeed += 10;

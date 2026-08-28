@@ -64,12 +64,133 @@ export function exampleNeedsStdin(source: string): boolean {
   return /\bScanner\b/.test(masked) || /\bSystem\.in\b/.test(masked);
 }
 
+const READ_CALL = /\.(?:nextLine|nextInt|nextDouble|next|readLine)\s*\(/g;
+
+function countReads(text: string): number {
+  return (maskComments(text).match(READ_CALL) || []).length;
+}
+
+interface BraceBlock {
+  start: number;
+  end: number;
+  body: string;
+}
+
+function extractBraceBlocks(source: string, headerRe: RegExp): BraceBlock[] {
+  const masked = maskComments(source);
+  const blocks: BraceBlock[] = [];
+  const re = new RegExp(headerRe.source, 'g');
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(masked))) {
+    let i = match.index + match[0].length;
+    while (i < masked.length && /\s/.test(masked[i] ?? '')) i += 1;
+    if (masked[i] !== '{') continue;
+    i += 1;
+    const bodyStart = i;
+    let depth = 1;
+    while (i < masked.length && depth > 0) {
+      if (masked[i] === '{') depth += 1;
+      else if (masked[i] === '}') depth -= 1;
+      if (depth === 0) break;
+      i += 1;
+    }
+    blocks.push({ start: bodyStart, end: i, body: source.slice(bodyStart, i) });
+    re.lastIndex = i + 1;
+  }
+  return blocks;
+}
+
+/** True when a while(true) would never exit (freezes the tab). */
+export function exampleLooksNonterminating(source: string): boolean {
+  if (/runs forever/i.test(source)) return true;
+  for (const block of extractBraceBlocks(source, /while\s*\(\s*true\s*\)/g)) {
+    const body = maskComments(block.body);
+    const canStop =
+      /\bbreak\b/.test(body) || /\breturn\b/.test(body) || countReads(block.body) > 0;
+    if (!canStop) return true;
+  }
+  return false;
+}
+
+function stdinForLoopBody(body: string): string[] {
+  const masked = maskComments(body);
+  if (/\.equals(?:IgnoreCase)?\s*\(\s*"y"/i.test(masked)) {
+    return ['n', 'y'];
+  }
+  if (/\.equals(?:IgnoreCase)?\s*\(\s*"(quit|exit)"/i.test(masked)) {
+    return ['5', 'quit'];
+  }
+  const counted = masked.match(/\b(?:numbersRead|count|readCount)\s*==\s*(\d+)/);
+  if (counted && /\bbreak\b/.test(masked)) {
+    const n = Number(counted[1]);
+    return Array.from({ length: n }, (_, i) => String(i + 1));
+  }
+  if (/(?<![!=])==\s*999\b/.test(masked) && /\bbreak\b/.test(masked)) {
+    const lines: string[] = [];
+    if (/\bcontinue\b/.test(masked)) lines.push('-2');
+    lines.push('15', '999');
+    return lines;
+  }
+  if (/(?<![!=])==\s*-1\b/.test(masked) && /\bbreak\b/.test(masked)) {
+    const lines = ['42'];
+    if (/\bcontinue\b/.test(masked)) lines.push('150');
+    lines.push('-1');
+    return lines;
+  }
+  if (/(?<![!=])==\s*0\b/.test(masked) && /\bbreak\b/.test(masked)) {
+    return ['4', '1', '0'];
+  }
+  if (/\bInteger\.(?:valueOf|parseInt)|parseInt\s*\(|\.nextInt\s*\(/.test(masked)) {
+    return ['3', '0'];
+  }
+  return ['y'];
+}
+
+function sequentialStdinLines(source: string, count: number): string[] {
+  const masked = maskComments(source);
+  if (count <= 0) return [];
+  if (/sensor index|0-3/.test(masked)) return ['1'];
+  if (/How many robots|teamSize/.test(masked) && count >= 3) {
+    return ['1', 'Spark', '3476'];
+  }
+  if (/\bInteger\.(?:valueOf|parseInt)|parseInt\s*\(|parseDouble|nextInt|nextDouble/.test(masked)) {
+    return Array.from({ length: count }, (_, i) => String(i + 1));
+  }
+  return Array.from({ length: count }, () => 'hello');
+}
+
+/**
+ * Sample stdin so Scanner / System.in examples finish instead of throwing or hanging.
+ */
+export function suggestExampleStdin(source: string): string {
+  if (!exampleNeedsStdin(source)) return '';
+  const lines: string[] = [];
+  const inputLoops = extractBraceBlocks(source, /while\s*\(\s*true\s*\)/g).filter(
+    (block) => countReads(block.body) > 0,
+  );
+
+  if (inputLoops.length > 0) {
+    const first = inputLoops[0];
+    const before = source.slice(0, first.start);
+    lines.push(...sequentialStdinLines(before, countReads(before)));
+    for (const block of inputLoops) {
+      lines.push(...stdinForLoopBody(block.body));
+    }
+  } else {
+    lines.push(...sequentialStdinLines(source, countReads(source)));
+  }
+
+  if (lines.length === 0) return '';
+  return `${lines.join('\n')}\n`;
+}
+
 /**
  * True when a fenced Java example is worth compiling in the browser.
  * Skips placeholders, comment-only blocks, and Git snippets tagged as java.
  */
 export function looksLikeRunnableJava(source: string): boolean {
   if (/<code>|&lt;code/.test(source)) return false;
+  if (exampleLooksNonterminating(source)) return false;
   const body = withoutComments(source).trim();
   if (!body) return false;
   if (/^\s*git\b/m.test(body) && !/\b(class|interface|enum)\s+[A-Za-z_]/.test(body)) {

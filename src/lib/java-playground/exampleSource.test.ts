@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+  exampleLooksNonterminating,
   exampleNeedsStdin,
   looksLikeRunnableJava,
+  suggestExampleStdin,
   wrapExampleSource,
 } from './exampleSource';
 
@@ -24,6 +26,12 @@ describe('looksLikeRunnableJava', () => {
 
   it('rejects git snippets tagged as java', () => {
     expect(looksLikeRunnableJava('git branch feature-name\ngit checkout -b new-branch')).toBe(false);
+  });
+
+  it('rejects an infinite print loop', () => {
+    expect(
+      looksLikeRunnableJava('while (true) {\n    System.out.println("I can program!");\n}'),
+    ).toBe(false);
   });
 });
 
@@ -122,5 +130,94 @@ describe('exampleNeedsStdin', () => {
   it('detects Scanner and System.in', () => {
     expect(exampleNeedsStdin('Scanner scanner = new Scanner(System.in);')).toBe(true);
     expect(exampleNeedsStdin('System.out.println(1);')).toBe(false);
+  });
+});
+
+describe('suggestExampleStdin', () => {
+  it('supplies three numbers for sequential nextLine reads', () => {
+    const src = `Scanner scanner = new Scanner(System.in);
+int sum = 0;
+sum = sum + Integer.valueOf(scanner.nextLine());
+sum = sum + Integer.valueOf(scanner.nextLine());
+sum = sum + Integer.valueOf(scanner.nextLine());
+System.out.println("The sum is " + sum);`;
+    expect(suggestExampleStdin(src)).toBe('1\n2\n3\n');
+  });
+
+  it('supplies five numbers when the loop stops after five reads', () => {
+    const src = `Scanner scanner = new Scanner(System.in);
+int numbersRead = 0;
+int sum = 0;
+while (true) {
+    if (numbersRead == 5) {
+        break;
+    }
+    sum = sum + Integer.valueOf(scanner.nextLine());
+    numbersRead = numbersRead + 1;
+}`;
+    expect(suggestExampleStdin(src)).toBe('1\n2\n3\n4\n5\n');
+  });
+
+  it('exits a y-loop then a 0-loop', () => {
+    const src = `Scanner scanner = new Scanner(System.in);
+while (true) {
+    String input = scanner.nextLine();
+    if (input.equals("y")) {
+        break;
+    }
+}
+while (true) {
+    int reading = Integer.valueOf(scanner.nextLine());
+    if (reading == 0) {
+        break;
+    }
+}`;
+    expect(suggestExampleStdin(src)).toBe('n\ny\n4\n1\n0\n');
+  });
+
+  it('includes invalid then sentinel values for continue/break', () => {
+    const src = `Scanner scanner = new Scanner(System.in);
+while (true) {
+    int number = Integer.valueOf(scanner.nextLine());
+    if (number <= 0) {
+        continue;
+    }
+    if (number == 999) {
+        break;
+    }
+}
+while (true) {
+    int reading = Integer.valueOf(scanner.nextLine());
+    if (reading == -1) {
+        break;
+    }
+    if (reading < 0 || reading > 100) {
+        continue;
+    }
+}`;
+    expect(suggestExampleStdin(src)).toBe('-2\n15\n999\n42\n150\n-1\n');
+  });
+
+  it('supplies one line for a single numeric read', () => {
+    const src = `BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+int n = Integer.parseInt(in.readLine().trim());
+System.out.println(n * 2);`;
+    expect(suggestExampleStdin(src)).toBe('1\n');
+  });
+});
+
+describe('exampleLooksNonterminating', () => {
+  it('rejects a while(true) with no break', () => {
+    expect(
+      exampleLooksNonterminating('while (true) { System.out.println("I can program!"); }'),
+    ).toBe(true);
+  });
+
+  it('allows a while(true) that breaks', () => {
+    expect(
+      exampleLooksNonterminating(
+        'int n = 0; while (true) { n++; if (n >= 3) break; }',
+      ),
+    ).toBe(false);
   });
 });

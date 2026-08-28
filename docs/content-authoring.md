@@ -128,7 +128,9 @@ System.out.println("Hello world!");
 
 Snippets without a class are wrapped in `Main` at run time. Complete programs keep their class name. Class-only examples compile but explain that nothing runs until `main` is added.
 
-Keep an example static with the `norun` fence flag:
+Snippets that read `System.in` get a **Sample input** box prefilled with values that let the example finish (including loop quit sentinels such as `0` or `y`). Students can edit that input before Run.
+
+Keep an example static with the `norun` fence flag. Use it for snippets that are meant to run forever:
 
 ````mdx
 ```java norun

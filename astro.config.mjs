@@ -8,6 +8,8 @@ import { pagefindDevPlugin } from './scripts/pagefind-dev-plugin.mjs';
 import { netlifyFunctionsDevPlugin } from './scripts/netlify-functions-dev-plugin.mjs';
 import { normalizeWindowsDevPathsPlugin } from './scripts/normalize-windows-dev-paths.mjs';
 import { rehypeBasePath } from './scripts/rehype-base-path.mjs';
+import { rehypeRunnableJava } from './scripts/rehype-runnable-java.mjs';
+import { remarkJavaNorun } from './scripts/remark-java-norun.mjs';
 
 const SITE = 'https://frc3476.github.io/mantik-orange';
 const analyze = process.env.ANALYZE === '1';
@@ -33,7 +35,8 @@ export default defineConfig({
     }),
   ],
   markdown: {
-    rehypePlugins: [[rehypeBasePath, '/mantik-orange']],
+    remarkPlugins: [remarkJavaNorun],
+    rehypePlugins: [[rehypeBasePath, '/mantik-orange'], rehypeRunnableJava],
     shikiConfig: {
       theme: 'github-light',
       themes: {
@@ -80,7 +83,7 @@ export default defineConfig({
               return 'pid-uplot';
             }
             if (id.includes('node_modules/monaco-editor') || id.includes('node_modules/@monaco-editor')) {
-              return 'pid-monaco';
+              return 'monaco';
             }
             if (
               id.includes('/lib/pid-sim/physics/elevatorSim') ||

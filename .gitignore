@@ -17,3 +17,4 @@ out/
 /frc/
 /comp/
 .env.example
+public/java-playground/ecj.jar

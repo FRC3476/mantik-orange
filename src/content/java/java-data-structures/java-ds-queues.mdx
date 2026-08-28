@@ -221,11 +221,119 @@ Only `peek` and `poll` respect priority. Printing it or iterating over it gives 
 
 <ExerciseBox title="Practice">
 
+Fill in each starter, click Run, then open Hints if you get stuck.
+
 1. Offer the numbers 1 through 5 to a queue, then poll and print them. Confirm the order is preserved, unlike a stack.
+
+```java
+import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        Queue<Integer> queue = new ArrayDeque<Integer>();
+        // TODO: offer 1 through 5, then poll and print until empty
+    }
+}
+```
+
 2. Write a class that holds the last 10 sensor readings, discarding the oldest when an eleventh arrives.
+
+```java
+import java.util.*;
+
+class LastTen {
+    Queue<Integer> readings = new ArrayDeque<Integer>();
+
+    void add(int reading) {
+        // TODO: keep only the last 10 readings
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        LastTen buffer = new LastTen();
+        for (int i = 1; i <= 12; i++) {
+            buffer.add(i);
+        }
+        System.out.println(buffer.readings);
+    }
+}
+```
+
 3. Write a method that takes a `Queue<String>` of task names and runs them in order, printing each.
+
+```java
+import java.util.*;
+
+public class Main {
+    static void runAll(Queue<String> tasks) {
+        // TODO: poll and print each task in order
+    }
+
+    public static void main(String[] args) {
+        Queue<String> tasks = new ArrayDeque<String>();
+        tasks.offer("calibrate");
+        tasks.offer("driveForward");
+        tasks.offer("shoot");
+        runAll(tasks);
+    }
+}
+```
+
 4. Use a `PriorityQueue` to print five tasks in priority order, lowest number first.
+
+```java
+import java.util.*;
+
+class Task {
+    String name;
+    int priority;
+
+    Task(String name, int priority) {
+        this.name = name;
+        this.priority = priority;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        PriorityQueue<Task> queue = new PriorityQueue<Task>(new Comparator<Task>() {
+            public int compare(Task a, Task b) {
+                return 0; // TODO: lowest priority number first
+            }
+        });
+        queue.offer(new Task("shoot", 3));
+        queue.offer(new Task("stopMotors", 1));
+        queue.offer(new Task("driveForward", 2));
+        queue.offer(new Task("intake", 5));
+        queue.offer(new Task("aim", 4));
+        while (!queue.isEmpty()) {
+            System.out.println(queue.poll().name);
+        }
+    }
+}
+```
+
 5. Given a grid of `.` and `#`, use a queue to count how many `.` cells are reachable from the top-left.
+
+```java
+import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        char[][] grid = {
+            {'.', '.', '#'},
+            {'#', '#', '#'},
+            {'.', '.', '.'}
+        };
+        Queue<int[]> frontier = new ArrayDeque<int[]>();
+        // TODO: count how many '.' cells are reachable from the top-left
+        int reachable = 0;
+        System.out.println(reachable);
+    }
+}
+```
+
 
 <details>
 <summary>Hints</summary>

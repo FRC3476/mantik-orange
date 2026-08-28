@@ -306,11 +306,156 @@ The shortest-path row is the one that catches people. DFS will happily return a 
 
 <ExerciseBox title="Practice">
 
+Fill in each starter, click Run, then open Hints if you get stuck.
+
 1. Build a small undirected graph and print every node reachable from node 0.
+
+```java
+import java.util.*;
+
+public class Main {
+    static void addEdge(List<List<Integer>> adj, int u, int v) {
+        adj.get(u).add(v);
+        adj.get(v).add(u);
+    }
+
+    static void dfs(int node, List<List<Integer>> adj, boolean[] visited) {
+        // TODO
+    }
+
+    public static void main(String[] args) {
+        int n = 4;
+        List<List<Integer>> adj = new ArrayList<List<Integer>>();
+        for (int i = 0; i < n; i++) {
+            adj.add(new ArrayList<Integer>());
+        }
+        addEdge(adj, 0, 1);
+        addEdge(adj, 0, 2);
+        addEdge(adj, 1, 3);
+
+        boolean[] visited = new boolean[n];
+        dfs(0, adj, visited);
+        System.out.println(Arrays.toString(visited));
+    }
+}
+```
+
 2. Count the connected components of an undirected graph.
+
+```java
+import java.util.*;
+
+public class Main {
+    static void addEdge(List<List<Integer>> adj, int u, int v) {
+        adj.get(u).add(v);
+        adj.get(v).add(u);
+    }
+
+    static int countComponents(List<List<Integer>> adj, int n) {
+        return 0;
+    }
+
+    public static void main(String[] args) {
+        int n = 4;
+        List<List<Integer>> adj = new ArrayList<List<Integer>>();
+        for (int i = 0; i < n; i++) {
+            adj.add(new ArrayList<Integer>());
+        }
+        addEdge(adj, 0, 1);
+        addEdge(adj, 2, 3);
+
+        System.out.println(countComponents(adj, n));
+    }
+}
+```
+
 3. Given a grid of `.` and `#`, count the regions of connected `.` cells.
+
+```java
+public class Main {
+    static void fill(char[][] grid, boolean[][] seen, int r, int c) {
+        // TODO
+    }
+
+    static int countRegions(char[][] grid) {
+        boolean[][] seen = new boolean[grid.length][grid[0].length];
+        return 0;
+    }
+
+    public static void main(String[] args) {
+        char[][] grid = {
+            {'.', '.', '#'},
+            {'#', '.', '.'},
+            {'.', '#', '.'}
+        };
+        System.out.println(countRegions(grid));
+    }
+}
+```
+
 4. Determine whether an undirected graph contains a cycle.
+
+```java
+import java.util.*;
+
+public class Main {
+    static void addEdge(List<List<Integer>> adj, int u, int v) {
+        adj.get(u).add(v);
+        adj.get(v).add(u);
+    }
+
+    static boolean hasCycle(int node, int parent, List<List<Integer>> adj, boolean[] visited) {
+        return false;
+    }
+
+    public static void main(String[] args) {
+        int n = 3;
+        List<List<Integer>> adj = new ArrayList<List<Integer>>();
+        for (int i = 0; i < n; i++) {
+            adj.add(new ArrayList<Integer>());
+        }
+        addEdge(adj, 0, 1);
+        addEdge(adj, 1, 2);
+        addEdge(adj, 2, 0);
+
+        System.out.println(hasCycle(0, -1, adj, new boolean[n]));
+    }
+}
+```
+
 5. Rewrite exercise 1 iteratively with an explicit stack and confirm the same set of nodes is reached.
+
+```java
+import java.util.*;
+
+public class Main {
+    static void addEdge(List<List<Integer>> adj, int u, int v) {
+        adj.get(u).add(v);
+        adj.get(v).add(u);
+    }
+
+    static void dfsIterative(int start, List<List<Integer>> adj, boolean[] visited) {
+        Stack<Integer> stack = new Stack<Integer>();
+        // TODO
+    }
+
+    public static void main(String[] args) {
+        int n = 4;
+        List<List<Integer>> adj = new ArrayList<List<Integer>>();
+        for (int i = 0; i < n; i++) {
+            adj.add(new ArrayList<Integer>());
+        }
+        addEdge(adj, 0, 1);
+        addEdge(adj, 0, 2);
+        addEdge(adj, 1, 3);
+
+        boolean[] visited = new boolean[n];
+        dfsIterative(0, adj, visited);
+        System.out.println(Arrays.toString(visited));
+    }
+}
+```
+
 
 <details>
 <summary>Hints</summary>

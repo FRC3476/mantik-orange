@@ -210,11 +210,110 @@ It is the default general-purpose list, and reaching for it first is usually cor
 
 <ExerciseBox title="Practice">
 
+Fill in each starter, click Run, then open Hints if you get stuck.
+
 1. Build a `List<String>` of five robot subsystem names, then print them one per line.
+
+```java
+import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        List<String> names = new ArrayList<String>();
+        // TODO: add five subsystem names, then print them one per line
+    }
+}
+```
+
 2. Write a method that takes a `List<Integer>` and returns the average as a `double`.
+
+```java
+import java.util.*;
+
+public class Main {
+    static double average(List<Integer> nums) {
+        return 0;
+    }
+
+    public static void main(String[] args) {
+        List<Integer> nums = new ArrayList<Integer>();
+        nums.add(10);
+        nums.add(20);
+        nums.add(30);
+        System.out.println(average(nums));
+    }
+}
+```
+
 3. Write a method that removes every negative number from a `List<Integer>`, without triggering a `ConcurrentModificationException`.
+
+```java
+import java.util.*;
+
+public class Main {
+    static void removeNegatives(List<Integer> nums) {
+        // TODO: remove every negative without a ConcurrentModificationException
+    }
+
+    public static void main(String[] args) {
+        List<Integer> nums = new ArrayList<Integer>();
+        nums.add(3);
+        nums.add(-1);
+        nums.add(4);
+        nums.add(-8);
+        nums.add(0);
+        removeNegatives(nums);
+        System.out.println(nums);
+    }
+}
+```
+
 4. Write a method that takes two lists and returns a new list containing only the values present in both.
+
+```java
+import java.util.*;
+
+public class Main {
+    static List<Integer> both(List<Integer> first, List<Integer> second) {
+        return new ArrayList<Integer>();
+    }
+
+    public static void main(String[] args) {
+        List<Integer> first = new ArrayList<Integer>();
+        first.add(1);
+        first.add(2);
+        first.add(3);
+        first.add(4);
+        List<Integer> second = new ArrayList<Integer>();
+        second.add(3);
+        second.add(4);
+        second.add(5);
+        System.out.println(both(first, second));
+    }
+}
+```
+
 5. Read numbers from the user until they enter `0`, storing them in a list, then print them in reverse order.
+
+```java
+import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        List<Integer> nums = new ArrayList<Integer>();
+        while (true) {
+            int n = scanner.nextInt();
+            if (n == 0) {
+                break;
+            }
+            // TODO: store n in the list
+        }
+        // TODO: print the numbers in reverse order
+    }
+}
+```
+
 
 <details>
 <summary>Hints</summary>

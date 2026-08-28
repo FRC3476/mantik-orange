@@ -287,11 +287,126 @@ Each stage runs after the previous one completes, without a thread sitting idle 
 
 <ExerciseBox title="Practice">
 
+Fill in each starter, click Run, then open Hints if you get stuck.
+
 1. Submit 20 tasks that each sleep briefly to a fixed pool of 4, printing which thread ran each. Note that only four names appear.
+
+```java
+import java.util.concurrent.*;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+        ExecutorService pool = Executors.newFixedThreadPool(4);
+        try {
+            for (int i = 0; i < 20; i++) {
+                final int id = i;
+                pool.submit(() -> {
+                    // TODO: sleep briefly (keep it under 20 ms), print id and Thread.currentThread().getName()
+                });
+            }
+        } finally {
+            pool.shutdown();
+            pool.awaitTermination(1, TimeUnit.SECONDS);
+        }
+        System.out.println("pool finished");
+    }
+}
+```
+
 2. Submit a `Callable` returning a number and collect it with `get()`.
+
+```java
+import java.util.concurrent.*;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+        ExecutorService pool = Executors.newFixedThreadPool(4);
+        try {
+            Future<Integer> future = pool.submit(() -> {
+                return 0;
+            });
+            // TODO: int result = future.get(); then print it
+            System.out.println("submitted");
+        } finally {
+            pool.shutdown();
+            pool.awaitTermination(1, TimeUnit.SECONDS);
+        }
+    }
+}
+```
+
 3. Submit a task that throws, then confirm nothing is printed until you call `get()`.
+
+```java
+import java.util.concurrent.*;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+        ExecutorService pool = Executors.newFixedThreadPool(4);
+        try {
+            Future<?> future = pool.submit(() -> {
+                throw new IllegalStateException("task failed");
+            });
+            System.out.println("submitted");
+            // TODO: call future.get() and catch ExecutionException
+        } finally {
+            pool.shutdown();
+            pool.awaitTermination(1, TimeUnit.SECONDS);
+        }
+    }
+}
+```
+
 4. Use `invokeAll` to run three computations and sum the results.
+
+```java
+import java.util.*;
+import java.util.concurrent.*;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+        ExecutorService pool = Executors.newFixedThreadPool(4);
+        try {
+            List<Callable<Integer>> tasks = Arrays.asList(
+                () -> 0,
+                () -> 0,
+                () -> 0
+            );
+            List<Future<Integer>> results = pool.invokeAll(tasks);
+            int sum = 0;
+            for (Future<Integer> f : results) {
+                // TODO: add f.get() to sum
+            }
+            System.out.println(sum);
+        } finally {
+            pool.shutdown();
+            pool.awaitTermination(1, TimeUnit.SECONDS);
+        }
+    }
+}
+```
+
 5. Schedule a task to run every 200 ms, let it run five times, then shut down cleanly.
+
+```java
+import java.util.concurrent.*;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+        try {
+            scheduler.scheduleAtFixedRate(() -> {
+                // TODO: print
+            }, 0, 50, TimeUnit.MILLISECONDS);
+            Thread.sleep(300);
+        } finally {
+            scheduler.shutdown();
+            scheduler.awaitTermination(1, TimeUnit.SECONDS);
+        }
+        System.out.println("scheduler finished");
+    }
+}
+```
 
 <details>
 <summary>Hints</summary>

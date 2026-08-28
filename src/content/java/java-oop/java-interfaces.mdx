@@ -258,11 +258,172 @@ The same reasoning drives [dependency injection](/java/java-dp-dependency-inject
 
 <ExerciseBox title="Practice">
 
+Fill in each starter, click Run, then open Hints if you get stuck.
+
 1. Write a `Stoppable` interface and implement it in two classes that share no parent. Loop a mixed list and stop each.
+
+```java
+interface Stoppable {
+    void stop();
+}
+
+class Intake implements Stoppable {
+    @Override
+    public void stop() {
+        // TODO
+    }
+}
+
+class Camera implements Stoppable {
+    @Override
+    public void stop() {
+        // TODO
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        List<Stoppable> everything = Arrays.asList(new Intake(), new Camera());
+        for (Stoppable s : everything) {
+            s.stop();
+        }
+        System.out.println("looped " + everything.size());
+    }
+}
+```
+
 2. Write a class implementing two interfaces at once and confirm it satisfies both.
+
+```java
+interface Stoppable {
+    void stop();
+}
+
+interface Loggable {
+    String toLogLine();
+}
+
+class Intake implements Stoppable, Loggable {
+    @Override
+    public void stop() {
+        // TODO
+    }
+
+    @Override
+    public String toLogLine() {
+        return "";
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Intake intake = new Intake();
+        Stoppable asStoppable = intake;
+        Loggable asLoggable = intake;
+        asStoppable.stop();
+        System.out.println(asLoggable.toLogLine());
+    }
+}
+```
+
 3. Add a `default` method to an interface, then override it in one implementation and not the other. Confirm which runs.
+
+```java
+interface Stoppable {
+    void stop();
+
+    default void emergencyStop() {
+        // TODO
+    }
+}
+
+class Intake implements Stoppable {
+    @Override
+    public void stop() {
+        // TODO
+    }
+
+    // TODO: override emergencyStop in only one class
+}
+
+class Camera implements Stoppable {
+    @Override
+    public void stop() {
+        // TODO
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Stoppable intake = new Intake();
+        Stoppable camera = new Camera();
+        intake.emergencyStop();
+        camera.emergencyStop();
+        System.out.println("called both");
+    }
+}
+```
+
 4. Write a functional interface and implement it with a lambda. Then add a second abstract method and read the compile error.
+
+```java
+@FunctionalInterface
+interface Named {
+    String name();
+    // Uncomment and click Run to see the error:
+    // String extra();
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Named n = null; // assign a lambda
+        System.out.println(n);
+    }
+}
+```
+
 5. Take a class with a hard-coded dependency and rewrite it to accept an interface, then test it with a fake implementation.
+
+```java
+interface Motor {
+    void set(double power);
+}
+
+class HardwareMotor implements Motor {
+    @Override
+    public void set(double power) {
+        System.out.println("hardware: " + power);
+    }
+}
+
+class FakeMotor implements Motor {
+    double lastPower;
+
+    @Override
+    public void set(double power) {
+        // TODO: record power
+    }
+}
+
+class Intake {
+    private HardwareMotor motor = new HardwareMotor();
+
+    void stop() {
+        motor.set(0);
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        FakeMotor fake = new FakeMotor();
+        Intake intake = new Intake();
+        intake.stop();
+        System.out.println("last power: " + fake.lastPower);
+        // TODO: construct Intake with the fake instead
+    }
+}
+```
+
 
 <details>
 <summary>Hints</summary>

@@ -266,11 +266,161 @@ Each step down is more code and more ways to be subtly wrong. Concurrent collect
 
 <ExerciseBox title="Practice">
 
+Fill in each starter, click Run, then open Hints if you get stuck.
+
 1. Have two threads add 10,000 items each to a shared `ArrayList`. Run it several times and record the sizes and any exceptions.
+
+```java
+import java.util.*;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+        List<Integer> shared = new ArrayList<Integer>();
+        Runnable adder = () -> {
+            try {
+                for (int i = 0; i < 100; i++) {
+                    shared.add(i);
+                }
+            } catch (RuntimeException e) {
+                System.out.println("corrupt: " + e.getClass().getSimpleName());
+            }
+        };
+        Thread a = new Thread(adder);
+        Thread b = new Thread(adder);
+        a.start();
+        b.start();
+        a.join();
+        b.join();
+        try {
+            System.out.println(shared.size());
+        } catch (RuntimeException e) {
+            System.out.println("size failed: " + e.getClass().getSimpleName());
+        }
+    }
+}
+```
+
 2. Repeat with `ConcurrentHashMap.newKeySet()` and confirm the count is stable.
+
+```java
+import java.util.*;
+import java.util.concurrent.*;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+        Set<Integer> shared = ConcurrentHashMap.newKeySet();
+        Thread a = new Thread(() -> {
+            for (int i = 0; i < 100; i++) {
+                // TODO: shared.add(i);
+            }
+        });
+        Thread b = new Thread(() -> {
+            for (int i = 100; i < 200; i++) {
+                // TODO: shared.add(i);
+            }
+        });
+        a.start();
+        b.start();
+        a.join();
+        b.join();
+        System.out.println(shared.size());
+    }
+}
+```
+
 3. Write a producer and consumer connected by an `ArrayBlockingQueue` of capacity 10, with the producer faster. Confirm it blocks rather than growing.
+
+```java
+import java.util.concurrent.*;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+        BlockingQueue<String> queue = new ArrayBlockingQueue<String>(1);
+        Thread producer = new Thread(() -> {
+            try {
+                for (int i = 0; i < 8; i++) {
+                    // TODO: queue.put("item " + i); print queue.size()
+                }
+                queue.put("DONE");
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        });
+        Thread consumer = new Thread(() -> {
+            try {
+                while (true) {
+                    String item = queue.take();
+                    if ("DONE".equals(item)) {
+                        break;
+                    }
+                    // TODO: print item
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        });
+        producer.start();
+        consumer.start();
+        producer.join();
+        consumer.join();
+        System.out.println("done");
+    }
+}
+```
+
 4. Show that `containsKey` followed by `put` can misbehave under load, then fix it with `putIfAbsent`.
+
+```java
+import java.util.concurrent.*;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+        ConcurrentHashMap<String, Integer> counts = new ConcurrentHashMap<String, Integer>();
+        Runnable racer = () -> {
+            for (int i = 0; i < 100; i++) {
+                String key = "k" + (i % 10);
+                // TODO: if (!counts.containsKey(key)) { counts.put(key, 0); }
+                // then replace that pair with counts.putIfAbsent(key, 0);
+            }
+        };
+        Thread a = new Thread(racer);
+        Thread b = new Thread(racer);
+        a.start();
+        b.start();
+        a.join();
+        b.join();
+        System.out.println(counts);
+    }
+}
+```
+
 5. Use a `ConcurrentHashMap` and `merge` to count word frequencies from several threads.
+
+```java
+import java.util.concurrent.*;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+        String[] words = {"intake", "shooter", "intake", "elevator", "intake", "shooter"};
+        ConcurrentHashMap<String, Integer> counts = new ConcurrentHashMap<String, Integer>();
+        Thread a = new Thread(() -> {
+            for (int i = 0; i < words.length / 2; i++) {
+                // TODO: counts.merge(words[i], 1, Integer::sum);
+            }
+        });
+        Thread b = new Thread(() -> {
+            for (int i = words.length / 2; i < words.length; i++) {
+                // TODO: counts.merge(words[i], 1, Integer::sum);
+            }
+        });
+        a.start();
+        b.start();
+        a.join();
+        b.join();
+        System.out.println(counts);
+    }
+}
+```
 
 <details>
 <summary>Hints</summary>

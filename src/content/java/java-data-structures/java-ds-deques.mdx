@@ -171,11 +171,116 @@ That last pattern is genuinely common in robot code, where you want a rolling av
 
 <ExerciseBox title="Practice">
 
+Fill in each starter, click Run, then open Hints if you get stuck.
+
 1. Add the values 1 through 5 alternately to the front and back of a deque, then print it. Predict the output before running it.
+
+```java
+import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        Deque<Integer> deque = new ArrayDeque<Integer>();
+        // TODO: add 1 through 5 alternately to the front and back, then print
+        System.out.println(deque);
+    }
+}
+```
+
 2. Write a method that checks whether a `String` is a palindrome by comparing characters from both ends of a deque.
+
+```java
+import java.util.*;
+
+public class Main {
+    static boolean palindrome(String s) {
+        return false;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(palindrome("radar"));
+    }
+}
+```
+
 3. Write a class holding the last 20 readings, dropping the oldest when a twenty-first arrives, with a method returning their average.
+
+```java
+import java.util.*;
+
+class RecentReadings {
+    Deque<Double> recent = new ArrayDeque<Double>();
+
+    void record(double reading) {
+        // TODO: add at the back; drop the oldest if size exceeds 20
+    }
+
+    double average() {
+        return 0;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        RecentReadings buf = new RecentReadings();
+        for (int i = 1; i <= 25; i++) {
+            buf.record(i);
+        }
+        System.out.println(buf.average());
+    }
+}
+```
+
 4. Implement undo and redo with two deques: `doAction`, `undo`, and `redo`.
+
+```java
+import java.util.*;
+
+class Editor {
+    Deque<String> undoStack = new ArrayDeque<String>();
+    Deque<String> redoStack = new ArrayDeque<String>();
+
+    void doAction(String action) {
+        // TODO
+    }
+
+    void undo() {
+        // TODO
+    }
+
+    void redo() {
+        // TODO
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Editor editor = new Editor();
+        editor.doAction("type A");
+        editor.doAction("type B");
+        editor.undo();
+        editor.redo();
+        System.out.println(editor.undoStack);
+        System.out.println(editor.redoStack);
+    }
+}
+```
+
 5. Given an `int[]` and a window width `k`, print the maximum of every window of that width.
+
+```java
+import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        int[] values = {1, 3, -1, -3, 5, 3, 6, 7};
+        int k = 3;
+        Deque<Integer> window = new ArrayDeque<Integer>();
+        // TODO: print the maximum of every window of width k
+    }
+}
+```
+
 
 <details>
 <summary>Hints</summary>

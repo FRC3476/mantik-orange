@@ -356,11 +356,189 @@ Add a factory when you have a concrete reason from the table above — naming, s
 
 <ExerciseBox title="Practice">
 
+Fill in each starter, click Run, then open Hints if you get stuck.
+
 1. Write an `Angle` class with a private constructor and `ofDegrees` / `ofRadians` factories, plus a `getDegrees()` method. Confirm both routes agree.
+
+```java
+class Angle {
+    private final double radians;
+
+    private Angle(double radians) {
+        this.radians = radians;
+    }
+
+    static Angle ofRadians(double radians) {
+        return null;
+    }
+
+    static Angle ofDegrees(double degrees) {
+        return null;
+    }
+
+    double getDegrees() {
+        return 0;
+    }
+
+    double getRadians() {
+        return radians;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Angle fromDegrees = Angle.ofDegrees(90);
+        Angle fromRadians = Angle.ofRadians(Math.PI / 2);
+        System.out.println(fromDegrees == null ? "null" : fromDegrees.getDegrees());
+        System.out.println(fromRadians == null ? "null" : fromRadians.getDegrees());
+    }
+}
+```
+
 2. Add a `ZERO` constant and make `ofRadians(0)` return it. Verify with `==` that you get the same object twice.
+
+```java
+class Angle {
+    private final double radians;
+    static final Angle ZERO = new Angle(0);
+
+    private Angle(double radians) {
+        this.radians = radians;
+    }
+
+    static Angle ofRadians(double radians) {
+        return new Angle(radians);
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Angle a = Angle.ofRadians(0);
+        Angle b = Angle.ofRadians(0);
+        System.out.println(a == b);
+        System.out.println(a == Angle.ZERO);
+    }
+}
+```
+
 3. Write a `Temperature` class with `fromCelsius` and `fromFahrenheit` factories.
+
+```java
+class Temperature {
+    private final double celsius;
+
+    private Temperature(double celsius) {
+        this.celsius = celsius;
+    }
+
+    static Temperature fromCelsius(double celsius) {
+        return null;
+    }
+
+    static Temperature fromFahrenheit(double fahrenheit) {
+        return null;
+    }
+
+    double getCelsius() {
+        return celsius;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Temperature fromC = Temperature.fromCelsius(0);
+        Temperature fromF = Temperature.fromFahrenheit(32);
+        System.out.println(fromC == null ? "null" : fromC.getCelsius());
+        System.out.println(fromF == null ? "null" : fromF.getCelsius());
+    }
+}
+```
+
 4. Write an abstract `Sensor` with two subclasses, and a static factory choosing between them from a `String`. Confirm the caller only ever sees `Sensor`.
+
+```java
+abstract class Sensor {
+    abstract String name();
+
+    static Sensor fromType(String type) {
+        return null;
+    }
+}
+
+class Gyro extends Sensor {
+    @Override
+    String name() {
+        return "gyro";
+    }
+
+    void calibrate() {
+        System.out.println("calibrating");
+    }
+}
+
+class Distance extends Sensor {
+    @Override
+    String name() {
+        return "distance";
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Sensor sensor = Sensor.fromType("gyro");
+        System.out.println(sensor == null ? "null" : sensor.name());
+        // Uncomment and click Run — it should not compile, because the type is Sensor:
+        // sensor.calibrate();
+    }
+}
+```
+
 5. Write a `MotorFactory` holding shared configuration and creating configured `Motor` objects from a port number.
+
+```java
+class Motor {
+    int port;
+    boolean inverted;
+    double maxOutput = 1.0;
+
+    Motor(int port) {
+        this.port = port;
+    }
+
+    void setInverted(boolean inverted) {
+        this.inverted = inverted;
+    }
+
+    void setMaxOutput(double maxOutput) {
+        this.maxOutput = maxOutput;
+    }
+}
+
+class MotorFactory {
+    private boolean inverted;
+    private double maxOutput;
+
+    MotorFactory(boolean inverted, double maxOutput) {
+        this.inverted = inverted;
+        this.maxOutput = maxOutput;
+    }
+
+    Motor create(int port) {
+        return null;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        MotorFactory factory = new MotorFactory(true, 0.8);
+        Motor left = factory.create(1);
+        Motor right = factory.create(2);
+        System.out.println(left == null ? "null" : "left port=" + left.port + " inverted=" + left.inverted + " max=" + left.maxOutput);
+        System.out.println(right == null ? "null" : "right port=" + right.port + " inverted=" + right.inverted + " max=" + right.maxOutput);
+    }
+}
+```
+
 
 <details>
 <summary>Hints</summary>

@@ -175,11 +175,92 @@ If the size changes as the program runs, use an [ArrayList](/java/java-ds-arrayl
 
 <ExerciseBox title="Practice" description="Write each of these using plain arrays only.">
 
+Fill in each starter, click Run, then open Hints if you get stuck.
+
 1. Create an array of 10 integers, fill it with the numbers 1 through 10, and print the total.
+
+```java
+public class Main {
+    public static void main(String[] args) {
+        int[] numbers = new int[10];
+        int total = 0;
+        // TODO: fill numbers with 1 through 10 and add them into total
+        System.out.println(total);
+    }
+}
+```
+
 2. Write a method that takes an `int[]` and returns the largest value. Handle an empty array sensibly.
+
+```java
+public class Main {
+    static int largest(int[] arr) {
+        // TODO: return the largest value; handle an empty array
+        return 0;
+    }
+
+    public static void main(String[] args) {
+        int[] sample = {3, 9, -2, 7};
+        System.out.println(largest(sample));
+        System.out.println(largest(new int[] {}));
+    }
+}
+```
+
 3. Write a method that reverses an `int[]` in place, without creating a second array.
+
+```java
+public class Main {
+    static void reverse(int[] arr) {
+        // TODO: reverse arr in place, without a second array
+    }
+
+    public static void main(String[] args) {
+        int[] values = {10, 20, 30, 40, 50};
+        reverse(values);
+        for (int i = 0; i < values.length; i++) {
+            System.out.print(values[i] + " ");
+        }
+        System.out.println();
+    }
+}
+```
+
 4. Write a method that takes an `int[]` and a value, and returns a new array with that value appended.
+
+```java
+public class Main {
+    static int[] append(int[] arr, int value) {
+        // TODO: return a new array with value appended
+        return arr;
+    }
+
+    public static void main(String[] args) {
+        int[] values = {1, 2, 3};
+        int[] longer = append(values, 4);
+        for (int i = 0; i < longer.length; i++) {
+            System.out.print(longer[i] + " ");
+        }
+        System.out.println();
+    }
+}
+```
+
 5. Create a 3 × 3 grid of integers and print the sum of each row and each column.
+
+```java
+public class Main {
+    public static void main(String[] args) {
+        int[][] grid = {
+            {1, 2, 3},
+            {4, 5, 6},
+            {7, 8, 9}
+        };
+        // TODO: print the sum of each row and each column
+    }
+}
+```
+
 
 <details>
 <summary>Hints</summary>

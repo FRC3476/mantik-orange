@@ -515,13 +515,141 @@ public class TeamRoster {
 
 <ExerciseBox title="Try It Yourself:" subtitle="Practice with Objects and References" answers={[{"task":"Create a Sensor class with equals() method that compares sensor type and ID","content":"public class FRCSensor {\n    private String sensorType;\n    private String sensorId;\n    private double lastReading;\n    private boolean isConnected;\n    \n    public FRCSensor(String type, String id) {\n        this.sensorType = type;\n        this.sensorId = id;\n        this.lastReading = 0.0;\n        this.isConnected = true;\n    }\n    \n    @Override\n    public boolean equals(Object compared) {\n        // Same object reference\n        if (this == compared) {\n            return true;\n        }\n        \n        // Null check\n        if (compared == null) {\n            return false;\n        }\n        \n        // Type check\n        if (!(compared instanceof FRCSensor)) {\n            return false;\n        }\n        \n        // Cast and compare important properties\n        FRCSensor other = (FRCSensor) compared;\n        \n        // Two sensors are equal if they have same type and ID\n        return this.sensorType.equals(other.sensorType) && \n               this.sensorId.equals(other.sensorId);\n    }\n    \n    public void updateReading(double reading) {\n        this.lastReading = reading;\n    }\n    \n    public double getLastReading() {\n        return this.lastReading;\n    }\n    \n    public String getSensorType() {\n        return this.sensorType;\n    }\n    \n    public String getSensorId() {\n        return this.sensorId;\n    }\n    \n    public boolean isConnected() {\n        return this.isConnected;\n    }\n    \n    public void setConnected(boolean connected) {\n        this.isConnected = connected;\n    }\n    \n    @Override\n    public String toString() {\n        return sensorType + \" [\" + sensorId + \"] - \" + \n               String.format(\"%.2f\", lastReading) + \n               (isConnected ? \" (Connected)\" : \" (Disconnected)\");\n    }\n}\n\n// Usage example:\nFRCSensor ultrasonic1 = new FRCSensor(\"Ultrasonic\", \"US-001\");\nFRCSensor ultrasonic2 = new FRCSensor(\"Ultrasonic\", \"US-001\");  // Same type and ID\nFRCSensor gyro1 = new FRCSensor(\"Gyroscope\", \"GY-001\");\n\n// Test equality\nSystem.out.println(\"ultrasonic1.equals(ultrasonic2): \" + ultrasonic1.equals(ultrasonic2));  // true\nSystem.out.println(\"ultrasonic1.equals(gyro1): \" + ultrasonic1.equals(gyro1));              // false\nSystem.out.println(\"ultrasonic1 == ultrasonic2: \" + (ultrasonic1 == ultrasonic2));         // false\n\n// Test with different readings (should still be equal)\nultrasonic1.updateReading(25.5);\nultrasonic2.updateReading(30.2);\nSystem.out.println(\"After different readings:\");\nSystem.out.println(\"Still equal? \" + ultrasonic1.equals(ultrasonic2));  // true\nSystem.out.println(ultrasonic1);\nSystem.out.println(ultrasonic2);"},{"task":"Build a Robot class that can be safely cloned with all its sensor references","content":"import java.util.ArrayList;\n\npublic class FRCRobotAdvanced {\n    private String teamName;\n    private int teamNumber;\n    private ArrayList<FRCSensor> sensors;\n    private double batteryLevel;\n    \n    public FRCRobotAdvanced(String name, int number) {\n        this.teamName = name;\n        this.teamNumber = number;\n        this.sensors = new ArrayList<>();\n        this.batteryLevel = 100.0;\n    }\n    \n    // Safe method to add a sensor\n    public void addSensor(FRCSensor sensor) {\n        if (sensor != null && !sensors.contains(sensor)) {\n            sensors.add(sensor);\n            System.out.println(\"[OK] Added sensor: \" + sensor.getSensorType() + \" [\" + sensor.getSensorId() + \"]\");\n        } else if (sensor == null) {\n            System.out.println(\"[ERROR] Cannot add null sensor\");\n        } else {\n            System.out.println(\"[WARNING]  Sensor already exists: \" + sensor.getSensorType() + \" [\" + sensor.getSensorId() + \"]\");\n        }\n    }\n    \n    // Safe method to get a sensor by type and ID\n    public FRCSensor getSensor(String type, String id) {\n        for (FRCSensor sensor : sensors) {\n            if (sensor != null && sensor.getSensorType().equals(type) && sensor.getSensorId().equals(id)) {\n                return sensor;\n            }\n        }\n        return null;  // Not found\n    }\n    \n    // Clone method that creates a deep copy\n    public FRCRobotAdvanced clone() {\n        System.out.println(\"[ROBOT] Cloning robot: \" + this.teamName);\n        \n        // Create new robot with same basic properties\n        FRCRobotAdvanced clone = new FRCRobotAdvanced(this.teamName + \" (Clone)\", this.teamNumber);\n        clone.batteryLevel = this.batteryLevel;\n        \n        // Deep copy all sensors\n        for (FRCSensor sensor : this.sensors) {\n            if (sensor != null) {\n                // Create new sensor with same properties\n                FRCSensor clonedSensor = new FRCSensor(sensor.getSensorType(), sensor.getSensorId() + \"-CLONE\");\n                clonedSensor.updateReading(sensor.getLastReading());\n                clonedSensor.setConnected(sensor.isConnected());\n                clone.addSensor(clonedSensor);\n            }\n        }\n        \n        return clone;\n    }\n    \n    // Safe method to use battery\n    public void useBattery(double amount) {\n        if (amount > 0) {\n            this.batteryLevel = Math.max(0, this.batteryLevel - amount);\n        }\n    }\n    \n    // Safe method to get sensor count\n    public int getSensorCount() {\n        return sensors.size();\n    }\n    \n    // Safe method to get all sensors (returns copy to prevent external modification)\n    public ArrayList<FRCSensor> getAllSensors() {\n        ArrayList<FRCSensor> sensorCopy = new ArrayList<>();\n        for (FRCSensor sensor : sensors) {\n            if (sensor != null) {\n                sensorCopy.add(sensor);\n            }\n        }\n        return sensorCopy;\n    }\n    \n    @Override\n    public String toString() {\n        return teamName + \" (Team \" + teamNumber + \") - Battery: \" + \n               String.format(\"%.1f\", batteryLevel) + \"%, Sensors: \" + sensors.size();\n    }\n}\n\n// Usage example:\nFRCRobotAdvanced originalRobot = new FRCRobotAdvanced(\"Storm Surge\", 98765);\n\n// Add sensors safely\noriginalRobot.addSensor(new FRCSensor(\"Ultrasonic\", \"US-001\"));\noriginalRobot.addSensor(new FRCSensor(\"Gyroscope\", \"GY-001\"));\noriginalRobot.addSensor(null);  // Test null handling\n\n// Use some battery\noriginalRobot.useBattery(25.0);\n\nSystem.out.println(\"\\nOriginal robot: \" + originalRobot);\n\n// Clone the robot\nFRCRobotAdvanced clonedRobot = originalRobot.clone();\nSystem.out.println(\"Cloned robot: \" + clonedRobot);\n\n// Modify original robot\noriginalRobot.useBattery(30.0);\noriginalRobot.addSensor(new FRCSensor(\"Color\", \"CO-001\"));\n\nSystem.out.println(\"\\nAfter modifications:\");\nSystem.out.println(\"Original: \" + originalRobot);\nSystem.out.println(\"Clone: \" + clonedRobot);\nSystem.out.println(\"Are they the same object? \" + (originalRobot == clonedRobot));"}]}>
 
+Fill in each starter, click Run, then open Show Answers when you want to compare.
+
 - Create a Sensor class with equals() method that compares sensor type and ID
+
+```java
+class Sensor {
+    private String sensorType;
+    private String sensorId;
+    private double lastReading;
+
+    Sensor(String type, String id) {
+        this.sensorType = type;
+        this.sensorId = id;
+        this.lastReading = 0.0;
+    }
+
+    public boolean equals(Object compared) {
+        return false;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Sensor a = new Sensor("Ultrasonic", "US-001");
+        Sensor b = new Sensor("Ultrasonic", "US-001");
+        Sensor c = new Sensor("Gyro", "GY-001");
+        System.out.println(a.equals(b));
+        System.out.println(a.equals(c));
+    }
+}
+```
+
 - Build a Robot class that can be safely cloned with all its sensor references
+
+```java
+import java.util.ArrayList;
+
+class Sensor {
+    String type;
+    String id;
+
+    Sensor(String type, String id) {
+        this.type = type;
+        this.id = id;
+    }
+}
+
+class Robot {
+    String teamName;
+    ArrayList<Sensor> sensors = new ArrayList<Sensor>();
+
+    Robot(String teamName) {
+        this.teamName = teamName;
+    }
+
+    void addSensor(Sensor sensor) {
+        sensors.add(sensor);
+    }
+
+    Robot copy() {
+        // TODO: return a new robot with its own copy of the sensors
+        return null;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Robot original = new Robot("Storm");
+        original.addSensor(new Sensor("Ultrasonic", "US-001"));
+        original.addSensor(new Sensor("Gyro", "GY-001"));
+        // TODO: Robot clone = original.copy();
+        // TODO: change original, then print both robots' sensors
+        System.out.println(original.teamName + " sensors: " + original.sensors.size());
+    }
+}
+```
+
 - Design a Competition class that manages teams and handles null robot references safely
+
+```java
+class Robot {
+    String name;
+
+    Robot(String name) {
+        this.name = name;
+    }
+}
+
+class Competition {
+    Robot[] roster = new Robot[4];
+
+    void printRoster() {
+        // TODO: print each robot; skip null slots without crashing
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Competition meet = new Competition();
+        meet.roster[0] = new Robot("Alpha");
+        meet.roster[1] = null;
+        meet.roster[2] = new Robot("Gamma");
+        meet.roster[3] = new Robot("Delta");
+        meet.printRoster();
+    }
+}
+```
+
 - Create a method that finds robots with low battery levels in a team roster
 
 ```java
-Test your understanding of object references, null handling, and object equality:
+class Robot {
+    String name;
+    double batteryLevel;
+
+    Robot(String name, double batteryLevel) {
+        this.name = name;
+        this.batteryLevel = batteryLevel;
+    }
+}
+
+public class Main {
+    static void findLowBattery(Robot[] roster) {
+        // TODO: print robots whose battery is low
+    }
+
+    public static void main(String[] args) {
+        Robot[] roster = new Robot[4];
+        roster[0] = new Robot("Alpha", 15.0);
+        roster[1] = new Robot("Beta", 80.0);
+        roster[2] = null;
+        roster[3] = new Robot("Gamma", 8.0);
+        findLowBattery(roster);
+    }
+}
 ```
 
 </ExerciseBox>

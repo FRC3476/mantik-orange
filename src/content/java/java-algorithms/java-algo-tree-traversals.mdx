@@ -318,11 +318,153 @@ There is no meaningful in-order for more than two children — "the middle" is u
 
 <ExerciseBox title="Practice" description="Build a small tree by hand first so you can check the expected output.">
 
+Fill in each starter, click Run, then open Hints if you get stuck.
+
 1. Print a tree in all three recursive orders and confirm the sequences differ as expected.
+
+```java
+class Node {
+    int value;
+    Node left;
+    Node right;
+    Node(int value) { this.value = value; }
+}
+
+public class Main {
+    static void preorder(Node node) {
+        // TODO
+    }
+
+    static void inorder(Node node) {
+        // TODO
+    }
+
+    static void postorder(Node node) {
+        // TODO
+    }
+
+    public static void main(String[] args) {
+        Node root = new Node(1);
+        root.left = new Node(2);
+        root.right = new Node(3);
+        root.left.left = new Node(4);
+        preorder(root);
+        System.out.println("---");
+        inorder(root);
+        System.out.println("---");
+        postorder(root);
+    }
+}
+```
+
 2. Build a binary search tree, print it in-order, and verify the output is sorted.
+
+```java
+class Node {
+    int value;
+    Node left;
+    Node right;
+    Node(int value) { this.value = value; }
+}
+
+public class Main {
+    static Node insert(Node node, int value) {
+        return node;
+    }
+
+    static void inorder(Node node) {
+        // TODO
+    }
+
+    public static void main(String[] args) {
+        Node root = null;
+        int[] values = {5, 2, 8, 1, 4};
+        for (int i = 0; i < values.length; i++) {
+            root = insert(root, values[i]);
+        }
+        inorder(root);
+    }
+}
+```
+
 3. Print a tree level by level, one line per level.
+
+```java
+import java.util.*;
+
+class Node {
+    int value;
+    Node left;
+    Node right;
+    Node(int value) { this.value = value; }
+}
+
+public class Main {
+    static void levelOrder(Node root) {
+        // TODO
+    }
+
+    public static void main(String[] args) {
+        Node root = new Node(1);
+        root.left = new Node(2);
+        root.right = new Node(3);
+        root.left.left = new Node(4);
+        levelOrder(root);
+    }
+}
+```
+
 4. Write a method returning the height of a tree, and explain why it must be post-order.
+
+```java
+class Node {
+    int value;
+    Node left;
+    Node right;
+    Node(int value) { this.value = value; }
+}
+
+public class Main {
+    static int height(Node node) {
+        return 0;
+    }
+
+    public static void main(String[] args) {
+        Node root = new Node(1);
+        root.left = new Node(2);
+        root.right = new Node(3);
+        root.left.left = new Node(4);
+        System.out.println(height(root));
+    }
+}
+```
+
 5. Write pre-order iteratively with an explicit stack, and confirm it matches the recursive version.
+
+```java
+import java.util.*;
+
+class Node {
+    int value;
+    Node left;
+    Node right;
+    Node(int value) { this.value = value; }
+}
+
+public class Main {
+    static void preorderIterative(Node root) {
+        // TODO
+    }
+
+    public static void main(String[] args) {
+        Node root = new Node(1);
+        root.left = new Node(2);
+        root.right = new Node(3);
+        root.left.left = new Node(4);
+        preorderIterative(root);
+    }
+}
+```
 
 <details>
 <summary>Hints</summary>

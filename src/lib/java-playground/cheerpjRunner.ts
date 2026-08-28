@@ -20,6 +20,8 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.HashSet;
+import java.util.Set;
 
 public class JpStdioLauncher {
     public static void main(String[] args) throws Exception {
@@ -42,6 +44,7 @@ public class JpStdioLauncher {
         System.setOut(out);
         System.setErr(err);
 
+        Set<Thread> existing = snapshotThreads();
         try {
             Method main = Class.forName(entryClass).getMethod("main", String[].class);
             main.invoke(null, (Object) new String[0]);
@@ -53,11 +56,49 @@ public class JpStdioLauncher {
         } catch (Throwable t) {
             t.printStackTrace(err);
         } finally {
+            joinNewUserThreads(existing);
             out.flush();
             err.flush();
             out.close();
             err.close();
             try { in.close(); } catch (Exception ignored) {}
+        }
+    }
+
+    /** CheerpJ's getAllStackTraces() is empty; enumerate() still sees user threads. */
+    private static Set<Thread> snapshotThreads() {
+        Thread[] threads = new Thread[Math.max(8, Thread.activeCount() + 16)];
+        int n = Thread.enumerate(threads);
+        Set<Thread> set = new HashSet<Thread>();
+        for (int i = 0; i < n; i++) {
+            if (threads[i] != null) {
+                set.add(threads[i]);
+            }
+        }
+        return set;
+    }
+
+    /** Like a desktop JVM: keep stdout open until threads started by main() finish. */
+    private static void joinNewUserThreads(Set<Thread> existing) {
+        Thread current = Thread.currentThread();
+        while (true) {
+            Thread pending = null;
+            for (Thread t : snapshotThreads()) {
+                if (t == current || t.isDaemon() || !t.isAlive() || existing.contains(t)) {
+                    continue;
+                }
+                pending = t;
+                break;
+            }
+            if (pending == null) {
+                return;
+            }
+            try {
+                pending.join();
+            } catch (InterruptedException e) {
+                current.interrupt();
+                return;
+            }
         }
     }
 }

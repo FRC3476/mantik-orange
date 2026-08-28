@@ -408,11 +408,242 @@ The last row is the honest cost. Constructors get longer, and wiring code appear
 
 <ExerciseBox title="Practice">
 
+Fill in each starter, click Run, then open Hints if you get stuck.
+
 1. Rewrite a class that constructs its own dependency so the dependency is passed in.
+
+```java
+class RealMotor {
+    void set(double output) {
+        System.out.println("motor set to " + output);
+    }
+}
+
+class Shooter {
+    private RealMotor motor;
+
+    Shooter() {
+        this.motor = new RealMotor();
+    }
+
+    void spinUp() {
+        motor.set(0.9);
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        new Shooter().spinUp();
+    }
+}
+```
+
 2. Define a `MotorController` interface, a real implementation, and a fake one that records calls.
+
+```java
+public class Main {
+    public static void main(String[] args) {
+        RealMotor real = new RealMotor();
+        real.set(0.9);
+        real.stop();
+
+        FakeMotor fake = new FakeMotor();
+        fake.set(0.9);
+        fake.stop();
+        System.out.println("lastOutput=" + fake.lastOutput);
+        System.out.println("stopped=" + fake.stopped);
+    }
+}
+
+interface MotorController {
+    void set(double output);
+
+    void stop();
+}
+
+class RealMotor implements MotorController {
+    @Override
+    public void set(double output) {
+        // TODO
+    }
+
+    @Override
+    public void stop() {
+        // TODO
+    }
+}
+
+class FakeMotor implements MotorController {
+    double lastOutput;
+    boolean stopped;
+
+    @Override
+    public void set(double output) {
+        // TODO
+    }
+
+    @Override
+    public void stop() {
+        // TODO
+    }
+}
+```
+
 3. Write a `Shooter` taking a `MotorController` and test it with the fake — no hardware.
+
+```java
+public class Main {
+    public static void main(String[] args) {
+        FakeMotor fake = new FakeMotor();
+        Shooter shooter = new Shooter(fake);
+        shooter.spinUp();
+        System.out.println(fake.lastOutput);
+        shooter.stop();
+        System.out.println(fake.stopped);
+    }
+}
+
+interface MotorController {
+    void set(double output);
+
+    void stop();
+}
+
+class FakeMotor implements MotorController {
+    double lastOutput;
+    boolean stopped;
+
+    @Override
+    public void set(double output) {
+        lastOutput = output;
+    }
+
+    @Override
+    public void stop() {
+        stopped = true;
+    }
+}
+
+class Shooter {
+    private MotorController motor;
+
+    Shooter(MotorController motor) {
+        this.motor = motor;
+    }
+
+    void spinUp() {
+        // TODO
+    }
+
+    void stop() {
+        // TODO
+    }
+}
+```
+
 4. Write a class taking a `DoubleSupplier` and show that it sees updated values when the source changes.
+
+```java
+import java.util.function.*;
+
+class DriveCommand {
+    DoubleSupplier forward;
+
+    DriveCommand(DoubleSupplier forward) {
+        this.forward = forward;
+    }
+
+    void execute() {
+        // TODO
+    }
+}
+
+public class Main {
+    static double stick = 0.2;
+
+    public static void main(String[] args) {
+        DriveCommand command = new DriveCommand(() -> stick);
+        command.execute();
+        stick = 0.8;
+        command.execute();
+    }
+}
+```
+
 5. Write a small composition root creating two subsystems and their dependencies in one place.
+
+```java
+public class Main {
+    public static void main(String[] args) {
+        RobotContainer robot = new RobotContainer();
+        robot.demo();
+    }
+}
+
+interface MotorController {
+    void set(double output);
+
+    void stop();
+}
+
+class Motor implements MotorController {
+    int port;
+
+    Motor(int port) {
+        this.port = port;
+    }
+
+    @Override
+    public void set(double output) {
+        System.out.println("motor " + port + " set to " + output);
+    }
+
+    @Override
+    public void stop() {
+        System.out.println("motor " + port + " stopped");
+    }
+}
+
+class Shooter {
+    private MotorController motor;
+
+    Shooter(MotorController motor) {
+        this.motor = motor;
+    }
+
+    void spinUp() {
+        motor.set(0.9);
+    }
+}
+
+class Intake {
+    private MotorController motor;
+
+    Intake(MotorController motor) {
+        this.motor = motor;
+    }
+
+    void run() {
+        motor.set(0.6);
+    }
+}
+
+class RobotContainer {
+    MotorController shooterMotor;
+    MotorController intakeMotor;
+    Shooter shooter;
+    Intake intake;
+
+    RobotContainer() {
+        // TODO
+    }
+
+    void demo() {
+        // TODO
+    }
+}
+```
+
 
 <details>
 <summary>Hints</summary>

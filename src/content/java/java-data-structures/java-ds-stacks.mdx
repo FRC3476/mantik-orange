@@ -177,11 +177,102 @@ All three operations touch only the last slot, so all three are instant. Growing
 
 <ExerciseBox title="Practice">
 
+Fill in each starter, click Run, then open Hints if you get stuck.
+
 1. Push the numbers 1 through 5 onto a stack, then pop and print them all. Confirm the order is reversed.
+
+```java
+import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        Deque<Integer> stack = new ArrayDeque<Integer>();
+        // TODO: push 1 through 5, then pop and print until empty
+    }
+}
+```
+
 2. Write a method that reverses a `String` using a stack.
+
+```java
+import java.util.*;
+
+public class Main {
+    static String reverse(String s) {
+        return s;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(reverse("robot"));
+    }
+}
+```
+
 3. Write a method that checks whether a string of `(`, `[`, and `{` brackets is balanced.
+
+```java
+import java.util.*;
+
+public class Main {
+    static boolean balanced(String s) {
+        return false;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(balanced("([])"));
+    }
+}
+```
+
 4. Write a simple undo system: a class with `doAction(String)`, `undo()`, and `history()`.
+
+```java
+import java.util.*;
+
+class UndoSystem {
+    Deque<String> actions = new ArrayDeque<String>();
+
+    void doAction(String action) {
+        // TODO: push the action
+    }
+
+    void undo() {
+        // TODO: pop if not empty
+    }
+
+    void history() {
+        System.out.println(actions);
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        UndoSystem system = new UndoSystem();
+        system.doAction("moveArm");
+        system.doAction("closeClaw");
+        system.doAction("liftArm");
+        system.undo();
+        system.history();
+    }
+}
+```
+
 5. Write a method that evaluates a postfix expression such as `"3 4 + 2 *"`, giving 14.
+
+```java
+import java.util.*;
+
+public class Main {
+    static int postfix(String expr) {
+        return 0;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(postfix("3 4 + 2 *"));
+    }
+}
+```
+
 
 <details>
 <summary>Hints</summary>

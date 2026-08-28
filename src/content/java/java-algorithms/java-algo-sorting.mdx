@@ -267,11 +267,151 @@ This only works because `List.sort` is stable. Chaining with `thenComparing` is 
 
 <ExerciseBox title="Practice">
 
+Fill in each starter, click Run, then open Hints if you get stuck.
+
 1. Implement selection sort and test it on an empty array, one element, sorted input, and reverse-sorted input.
+
+```java
+import java.util.*;
+
+public class Main {
+    static void selectionSort(int[] a) {
+        // TODO
+    }
+
+    public static void main(String[] args) {
+        int[] empty = {};
+        int[] single = {4};
+        int[] sorted = {1, 2, 3, 4};
+        int[] reversed = {4, 3, 2, 1};
+        selectionSort(empty);
+        selectionSort(single);
+        selectionSort(sorted);
+        selectionSort(reversed);
+        System.out.println(Arrays.toString(empty));
+        System.out.println(Arrays.toString(single));
+        System.out.println(Arrays.toString(sorted));
+        System.out.println(Arrays.toString(reversed));
+    }
+}
+```
+
 2. Implement insertion sort. Count the inner-loop iterations on sorted versus reversed input and compare.
+
+```java
+import java.util.*;
+
+public class Main {
+    static int insertionSort(int[] a) {
+        int inner = 0;
+        // TODO
+        return inner;
+    }
+
+    public static void main(String[] args) {
+        int[] sorted = {1, 2, 3, 4, 5};
+        int[] reversed = {5, 4, 3, 2, 1};
+        System.out.println(insertionSort(sorted));
+        System.out.println(Arrays.toString(sorted));
+        System.out.println(insertionSort(reversed));
+        System.out.println(Arrays.toString(reversed));
+    }
+}
+```
+
 3. Implement merge sort, then confirm it is stable using objects with equal keys.
+
+```java
+import java.util.*;
+
+class Item {
+    int key;
+    int id;
+
+    Item(int key, int id) {
+        this.key = key;
+        this.id = id;
+    }
+}
+
+public class Main {
+    static void mergeSort(int[] a, int low, int high) {
+        // TODO
+    }
+
+    static void merge(int[] a, int low, int mid, int high) {
+        // TODO
+    }
+
+    public static void main(String[] args) {
+        int[] a = {5, 2, 9, 1};
+        mergeSort(a, 0, a.length - 1);
+        System.out.println(Arrays.toString(a));
+
+        Item[] items = {
+            new Item(2, 1),
+            new Item(1, 2),
+            new Item(2, 3)
+        };
+        // TODO: sort by key; equal keys should keep their original order
+        for (int i = 0; i < items.length; i++) {
+            System.out.print(items[i].id + " ");
+        }
+        System.out.println();
+    }
+}
+```
+
 4. Sort a list of your own objects by one field descending, breaking ties on another field ascending.
+
+```java
+import java.util.*;
+
+class Motor {
+    String name;
+    int port;
+
+    Motor(String name, int port) {
+        this.name = name;
+        this.port = port;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        List<Motor> motors = new ArrayList<Motor>();
+        motors.add(new Motor("intake", 2));
+        motors.add(new Motor("shooter", 1));
+        motors.add(new Motor("arm", 1));
+        // TODO: sort by port descending, then name ascending
+        for (int i = 0; i < motors.size(); i++) {
+            Motor m = motors.get(i);
+            System.out.println(m.name + ":" + m.port);
+        }
+    }
+}
+```
+
 5. Given a list of names, sort them by length, then alphabetically among equal lengths.
+
+```java
+import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        List<String> names = new ArrayList<String>();
+        names.add("bob");
+        names.add("alice");
+        names.add("carol");
+        names.add("ed");
+        names.add("dan");
+        // TODO: sort by length, then alphabetically among equal lengths
+        for (int i = 0; i < names.size(); i++) {
+            System.out.println(names.get(i));
+        }
+    }
+}
+```
 
 <details>
 <summary>Hints</summary>

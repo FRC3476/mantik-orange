@@ -290,11 +290,104 @@ Counting the complement *before* inserting the current value is what prevents an
 
 <ExerciseBox title="Practice" description="Each is a few lines with the right structure chosen.">
 
+Fill in each starter, click Run, then open Hints if you get stuck.
+
 1. Read N integers and print how many appear more than once.
+
+```java
+import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        int[] values = {4, 1, 4, 2, 1, 7, 4};
+        Map<Integer, Integer> count = new HashMap<Integer, Integer>();
+
+        // TODO: loop over values and fill count
+        int moreThanOnce = 0;
+        // TODO: count how many keys appear more than once
+        System.out.println(moreThanOnce);
+    }
+}
+```
+
 2. Read two lists of integers and print the values present in both.
+
+```java
+import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        int[] first = {1, 5, 3, 8, 2};
+        int[] second = {8, 4, 5, 9, 1};
+        Set<Integer> inFirst = new HashSet<Integer>();
+        inFirst.add(1);
+        inFirst.add(5);
+        inFirst.add(3);
+        inFirst.add(8);
+        inFirst.add(2);
+
+        // TODO: print each value from second that is also in inFirst
+    }
+}
+```
+
 3. Read N integers and print the length of the longest run of consecutive integers present in the input, in any order.
+
+```java
+import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        int[] values = {100, 4, 200, 1, 3, 2};
+        Set<Integer> seen = new HashSet<Integer>();
+        seen.add(100);
+        seen.add(4);
+        seen.add(200);
+        seen.add(1);
+        seen.add(3);
+        seen.add(2);
+
+        int longest = 0;
+        // TODO: find the longest consecutive run among the values in seen
+        System.out.println(longest);
+    }
+}
+```
+
 4. Read N integers and print the first value that appears exactly twice.
+
+```java
+import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        int[] values = {7, 1, 3, 1, 7, 3};
+        Map<Integer, Integer> count = new HashMap<Integer, Integer>();
+
+        Integer firstTwice = null;
+        // TODO: fill count, then set firstTwice to the first value whose count is exactly 2
+        System.out.println(firstTwice);
+    }
+}
+```
+
 5. Read a stream of N integers; after each one, print the smallest value seen so far that is greater than or equal to the current value.
+
+```java
+import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        int[] stream = {9, 3, 7, 3, 10};
+        TreeSet<Integer> seen = new TreeSet<Integer>();
+
+        for (int i = 0; i < stream.length; i++) {
+            int current = stream[i];
+            // TODO: update seen, then print the smallest value in seen that is >= current
+        }
+    }
+}
+```
 
 <details>
 <summary>Hints</summary>

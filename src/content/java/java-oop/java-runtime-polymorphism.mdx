@@ -279,11 +279,197 @@ Checking for a *capability interface* like `Stoppable` is more defensible, since
 
 <ExerciseBox title="Practice">
 
+Fill in each starter, click Run, then open Hints if you get stuck.
+
 1. Write an abstract `Shape` class with an abstract `area()` method, plus `Circle` and `Rectangle` subclasses. Put several in a list and print every area in one loop.
+
+```java
+abstract class Shape {
+    abstract double area();
+}
+
+class Circle extends Shape {
+    double radius;
+
+    Circle(double radius) {
+        this.radius = radius;
+    }
+
+    @Override
+    double area() {
+        return 0;
+    }
+}
+
+class Rectangle extends Shape {
+    double width;
+    double height;
+
+    Rectangle(double width, double height) {
+        this.width = width;
+        this.height = height;
+    }
+
+    @Override
+    double area() {
+        return 0;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        List<Shape> shapes = Arrays.asList(new Circle(3), new Rectangle(4, 5));
+        for (Shape s : shapes) {
+            System.out.println(s.area());
+        }
+    }
+}
+```
+
 2. Add a `describe()` method to `Shape` with a default body, and override it in only one subclass. Confirm which version runs for each.
+
+```java
+abstract class Shape {
+    abstract double area();
+
+    void describe() {
+        System.out.println("a shape");
+    }
+}
+
+class Circle extends Shape {
+    @Override
+    double area() {
+        return 0;
+    }
+
+    // TODO: override describe in Circle only
+}
+
+class Rectangle extends Shape {
+    @Override
+    double area() {
+        return 0;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Shape circle = new Circle();
+        Shape rectangle = new Rectangle();
+        circle.describe();
+        rectangle.describe();
+    }
+}
+```
+
 3. Write a `Stoppable` interface and implement it in two unrelated classes. Loop a mixed list and stop only the ones that can be stopped.
+
+```java
+interface Stoppable {
+    void stop();
+}
+
+class Intake implements Stoppable {
+    @Override
+    public void stop() {
+        // TODO
+    }
+}
+
+class Camera implements Stoppable {
+    @Override
+    public void stop() {
+        // TODO
+    }
+}
+
+class Sensor {
+}
+
+public class Main {
+    public static void main(String[] args) {
+        List<Object> items = Arrays.asList(new Intake(), new Sensor(), new Camera());
+        for (Object item : items) {
+            // TODO: stop only if item is Stoppable
+        }
+        System.out.println("checked " + items.size());
+    }
+}
+```
+
 4. Demonstrate field hiding: a parent and child each with a `name` field, and show that the declared type decides which you see.
+
+```java
+class Parent {
+    String name = "parent";
+}
+
+class Child extends Parent {
+    String name = "child";
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Parent p = new Child();
+        // TODO: print p.name
+        // TODO: print the child's name
+        System.out.println("assigned Child to Parent");
+    }
+}
+```
+
 5. Take a method containing a three-branch `instanceof` chain and rewrite it using polymorphism so the chain disappears.
+
+```java
+class Animal {
+    void act() {
+    }
+}
+
+class Dog extends Animal {
+    @Override
+    void act() {
+        // TODO
+    }
+}
+
+class Cat extends Animal {
+    @Override
+    void act() {
+        // TODO
+    }
+}
+
+class Bird extends Animal {
+    @Override
+    void act() {
+        // TODO
+    }
+}
+
+public class Main {
+    static void handle(Animal a) {
+        if (a instanceof Dog) {
+            // TODO: dog behaviour
+        } else if (a instanceof Cat) {
+            // TODO: cat behaviour
+        } else if (a instanceof Bird) {
+            // TODO: bird behaviour
+        }
+    }
+
+    public static void main(String[] args) {
+        List<Animal> animals = Arrays.asList(new Dog(), new Cat(), new Bird());
+        for (Animal a : animals) {
+            handle(a);
+            // TODO: replace handle(a) with a.act()
+        }
+        System.out.println("rewrite using act()");
+    }
+}
+```
+
 
 <details>
 <summary>Hints</summary>

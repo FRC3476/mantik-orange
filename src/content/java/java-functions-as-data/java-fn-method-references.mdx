@@ -205,11 +205,110 @@ When that happens, write the lambda instead — the argument types make it expli
 
 <ExerciseBox title="Practice">
 
+Fill in each starter, click Run, then open Hints if you get stuck.
+
 1. Rewrite `list.forEach(s -> System.out.println(s))` as a method reference.
+
+```java
+import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        List<String> list = new ArrayList<String>();
+        list.add("intake");
+        list.add("drive");
+        list.add("shooter");
+
+        list.forEach(s -> System.out.println(s));
+    }
+}
+```
+
 2. Convert a `List<String>` of digits into a `List<Integer>` using a method reference.
+
+```java
+import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        List<String> digits = new ArrayList<String>();
+        digits.add("1");
+        digits.add("2");
+        digits.add("3");
+
+        List<Integer> numbers = new ArrayList<Integer>();
+        // TODO: convert using a method reference
+        System.out.println(numbers);
+    }
+}
+```
+
 3. Sort a list of your own objects by an integer field using `Comparator.comparingInt` and a method reference.
+
+```java
+import java.util.*;
+
+public class Main {
+    static class Motor {
+        private final int port;
+
+        Motor(int port) {
+            this.port = port;
+        }
+
+        int getPort() {
+            return port;
+        }
+    }
+
+    public static void main(String[] args) {
+        List<Motor> motors = new ArrayList<Motor>();
+        motors.add(new Motor(3));
+        motors.add(new Motor(1));
+        motors.add(new Motor(2));
+
+        // TODO: sort with Comparator.comparingInt and a method reference
+        for (Motor m : motors) {
+            System.out.println(m.getPort());
+        }
+    }
+}
+```
+
 4. Use a constructor reference to create a `Supplier` that produces empty `ArrayList` objects, and call it twice — confirm you get two distinct lists.
+
+```java
+import java.util.*;
+import java.util.function.*;
+
+public class Main {
+    public static void main(String[] args) {
+        Supplier<ArrayList<String>> make = null; // TODO: constructor reference
+        if (make != null) {
+            ArrayList<String> first = make.get();
+            ArrayList<String> second = make.get();
+            System.out.println(first == second);
+        }
+    }
+}
+```
+
 5. Write a lambda that cannot become a method reference, and explain in a comment why not.
+
+```java
+import java.util.function.*;
+
+public class Main {
+    public static void main(String[] args) {
+        Function<Integer, Integer> f = x -> {
+            int doubled = x * 2;
+            return doubled;
+            // TODO: explain why this cannot become a method reference
+        };
+        System.out.println(f.apply(5));
+    }
+}
+```
 
 <details>
 <summary>Hints</summary>

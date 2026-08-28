@@ -236,11 +236,150 @@ The offset arrays give the four orthogonal neighbours. For diagonal movement too
 
 <ExerciseBox title="Practice">
 
+Fill in each starter, click Run, then open Hints if you get stuck.
+
 1. Build an undirected graph of 6 nodes with a few edges, then print every node reachable from node 0 using DFS.
+
+```java
+import java.util.*;
+
+public class Main {
+    static void addEdge(List<List<Integer>> adj, int a, int b) {
+        adj.get(a).add(b);
+        adj.get(b).add(a);
+    }
+
+    static void dfs(int node, List<List<Integer>> adj, boolean[] visited) {
+        // TODO: print every node reachable from here
+    }
+
+    public static void main(String[] args) {
+        int n = 6;
+        List<List<Integer>> adj = new ArrayList<List<Integer>>();
+        for (int i = 0; i < n; i++) {
+            adj.add(new ArrayList<Integer>());
+        }
+        addEdge(adj, 0, 1);
+        addEdge(adj, 0, 2);
+        addEdge(adj, 1, 3);
+        addEdge(adj, 4, 5);
+
+        boolean[] visited = new boolean[n];
+        dfs(0, adj, visited);
+    }
+}
+```
+
 2. Write a method that counts the connected components of an undirected graph.
+
+```java
+import java.util.*;
+
+public class Main {
+    static void addEdge(List<List<Integer>> adj, int a, int b) {
+        adj.get(a).add(b);
+        adj.get(b).add(a);
+    }
+
+    static int countComponents(List<List<Integer>> adj, int n) {
+        return 0;
+    }
+
+    public static void main(String[] args) {
+        int n = 5;
+        List<List<Integer>> adj = new ArrayList<List<Integer>>();
+        for (int i = 0; i < n; i++) {
+            adj.add(new ArrayList<Integer>());
+        }
+        addEdge(adj, 0, 1);
+        addEdge(adj, 2, 3);
+
+        System.out.println(countComponents(adj, n));
+    }
+}
+```
+
 3. Write a method that returns the fewest edges between two nodes, or `-1` if unreachable.
+
+```java
+import java.util.*;
+
+public class Main {
+    static void addEdge(List<List<Integer>> adj, int a, int b) {
+        adj.get(a).add(b);
+        adj.get(b).add(a);
+    }
+
+    static int fewestEdges(List<List<Integer>> adj, int n, int start, int goal) {
+        return -1;
+    }
+
+    public static void main(String[] args) {
+        int n = 6;
+        List<List<Integer>> adj = new ArrayList<List<Integer>>();
+        for (int i = 0; i < n; i++) {
+            adj.add(new ArrayList<Integer>());
+        }
+        addEdge(adj, 0, 1);
+        addEdge(adj, 1, 2);
+        addEdge(adj, 2, 3);
+        addEdge(adj, 4, 5);
+
+        System.out.println(fewestEdges(adj, n, 0, 3));
+    }
+}
+```
+
 4. Given a grid of `.` and `#`, count the separate regions of connected `.` cells.
+
+```java
+import java.util.*;
+
+public class Main {
+    static int countRegions(char[][] grid) {
+        return 0;
+    }
+
+    public static void main(String[] args) {
+        char[][] grid = {
+            {'.', '.', '#', '.'},
+            {'#', '.', '#', '.'},
+            {'.', '.', '.', '#'},
+            {'#', '#', '.', '.'}
+        };
+        System.out.println(countRegions(grid));
+    }
+}
+```
+
 5. Given a directed graph, determine whether a path exists from node `a` to node `b`.
+
+```java
+import java.util.*;
+
+public class Main {
+    static void addEdge(List<List<Integer>> adj, int a, int b) {
+        adj.get(a).add(b);
+    }
+
+    static boolean reachable(List<List<Integer>> adj, int a, int b) {
+        return false;
+    }
+
+    public static void main(String[] args) {
+        int n = 5;
+        List<List<Integer>> adj = new ArrayList<List<Integer>>();
+        for (int i = 0; i < n; i++) {
+            adj.add(new ArrayList<Integer>());
+        }
+        addEdge(adj, 0, 1);
+        addEdge(adj, 1, 2);
+        addEdge(adj, 0, 3);
+
+        System.out.println(reachable(adj, 0, 2));
+    }
+}
+```
 
 <details>
 <summary>Hints</summary>

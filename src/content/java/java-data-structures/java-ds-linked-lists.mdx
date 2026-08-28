@@ -234,11 +234,134 @@ And it teaches you to reason about references — what happens when two variable
 
 <ExerciseBox title="Practice" description="Use your own Node class for 1-4, then compare with java.util.LinkedList.">
 
+Fill in each starter, click Run, then open Hints if you get stuck.
+
 1. Build a linked list of the values 1 through 5 and print them in order.
+
+```java
+class Node {
+    int value;
+    Node next;
+
+    Node(int value) {
+        this.value = value;
+        this.next = null;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Node head = new Node(1);
+        // TODO: chain 2 through 5 onto head
+        for (Node current = head; current != null; current = current.next) {
+            System.out.println(current.value);
+        }
+    }
+}
+```
+
 2. Write a method that counts the nodes in a list.
+
+```java
+class Node {
+    int value;
+    Node next;
+
+    Node(int value) {
+        this.value = value;
+        this.next = null;
+    }
+}
+
+public class Main {
+    static int count(Node head) {
+        return 0;
+    }
+
+    public static void main(String[] args) {
+        Node head = new Node(10);
+        head.next = new Node(20);
+        head.next.next = new Node(30);
+        System.out.println(count(head));
+    }
+}
+```
+
 3. Write a method that returns the largest value in a list.
+
+```java
+class Node {
+    int value;
+    Node next;
+
+    Node(int value) {
+        this.value = value;
+        this.next = null;
+    }
+}
+
+public class Main {
+    static int largest(Node head) {
+        return 0;
+    }
+
+    public static void main(String[] args) {
+        Node head = new Node(10);
+        head.next = new Node(20);
+        head.next.next = new Node(30);
+        System.out.println(largest(head));
+    }
+}
+```
+
 4. Write a method that reverses a linked list by rearranging references, without creating new nodes.
+
+```java
+class Node {
+    int value;
+    Node next;
+
+    Node(int value) {
+        this.value = value;
+        this.next = null;
+    }
+}
+
+public class Main {
+    static Node reverse(Node head) {
+        return head;
+    }
+
+    public static void main(String[] args) {
+        Node head = new Node(10);
+        head.next = new Node(20);
+        head.next.next = new Node(30);
+        head = reverse(head);
+        for (Node current = head; current != null; current = current.next) {
+            System.out.println(current.value);
+        }
+    }
+}
+```
+
 5. Using `java.util.LinkedList`, add five task names and then print them in reverse order.
+
+```java
+import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        LinkedList<String> tasks = new LinkedList<String>();
+        tasks.add("intake");
+        tasks.add("aim");
+        tasks.add("shoot");
+        tasks.add("reset");
+        tasks.add("stow");
+        // TODO: print them in reverse order
+    }
+}
+```
+
 
 <details>
 <summary>Hints</summary>

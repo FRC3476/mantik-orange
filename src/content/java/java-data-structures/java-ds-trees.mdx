@@ -268,13 +268,190 @@ System.out.println(values.floor(20));    // 10 — largest value <= 20
 
 <JavaPlayground id="java-ds-trees" />
 
-<ExerciseBox title="Practice" description="Use your own TreeNode for 1-4.">
+<ExerciseBox title="Practice" description="Use the Node class in each starter for 1–4.">
+
+Fill in each starter, click Run, then open Hints if you get stuck.
 
 1. Build a small binary tree by hand and print it in all three recursive orders. Confirm the sequences differ.
+
+```java
+import java.util.*;
+
+class Node {
+    int value;
+    Node left;
+    Node right;
+
+    Node(int value) {
+        this.value = value;
+    }
+}
+
+public class Main {
+    static void preorder(Node node) {
+        // TODO: print this node, then the left subtree, then the right
+    }
+
+    static void inorder(Node node) {
+        // TODO: print the left subtree, then this node, then the right
+    }
+
+    static void postorder(Node node) {
+        // TODO: print the left subtree, then the right, then this node
+    }
+
+    public static void main(String[] args) {
+        Node root = new Node(2);
+        root.left = new Node(1);
+        root.right = new Node(3);
+
+        System.out.println("pre-order");
+        preorder(root);
+        System.out.println("in-order");
+        inorder(root);
+        System.out.println("post-order");
+        postorder(root);
+    }
+}
+```
+
 2. Write a method that counts the leaf nodes.
+
+```java
+import java.util.*;
+
+class Node {
+    int value;
+    Node left;
+    Node right;
+
+    Node(int value) {
+        this.value = value;
+    }
+}
+
+public class Main {
+    static int countLeaves(Node node) {
+        return 0;
+    }
+
+    public static void main(String[] args) {
+        Node root = new Node(1);
+        root.left = new Node(2);
+        root.right = new Node(3);
+        root.right.left = new Node(4);
+
+        System.out.println(countLeaves(root));
+    }
+}
+```
+
 3. Write a method that returns the largest value in a binary tree, without assuming search-tree ordering.
+
+```java
+import java.util.*;
+
+class Node {
+    int value;
+    Node left;
+    Node right;
+
+    Node(int value) {
+        this.value = value;
+    }
+}
+
+public class Main {
+    static int largest(Node node) {
+        return 0;
+    }
+
+    public static void main(String[] args) {
+        Node root = new Node(4);
+        root.left = new Node(9);
+        root.right = new Node(1);
+
+        System.out.println(largest(root));
+    }
+}
+```
+
 4. Write `insert` and `contains` for a binary search tree, then insert ten values and search for a few.
+
+```java
+import java.util.*;
+
+class Node {
+    int value;
+    Node left;
+    Node right;
+
+    Node(int value) {
+        this.value = value;
+    }
+}
+
+public class Main {
+    static Node insert(Node node, int value) {
+        return node;
+    }
+
+    static boolean contains(Node node, int value) {
+        return false;
+    }
+
+    public static void main(String[] args) {
+        Node root = new Node(50);
+        root.left = new Node(30);
+        root.right = new Node(70);
+        int[] values = {20, 40, 60, 80, 10, 35, 65, 25, 45, 55};
+        for (int i = 0; i < values.length; i++) {
+            root = insert(root, values[i]);
+        }
+
+        System.out.println(contains(root, 40));
+        System.out.println(contains(root, 99));
+    }
+}
+```
+
 5. Using `TreeSet<Integer>`, add ten random values, then print the smallest, largest, and the nearest value at or above 50.
+
+```java
+import java.util.*;
+
+class Node {
+    int value;
+    Node left;
+    Node right;
+
+    Node(int value) {
+        this.value = value;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Node root = new Node(2);
+        root.left = new Node(1);
+        root.right = new Node(3);
+
+        TreeSet<Integer> values = new TreeSet<Integer>();
+        values.add(12);
+        values.add(81);
+        values.add(47);
+        values.add(50);
+        values.add(3);
+        values.add(99);
+        values.add(64);
+        values.add(28);
+        values.add(71);
+        values.add(16);
+
+        // TODO: print the smallest, the largest, and the nearest value at or above 50
+    }
+}
+```
 
 <details>
 <summary>Hints</summary>

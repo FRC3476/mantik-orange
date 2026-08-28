@@ -524,11 +524,286 @@ Push executed commands onto a [stack](/java/java-ds-stacks); undo pops and rever
 
 <ExerciseBox title="Practice">
 
+Fill in each starter, click Run, then open Hints if you get stuck.
+
 1. Define a one-method `Command` interface and create three commands with lambdas that print different messages. Store them in a list and run them in order.
+
+```java
+import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        List<Command> commands = new ArrayList<Command>();
+        commands.add(() -> {
+            // TODO
+        });
+        commands.add(() -> {
+            // TODO
+        });
+        commands.add(() -> {
+            // TODO
+        });
+        for (Command command : commands) {
+            command.execute();
+        }
+    }
+}
+
+interface Command {
+    void execute();
+}
+```
+
 2. Add `initialize`, `isFinished`, and `end` as `default` methods, then write a command that counts to five before finishing.
+
+```java
+public class Main {
+    public static void main(String[] args) {
+        CountToFive command = new CountToFive();
+        command.initialize();
+        for (int i = 0; i < 6; i++) {
+            command.execute();
+            if (command.isFinished()) {
+                break;
+            }
+        }
+        System.out.println("count=" + command.count);
+        System.out.println("finished=" + command.isFinished());
+        command.end(false);
+    }
+}
+
+interface Command {
+    default void initialize() {}
+
+    void execute();
+
+    default boolean isFinished() {
+        return false;
+    }
+
+    default void end(boolean interrupted) {}
+}
+
+class CountToFive implements Command {
+    int count;
+
+    @Override
+    public void execute() {
+        // TODO
+    }
+
+    @Override
+    public boolean isFinished() {
+        return false;
+    }
+}
+```
+
 3. Write a `Scheduler` that runs commands each cycle and removes finished ones. Test it with the counting command.
+
+```java
+import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        Scheduler scheduler = new Scheduler();
+        CountToFive command = new CountToFive();
+        scheduler.schedule(command);
+        for (int i = 0; i < 6; i++) {
+            scheduler.run();
+        }
+        System.out.println("count=" + command.count);
+    }
+}
+
+interface Command {
+    default void initialize() {}
+
+    void execute();
+
+    default boolean isFinished() {
+        return false;
+    }
+
+    default void end(boolean interrupted) {}
+}
+
+class CountToFive implements Command {
+    int count;
+
+    @Override
+    public void execute() {
+        // TODO
+    }
+
+    @Override
+    public boolean isFinished() {
+        return false;
+    }
+}
+
+class Scheduler {
+    List<Command> running = new ArrayList<Command>();
+
+    void schedule(Command command) {
+        command.initialize();
+        running.add(command);
+    }
+
+    void run() {
+        // TODO
+    }
+}
+```
+
 4. Write a `SequentialCommand` running several commands one after another, and confirm a sequence can contain another sequence.
+
+```java
+import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        List<Command> innerChildren = new ArrayList<Command>();
+        innerChildren.add(new NamedCommand("inner-a"));
+        innerChildren.add(new NamedCommand("inner-b"));
+        SequentialCommand inner = new SequentialCommand(innerChildren);
+
+        List<Command> outerChildren = new ArrayList<Command>();
+        outerChildren.add(new NamedCommand("first"));
+        outerChildren.add(inner);
+        outerChildren.add(new NamedCommand("second"));
+        SequentialCommand sequence = new SequentialCommand(outerChildren);
+
+        sequence.initialize();
+        for (int i = 0; i < 6; i++) {
+            sequence.execute();
+        }
+        System.out.println("finished=" + sequence.isFinished());
+    }
+}
+
+interface Command {
+    default void initialize() {}
+
+    void execute();
+
+    default boolean isFinished() {
+        return false;
+    }
+
+    default void end(boolean interrupted) {}
+}
+
+class NamedCommand implements Command {
+    String name;
+    boolean done;
+
+    NamedCommand(String name) {
+        this.name = name;
+    }
+
+    @Override
+    public void execute() {
+        System.out.println(name);
+        done = true;
+    }
+
+    @Override
+    public boolean isFinished() {
+        return done;
+    }
+}
+
+class SequentialCommand implements Command {
+    List<Command> children;
+
+    SequentialCommand(List<Command> children) {
+        this.children = children;
+    }
+
+    @Override
+    public void initialize() {
+        // TODO
+    }
+
+    @Override
+    public void execute() {
+        // TODO
+    }
+
+    @Override
+    public boolean isFinished() {
+        return false;
+    }
+}
+```
+
 5. Write an `UndoableCommand` for setting a value, and an undo stack supporting repeated undo.
+
+```java
+import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        Box box = new Box();
+        Deque<UndoableCommand> undoStack = new ArrayDeque<UndoableCommand>();
+
+        SetValue first = new SetValue(box, 10);
+        first.execute();
+        undoStack.push(first);
+
+        SetValue second = new SetValue(box, 20);
+        second.execute();
+        undoStack.push(second);
+
+        for (int i = 0; i < 2; i++) {
+            // TODO: pop and undo
+        }
+    }
+}
+
+interface UndoableCommand {
+    void execute();
+
+    void undo();
+}
+
+class Box {
+    int value;
+
+    int get() {
+        return value;
+    }
+
+    void set(int value) {
+        this.value = value;
+        System.out.println("value=" + this.value);
+    }
+}
+
+class SetValue implements UndoableCommand {
+    Box box;
+    int target;
+    int previous;
+
+    SetValue(Box box, int target) {
+        this.box = box;
+        this.target = target;
+    }
+
+    @Override
+    public void execute() {
+        // TODO
+    }
+
+    @Override
+    public void undo() {
+        // TODO
+    }
+}
+```
+
 
 <details>
 <summary>Hints</summary>

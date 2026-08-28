@@ -21,6 +21,11 @@ The typical reason is that one task should not block another. Reading a slow sen
 Thread worker = new Thread(() -> {
     for (int i = 0; i < 3; i++) {
         System.out.println("worker: " + i);
+        try {
+            Thread.sleep(20);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 });
 
@@ -28,10 +33,13 @@ worker.start();                       // begins running alongside main
 
 for (int i = 0; i < 3; i++) {
     System.out.println("main: " + i);
+    Thread.sleep(20);
 }
 ```
 
-The output interleaves, and **the exact order changes between runs**. That unpredictability is the defining feature of concurrent code, and the source of most of its difficulty.
+You will see both `worker` and `main` lines. The exact order is not guaranteed, and **it can change between runs**. That unpredictability is the defining feature of concurrent code, and the source of most of its difficulty.
+
+The short `sleep` pauses give the other thread a chance to run. Without a pause, a tiny loop often finishes on one thread before the other starts.
 
 <RulesBox title="start(), not run()">
 
@@ -207,11 +215,109 @@ Genuine cases exist, mainly long-running independent work like image processing.
 
 <ExerciseBox title="Practice">
 
+Fill in each starter, click Run, then open Hints if you get stuck.
+
 1. Start a thread printing 1 to 5 while the main thread prints A to E. Run it several times and note the order changes.
+
+```java
+public class Main {
+    public static void main(String[] args) throws Exception {
+        Thread worker = new Thread(() -> {
+            for (int i = 1; i <= 5; i++) {
+                // TODO: print i
+            }
+        });
+        worker.start();
+        for (char c = 'A'; c <= 'E'; c++) {
+            // TODO: print c
+        }
+        worker.join();
+        System.out.println("done");
+    }
+}
+```
+
 2. Modify it so main waits for the worker with `join()`, and confirm the output is now ordered.
+
+```java
+public class Main {
+    public static void main(String[] args) throws Exception {
+        Thread worker = new Thread(() -> {
+            for (int i = 1; i <= 5; i++) {
+                System.out.println(i);
+            }
+        });
+        worker.start();
+        // TODO: worker.join() here so A–E wait until 1–5 finish
+        for (char c = 'A'; c <= 'E'; c++) {
+            System.out.println(c);
+        }
+        worker.join();
+        System.out.println("done");
+    }
+}
+```
+
 3. Write a thread that sleeps one second then prints, and confirm main continues meanwhile.
+
+```java
+public class Main {
+    public static void main(String[] args) throws Exception {
+        Thread worker = new Thread(() -> {
+            try {
+                Thread.sleep(50);
+                // TODO: print after the sleep
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        });
+        long t0 = System.currentTimeMillis();
+        worker.start();
+        System.out.println("main continues");
+        worker.join();
+        System.out.println("elapsed ms: " + (System.currentTimeMillis() - t0));
+    }
+}
+```
+
 4. Call `run()` instead of `start()` and observe that the interleaving disappears.
+
+```java
+public class Main {
+    public static void main(String[] args) throws Exception {
+        Thread worker = new Thread(() -> {
+            for (int i = 1; i <= 5; i++) {
+                System.out.println(i);
+            }
+        });
+        worker.start();
+        // Change start() to run() and compare.
+        for (char c = 'A'; c <= 'E'; c++) {
+            System.out.println(c);
+        }
+        worker.join();
+        System.out.println("done");
+    }
+}
+```
+
 5. Start a daemon thread looping forever, and confirm the program still exits when main finishes.
+
+```java
+public class Main {
+    public static void main(String[] args) throws Exception {
+        Thread t = new Thread(() -> {
+            for (int i = 0; i < 3; i++) {
+                System.out.println("background " + i);
+            }
+        });
+        // t.setDaemon(true);
+        t.start();
+        Thread.sleep(50);
+        System.out.println("main finished");
+    }
+}
+```
 
 <details>
 <summary>Hints</summary>

@@ -278,11 +278,174 @@ Useful when a class's correctness depends on behaviour that a subclass must not 
 
 <ExerciseBox title="Practice">
 
+Fill in each starter, click Run, then open Hints if you get stuck.
+
 1. Write a `Subsystem` base class with a name and enable/disable behaviour, then two subclasses that add their own methods.
+
+```java
+class Subsystem {
+    protected String name;
+    protected boolean enabled;
+
+    Subsystem(String name) {
+        this.name = name;
+    }
+
+    void enable() {
+        // TODO
+    }
+
+    void disable() {
+        // TODO
+    }
+
+    boolean isEnabled() {
+        return false;
+    }
+}
+
+class Intake extends Subsystem {
+    Intake() {
+        super("intake");
+    }
+
+    void collect() {
+        // TODO
+    }
+}
+
+class Shooter extends Subsystem {
+    Shooter() {
+        super("shooter");
+    }
+
+    void fire() {
+        // TODO
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Intake intake = new Intake();
+        Shooter shooter = new Shooter();
+        intake.enable();
+        shooter.enable();
+        System.out.println(intake.name);
+        System.out.println(shooter.name);
+        intake.collect();
+        shooter.fire();
+    }
+}
+```
+
 2. Add a `describe()` method to the parent and override it in one subclass, calling `super.describe()` inside.
+
+```java
+class Subsystem {
+    protected String name;
+
+    Subsystem(String name) {
+        this.name = name;
+    }
+
+    void describe() {
+        // TODO
+    }
+}
+
+class Intake extends Subsystem {
+    private int port;
+
+    Intake(int port) {
+        super("intake");
+        this.port = port;
+    }
+
+    @Override
+    void describe() {
+        // TODO: call super.describe(), then print port
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        new Intake(3).describe();
+        System.out.println("called describe");
+    }
+}
+```
+
 3. Demonstrate field hiding, then fix it by making the field private with a getter.
+
+```java
+class Parent {
+    String name = "parent";
+}
+
+class Child extends Parent {
+    String name = "child";
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Child child = new Child();
+        Parent p = child;
+        // TODO: print p.name
+        // TODO: print the child's name
+        System.out.println("assigned Child to Parent");
+    }
+}
+```
+
 4. Give the parent only a parameterised constructor, then write a subclass constructor that omits `super(...)`. Read the compile error.
+
+```java
+class Subsystem {
+    protected String name;
+
+    Subsystem(String name) {
+        this.name = name;
+    }
+}
+
+class Intake extends Subsystem {
+    Intake() {
+        super("intake");
+    }
+}
+
+// Uncomment and click Run to see the error:
+// class Broken extends Subsystem { }
+
+public class Main {
+    public static void main(String[] args) {
+        System.out.println(new Intake().name);
+    }
+}
+```
+
 5. Take a class that extends another purely for code reuse and rewrite it using composition.
+
+```java
+class Drivetrain {
+    void drive() {
+        System.out.println("driving");
+    }
+}
+
+class Robot extends Drivetrain {
+    // TODO: replace extends with a private Drivetrain field
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Robot robot = new Robot();
+        robot.drive();
+        System.out.println("rewrite Robot to use composition");
+    }
+}
+```
+
 
 <details>
 <summary>Hints</summary>

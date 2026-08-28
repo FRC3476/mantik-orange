@@ -237,11 +237,104 @@ System.out.println(combined.apply(5));      // "value: 10"
 
 <ExerciseBox title="Practice">
 
+Fill in each starter, click Run, then open Hints if you get stuck.
+
 1. Rewrite your `ReadingTest` filter using `Predicate<Integer>`.
+
+```java
+import java.util.*;
+import java.util.function.*;
+
+public class Main {
+    static List<Integer> filter(List<Integer> items, Predicate<Integer> test) {
+        // TODO: keep items that pass test.test
+        return new ArrayList<Integer>();
+    }
+
+    public static void main(String[] args) {
+        List<Integer> readings = new ArrayList<Integer>();
+        readings.add(40);
+        readings.add(80);
+        readings.add(120);
+        readings.add(160);
+
+        Predicate<Integer> above100 = r -> false;
+        System.out.println(filter(readings, above100));
+    }
+}
+```
+
 2. Write a method taking a `Consumer<String>` and calling it with three different names.
+
+```java
+import java.util.function.*;
+
+public class Main {
+    static void greet(Consumer<String> action) {
+        // TODO: accept three names
+    }
+
+    public static void main(String[] args) {
+        greet(name -> System.out.println(name));
+    }
+}
+```
+
 3. Write a `logLazy(boolean, Supplier<String>)` method and demonstrate that the message is not built when the flag is false — print something inside the supplier to prove it.
+
+```java
+import java.util.function.*;
+
+public class Main {
+    static void logLazy(boolean enabled, Supplier<String> message) {
+    }
+
+    public static void main(String[] args) {
+        logLazy(false, () -> {
+            System.out.println("building");
+            return "report";
+        });
+        logLazy(true, () -> {
+            System.out.println("building");
+            return "report";
+        });
+    }
+}
+```
+
 4. Build a `Function<Integer,String>` by composing a doubling function with a formatting function, and verify the order.
+
+```java
+import java.util.function.*;
+
+public class Main {
+    public static void main(String[] args) {
+        Function<Integer, Integer> doubled = x -> 0;
+        Function<Integer, String> describe = x -> "";
+        Function<Integer, String> combined = null;
+        if (combined != null) {
+            System.out.println(combined.apply(5));
+        }
+    }
+}
+```
+
 5. Write a `Supplier<Double>` reading from a mutable field, then change the field and call `get()` again to confirm you see the new value.
+
+```java
+import java.util.function.*;
+
+public class Main {
+    static double distance = 1.5;
+
+    public static void main(String[] args) {
+        DoubleSupplier reading = () -> 0.0;
+        System.out.println(reading.getAsDouble());
+        distance = 3.0;
+        System.out.println(reading.getAsDouble());
+    }
+}
+```
 
 <details>
 <summary>Hints</summary>

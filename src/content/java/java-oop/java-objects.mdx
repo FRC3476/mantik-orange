@@ -310,3 +310,133 @@ manager.manageRobotTeam(new FRCRobot[] { alpha, beta, null });
 
 <JavaPlayground id="java-objects" />
 
+<ExerciseBox title="Practice">
+
+Fill in each starter, click Run, then compare with the hints if you get stuck.
+
+1. Write a Robot class with a name. Create two and print both names.
+
+```java
+class Robot {
+    String name;
+
+    Robot(String name) {
+        // TODO: store the name
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Robot a = new Robot("Alpha");
+        Robot b = new Robot("Beta");
+        System.out.println(a.name);
+        System.out.println(b.name);
+    }
+}
+```
+
+2. Write activate(Robot r) that prints the name; call it twice.
+
+```java
+class Robot {
+    String name;
+
+    Robot(String name) {
+        this.name = name;
+    }
+}
+
+public class Main {
+    static void activate(Robot r) {
+        // TODO: print the robot's name
+    }
+
+    public static void main(String[] args) {
+        Robot a = new Robot("Alpha");
+        Robot b = new Robot("Beta");
+        activate(a);
+        activate(b);
+    }
+}
+```
+
+3. Store three robots in an array; loop and print names.
+
+```java
+class Robot {
+    String name;
+
+    Robot(String name) {
+        this.name = name;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Robot a = new Robot("Alpha");
+        Robot b = new Robot("Beta");
+        Robot c = new Robot("Gamma");
+        Robot[] team = new Robot[3];
+        // TODO: store all three in the array, then loop and print names
+    }
+}
+```
+
+4. Put null in one slot and skip it safely.
+
+```java
+class Robot {
+    String name;
+
+    Robot(String name) {
+        this.name = name;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Robot[] team = new Robot[3];
+        team[0] = new Robot("Alpha");
+        team[1] = null;
+        team[2] = new Robot("Gamma");
+        // TODO: loop and print names, skipping null slots
+    }
+}
+```
+
+5. Print whether two robots are the same object (`==`) vs same name.
+
+```java
+class Robot {
+    String name;
+
+    Robot(String name) {
+        this.name = name;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Robot a = new Robot("Alpha");
+        Robot b = new Robot("Alpha");
+        Robot same = a;
+        // TODO: print a == b
+        // TODO: print a == same
+        // TODO: print whether a and b have the same name
+    }
+}
+```
+
+<details>
+<summary>Hints</summary>
+
+1. The constructor should assign `this.name`. Main already prints both objects.
+2. Use the parameter `r` inside `activate`. Main already calls it twice.
+3. `team[0] = a;` and so on, then a `for` loop over `team`.
+4. Check `team[i] != null` before you print.
+5. `==` tests the same object in memory. Compare names with `.equals`.
+
+</details>
+
+</ExerciseBox>
+

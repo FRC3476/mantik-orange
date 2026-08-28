@@ -271,11 +271,134 @@ Inside a lambda, `this` refers to the enclosing object. Inside an anonymous clas
 
 <ExerciseBox title="Practice">
 
+Fill in each starter, click Run, then open Hints if you get stuck.
+
 1. Rewrite each anonymous class from the previous lesson's exercises as a lambda.
+
+```java
+import java.util.*;
+
+public class Main {
+    interface ReadingTest {
+        boolean matches(int reading);
+    }
+
+    static List<Integer> filter(List<Integer> readings, ReadingTest test) {
+        List<Integer> result = new ArrayList<Integer>();
+        for (int r : readings) {
+            if (test.matches(r)) {
+                result.add(r);
+            }
+        }
+        return result;
+    }
+
+    public static void main(String[] args) {
+        List<Integer> readings = new ArrayList<Integer>();
+        readings.add(40);
+        readings.add(80);
+        readings.add(120);
+        readings.add(160);
+
+        // ReadingTest above100 = new ReadingTest() {
+        //     public boolean matches(int reading) {
+        //         return reading > 100;
+        //     }
+        // };
+        ReadingTest above100 = r -> false;
+
+        // ReadingTest even = new ReadingTest() {
+        //     public boolean matches(int reading) {
+        //         return reading % 2 == 0;
+        //     }
+        // };
+        ReadingTest even = r -> false;
+
+        // ReadingTest inRange = new ReadingTest() {
+        //     public boolean matches(int reading) {
+        //         return reading >= 50 && reading <= 150;
+        //     }
+        // };
+        ReadingTest inRange = r -> false;
+
+        System.out.println(filter(readings, above100));
+        System.out.println(filter(readings, even));
+        System.out.println(filter(readings, inRange));
+    }
+}
+```
+
 2. Sort a `List<String>` by length, then alphabetically among equal lengths.
+
+```java
+import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        List<String> names = new ArrayList<String>();
+        names.add("intake");
+        names.add("arm");
+        names.add("drive");
+        names.add("shooter");
+
+        // TODO: sort by length, then alphabetically among equal lengths
+        System.out.println(names);
+    }
+}
+```
+
 3. Use `removeIf` to strip every empty or blank string from a list.
+
+```java
+import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        List<String> names = new ArrayList<String>();
+        names.add("intake");
+        names.add("");
+        names.add("  ");
+        names.add("drive");
+        names.add("   ");
+
+        // TODO: removeIf empty or blank
+        System.out.println(names);
+    }
+}
+```
+
 4. Write a method taking a `Runnable` and calling it three times, then pass a lambda that prints a counter.
+
+```java
+public class Main {
+    static void repeat(Runnable r) {
+    }
+
+    public static void main(String[] args) {
+        repeat(() -> { }); // TODO: print a counter
+    }
+}
+```
+
 5. Write a lambda that captures a threshold parameter and demonstrate the compile error when you try to reassign that variable afterwards.
+
+```java
+public class Main {
+    interface ReadingTest {
+        boolean matches(int reading);
+    }
+
+    public static void main(String[] args) {
+        final int threshold = 10;
+        ReadingTest test = r -> {
+            // threshold++;
+            return false;
+        };
+        System.out.println(test.matches(15));
+        System.out.println(test.matches(5));
+    }
+}
+```
 
 <details>
 <summary>Hints</summary>

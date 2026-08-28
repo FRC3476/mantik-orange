@@ -286,11 +286,194 @@ The returned object remembers `threshold` — a captured variable. Note the rest
 
 <ExerciseBox title="Practice" description="Use anonymous classes throughout — lambdas come in the next lesson.">
 
+Fill in each starter, click Run, then open Hints if you get stuck.
+
 1. Define a `ReadingTest` interface and a `filter` method, then filter a list three different ways.
+
+```java
+import java.util.*;
+
+public class Main {
+    interface ReadingTest {
+        boolean matches(int reading);
+    }
+
+    static List<Integer> filter(List<Integer> readings, ReadingTest test) {
+        // TODO: keep readings that match
+        return new ArrayList<Integer>();
+    }
+
+    public static void main(String[] args) {
+        List<Integer> readings = new ArrayList<Integer>();
+        readings.add(40);
+        readings.add(80);
+        readings.add(120);
+        readings.add(160);
+
+        ReadingTest above100 = new ReadingTest() {
+            public boolean matches(int r) {
+                return false;
+            }
+        };
+        ReadingTest even = new ReadingTest() {
+            public boolean matches(int r) {
+                return false;
+            }
+        };
+        ReadingTest inRange = new ReadingTest() {
+            public boolean matches(int r) {
+                return false;
+            }
+        };
+
+        System.out.println(filter(readings, above100));
+        System.out.println(filter(readings, even));
+        System.out.println(filter(readings, inRange));
+    }
+}
+```
+
 2. Define a `Transformer` interface with `int apply(int value)` and write a `map` method that applies it to every element of a list.
+
+```java
+import java.util.*;
+
+public class Main {
+    interface Transformer {
+        int apply(int value);
+    }
+
+    static List<Integer> map(List<Integer> readings, Transformer transformer) {
+        // TODO: apply to every element
+        return readings;
+    }
+
+    public static void main(String[] args) {
+        List<Integer> readings = new ArrayList<Integer>();
+        readings.add(40);
+        readings.add(80);
+        readings.add(120);
+        readings.add(160);
+
+        Transformer doubled = new Transformer() {
+            public int apply(int value) {
+                return value;
+            }
+        };
+
+        System.out.println(map(readings, doubled));
+    }
+}
+```
+
 3. Write a `greaterThan(int)` method that returns a `ReadingTest`, and use it twice with different thresholds.
+
+```java
+import java.util.*;
+
+public class Main {
+    interface ReadingTest {
+        boolean matches(int reading);
+    }
+
+    static List<Integer> filter(List<Integer> readings, ReadingTest test) {
+        // TODO: keep readings that match
+        return new ArrayList<Integer>();
+    }
+
+    static ReadingTest greaterThan(int threshold) {
+        return new ReadingTest() {
+            public boolean matches(int reading) {
+                return false;
+            }
+        };
+    }
+
+    public static void main(String[] args) {
+        List<Integer> readings = new ArrayList<Integer>();
+        readings.add(40);
+        readings.add(80);
+        readings.add(120);
+        readings.add(160);
+        readings.add(600);
+
+        System.out.println(filter(readings, greaterThan(100)));
+        System.out.println(filter(readings, greaterThan(500)));
+    }
+}
+```
+
 4. Define an `Action` interface and an `ActionQueue` that stores actions and runs them in order.
+
+```java
+import java.util.*;
+
+public class Main {
+    interface Action {
+        void run();
+    }
+
+    static class ActionQueue {
+        private final Queue<Action> pending = new ArrayDeque<Action>();
+
+        void schedule(Action action) {
+            // TODO: store, do not run yet
+        }
+
+        void runAll() {
+            // TODO: poll and run in order
+        }
+    }
+
+    public static void main(String[] args) {
+        ActionQueue queue = new ActionQueue();
+        queue.schedule(new Action() {
+            public void run() {
+                System.out.println("first");
+            }
+        });
+        queue.schedule(new Action() {
+            public void run() {
+                System.out.println("second");
+            }
+        });
+        queue.runAll();
+    }
+}
+```
+
 5. Write a `sort` helper that takes a list and a comparison interface you define yourself, so the caller decides the ordering.
+
+```java
+import java.util.*;
+
+public class Main {
+    interface Comparison {
+        int compare(int a, int b);
+    }
+
+    static void sort(List<Integer> values, Comparison order) {
+        // TODO: sort using order.compare
+    }
+
+    public static void main(String[] args) {
+        List<Integer> values = new ArrayList<Integer>();
+        values.add(160);
+        values.add(40);
+        values.add(120);
+        values.add(80);
+
+        Comparison ascending = new Comparison() {
+            public int compare(int a, int b) {
+                return 0;
+            }
+        };
+
+        sort(values, ascending);
+        System.out.println(values);
+    }
+}
+```
 
 <details>
 <summary>Hints</summary>

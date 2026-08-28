@@ -85,3 +85,168 @@ Variables defined inside a class are called **instance variables**, object field
 
 <JavaPlayground id="java-classes" />
 
+<ExerciseBox title="Practice">
+
+Fill in each starter, click Run, then compare with the hints if you get stuck.
+
+1. Write a TeamMember class with a name field and constructor. Create one and print the name.
+
+```java
+class TeamMember {
+    String name;
+
+    TeamMember(String name) {
+        // TODO: store the name
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        TeamMember member = new TeamMember("Ada");
+        System.out.println(member.name);
+    }
+}
+```
+
+2. Add private role with getter/setter. Change role and print it.
+
+```java
+class TeamMember {
+    private String name;
+    // TODO: private String role
+
+    TeamMember(String name) {
+        this.name = name;
+    }
+
+    String getName() {
+        return name;
+    }
+
+    // TODO: getRole() and setRole(String)
+}
+
+public class Main {
+    public static void main(String[] args) {
+        TeamMember member = new TeamMember("Ada");
+        System.out.println(member.getName());
+        // TODO: change the role, then print it
+    }
+}
+```
+
+3. Add assignRole that updates role and prints confirmation.
+
+```java
+class TeamMember {
+    private String name;
+    private String role;
+
+    TeamMember(String name) {
+        this.name = name;
+        this.role = "Student";
+    }
+
+    String getName() {
+        return name;
+    }
+
+    String getRole() {
+        return role;
+    }
+
+    void setRole(String role) {
+        this.role = role;
+    }
+
+    // TODO: assignRole(String newRole) — update role and print a confirmation
+}
+
+public class Main {
+    public static void main(String[] args) {
+        TeamMember member = new TeamMember("Ada");
+        // TODO: call assignRole, then print getRole()
+        System.out.println(member.getName() + " — " + member.getRole());
+    }
+}
+```
+
+4. Create two TeamMember objects; change one; print both to show independent state.
+
+```java
+class TeamMember {
+    private String name;
+    private String role;
+
+    TeamMember(String name) {
+        this.name = name;
+        this.role = "Student";
+    }
+
+    String getName() {
+        return name;
+    }
+
+    String getRole() {
+        return role;
+    }
+
+    void setRole(String role) {
+        this.role = role;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        // TODO: create two TeamMember objects
+        // TODO: change only one member's role
+        // TODO: print both names and roles
+    }
+}
+```
+
+5. From main, try to read a private field (commented failing line) to see the compile error.
+
+```java
+class TeamMember {
+    private String name;
+    private String role;
+
+    TeamMember(String name) {
+        this.name = name;
+        this.role = "Student";
+    }
+
+    String getName() {
+        return name;
+    }
+
+    String getRole() {
+        return role;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        TeamMember member = new TeamMember("Ada");
+        System.out.println(member.getName());
+        System.out.println(member.getRole());
+        // Uncomment and click Run to see the error:
+        // System.out.println(member.name);
+    }
+}
+```
+
+<details>
+<summary>Hints</summary>
+
+1. The constructor should assign `this.name`. Main already prints the field.
+2. `private String role;`, then `getRole` / `setRole`. Call the setter from main.
+3. `assignRole` sets the field, then prints a confirmation line.
+4. `new TeamMember(...)` twice. Change only one. Print both.
+5. Uncomment the private-field access and read the compiler message.
+
+</details>
+
+</ExerciseBox>
+

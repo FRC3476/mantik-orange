@@ -228,11 +228,190 @@ Distinguishing required steps (`abstract`) from optional hooks (concrete, empty)
 
 <ExerciseBox title="Practice">
 
+Fill in each starter, click Run, then open Hints if you get stuck.
+
 1. Write an abstract `Shape` class with an abstract `area()` method and a concrete `describe()` that prints the area. Add `Circle` and `Rectangle`.
+
+```java
+abstract class Shape {
+    abstract double area();
+
+    void describe() {
+        // TODO: print the area
+    }
+}
+
+class Circle extends Shape {
+    double radius;
+
+    Circle(double radius) {
+        this.radius = radius;
+    }
+
+    @Override
+    double area() {
+        return 0;
+    }
+}
+
+class Rectangle extends Shape {
+    double width;
+    double height;
+
+    Rectangle(double width, double height) {
+        this.width = width;
+        this.height = height;
+    }
+
+    @Override
+    double area() {
+        return 0;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Shape circle = new Circle(3);
+        Shape rectangle = new Rectangle(4, 5);
+        circle.describe();
+        rectangle.describe();
+        System.out.println(circle.area());
+        System.out.println(rectangle.area());
+    }
+}
+```
+
 2. Try to instantiate `Shape` directly and read the compile error.
+
+```java
+abstract class Shape {
+    abstract double area();
+}
+
+class Circle extends Shape {
+    @Override
+    double area() {
+        return 0;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Shape s = new Circle();
+        System.out.println(s.area());
+        // Uncomment and click Run to see the error:
+        // Shape broken = new Shape();
+    }
+}
+```
+
 3. Write a subclass that forgets to implement `area()` and read that error too.
+
+```java
+abstract class Shape {
+    abstract double area();
+}
+
+class Circle extends Shape {
+    @Override
+    double area() {
+        return 0;
+    }
+}
+
+// Uncomment and click Run to see the error:
+// class Broken extends Shape { }
+
+public class Main {
+    public static void main(String[] args) {
+        System.out.println(new Circle().area());
+    }
+}
+```
+
 4. Add an abstract `MotorSubsystem` between a `Subsystem` base and a concrete subclass, implementing only some methods at the middle level.
+
+```java
+class Motor {
+    void set(double power) {
+        System.out.println("motor power: " + power);
+    }
+}
+
+abstract class Subsystem {
+    abstract void periodic();
+
+    abstract void stop();
+}
+
+abstract class MotorSubsystem extends Subsystem {
+    protected Motor motor;
+
+    MotorSubsystem(Motor motor) {
+        this.motor = motor;
+    }
+
+    @Override
+    void stop() {
+        // TODO
+    }
+}
+
+class Intake extends MotorSubsystem {
+    Intake(Motor motor) {
+        super(motor);
+    }
+
+    @Override
+    void periodic() {
+        // TODO
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Intake intake = new Intake(new Motor());
+        intake.periodic();
+        intake.stop();
+        System.out.println("ready");
+    }
+}
+```
+
 5. Write a template method: a `final` method defining a fixed sequence, with one abstract step and one optional hook.
+
+```java
+abstract class AutoRoutine {
+    final void run() {
+        // TODO: call initialise, then step, then cleanUp
+    }
+
+    void initialise() {
+        // optional hook
+    }
+
+    abstract void step();
+
+    void cleanUp() {
+        // optional hook
+    }
+}
+
+class DriveForward extends AutoRoutine {
+    @Override
+    void step() {
+        // TODO
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        new DriveForward().run();
+        System.out.println("done");
+    }
+}
+```
+
 
 <details>
 <summary>Hints</summary>

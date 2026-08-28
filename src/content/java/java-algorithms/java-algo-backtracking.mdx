@@ -220,11 +220,98 @@ If the bound is large, backtracking will not finish, and the intended solution i
 
 <ExerciseBox title="Practice">
 
+Fill in each starter, click Run, then open Hints if you get stuck.
+
 1. Print every subset of an array of five integers.
+
+```java
+import java.util.*;
+
+public class Main {
+    static List<Integer> current = new ArrayList<Integer>();
+    static List<List<Integer>> results = new ArrayList<List<Integer>>();
+
+    static void subsets(int[] values, int index) {
+    }
+
+    public static void main(String[] args) {
+        int[] values = {1, 2, 3, 4, 5};
+        subsets(values, 0);
+        System.out.println(results);
+    }
+}
+```
+
 2. Print every permutation of a four-character string.
+
+```java
+import java.util.*;
+
+public class Main {
+    static List<Character> current = new ArrayList<Character>();
+    static List<List<Character>> results = new ArrayList<List<Character>>();
+
+    static void permute(char[] letters, boolean[] used) {
+    }
+
+    public static void main(String[] args) {
+        char[] letters = {'A', 'B', 'C', 'D'};
+        permute(letters, new boolean[letters.length]);
+        System.out.println(results);
+    }
+}
+```
+
 3. Print every combination of exactly 3 elements chosen from 5.
+
+```java
+import java.util.*;
+
+public class Main {
+    static List<Integer> current = new ArrayList<Integer>();
+    static List<List<Integer>> results = new ArrayList<List<Integer>>();
+
+    static void choose(int[] values, int start, int k) {
+    }
+
+    public static void main(String[] args) {
+        int[] values = {1, 2, 3, 4, 5};
+        choose(values, 0, 3);
+        System.out.println(results);
+    }
+}
+```
+
 4. Determine whether any subset of an array sums to a target, with pruning.
+
+```java
+public class Main {
+    static boolean canReachTarget(int[] values, int index, int sum, int target) {
+        return false;
+    }
+
+    public static void main(String[] args) {
+        int[] values = {3, 1, 7, 2, 8};
+        System.out.println(canReachTarget(values, 0, 0, 8));
+    }
+}
+```
+
 5. Count the ways to place `n` non-attacking rooks on an `n` × `n` board, for `n` up to 8.
+
+```java
+public class Main {
+    static int countArrangements(int n, int row, boolean[] usedColumns) {
+        return 0;
+    }
+
+    public static void main(String[] args) {
+        int n = 4; // try up to 8 after it works
+        System.out.println(countArrangements(n, 0, new boolean[n]));
+    }
+}
+```
+
 
 <details>
 <summary>Hints</summary>

@@ -254,11 +254,103 @@ Step 5 catches most errors. If `dp[3]` disagrees with what you counted on paper,
 
 <ExerciseBox title="Practice">
 
+Fill in each starter, click Run, then open Hints if you get stuck.
+
 1. Write the naive recursive Fibonacci, then time `fib(35)`. Add memoisation and time it again.
+
+```java
+public class Main {
+    static int fib(int n) {
+        return 0;
+    }
+
+    public static void main(String[] args) {
+        int n = 10; // raise n after memoizing
+        long start = System.nanoTime();
+        int result = fib(n);
+        long elapsedNs = System.nanoTime() - start;
+        System.out.println(result);
+        System.out.println(elapsedNs + " ns");
+    }
+}
+```
+
 2. Rewrite it as a table, then reduce it to two variables.
+
+```java
+public class Main {
+    static long fibTable(int n) {
+        long[] table = new long[n + 1];
+        // TODO
+        return 0;
+    }
+
+    static long fibTwoVars(int n) {
+        return 0;
+    }
+
+    public static void main(String[] args) {
+        int n = 10;
+        System.out.println(fibTable(n));
+        System.out.println(fibTwoVars(n));
+    }
+}
+```
+
 3. Count the ways to climb `n` stairs with steps of 1, 2, or 3.
+
+```java
+public class Main {
+    static long countWays(int n) {
+        long[] ways = new long[Math.max(n + 1, 4)];
+        return 0;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(countWays(5));
+    }
+}
+```
+
 4. Count the paths across a grid with blocked cells.
+
+```java
+public class Main {
+    static long countPaths(char[][] grid) {
+        int rows = grid.length;
+        int cols = grid[0].length;
+        long[][] paths = new long[rows][cols];
+        return 0;
+    }
+
+    public static void main(String[] args) {
+        char[][] grid = {
+            {'.', '.', '.'},
+            {'.', '#', '.'},
+            {'.', '.', '.'}
+        };
+        System.out.println(countPaths(grid));
+    }
+}
+```
+
 5. Given coin values and a target, find the fewest coins that sum to it, or report that it is impossible.
+
+```java
+public class Main {
+    static int fewestCoins(int[] coins, int target) {
+        int[] dp = new int[target + 1];
+        return 0;
+    }
+
+    public static void main(String[] args) {
+        int[] coins = {1, 3, 4};
+        int target = 6;
+        System.out.println(fewestCoins(coins, target));
+    }
+}
+```
+
 
 <details>
 <summary>Hints</summary>

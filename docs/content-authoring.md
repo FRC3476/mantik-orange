@@ -98,6 +98,8 @@ System.out.println("Hello");
 </ExerciseBox>
 ```
 
+On Java coding lessons, each Try It Yourself / Practice task needs a **compilable scaffold** in its own ` ```java ` fence. Students click **Run** on that fence before opening Show Answers. The scaffold must compile as Java 8, include sample data and empty method bodies, and omit the solution. Skip a fence only for non-code tasks (IDE shortcuts, Git, reflection questions). Intended compile errors stay as a commented line the student can uncomment.
+
 Legacy prop style still works (`items={[]}`, `tasks={[]}`) but prefer slots for new content.
 
 ### JavaPlayground

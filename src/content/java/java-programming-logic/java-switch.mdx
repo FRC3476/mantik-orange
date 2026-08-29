@@ -1,0 +1,194 @@
+---
+title: Switch Statements
+lessonId: java-switch
+section: java
+group: java-programming-logic
+groupLabel: Programming Logic
+groupOrder: 2
+order: 2
+difficulty: beginner
+duration: 25 min
+description: Choosing among several exact matches with switch, case, break, and default
+---
+
+### One value, several matches
+
+[Conditional Statements](/java/java-conditionals) taught `if` / `else if` / `else`. That form is right when you compare ranges or combine tests (`battery > 50`, `clear && !eStop`).
+
+When one value must match one of several exact options, a long `else if (mode == 1)` chain is hard to scan. A `switch` statement lists those options as `case` labels.
+
+Robot code uses this shape for numbered modes and for named commands. State machines later use the same idea on an enum. This page stays with `int` and `String`.
+
+### A first switch
+
+`mode` is `1`, `2`, or `3`. The switch prints one label.
+
+```java
+public class Main {
+    public static void main(String[] args) {
+        int mode = 2;
+
+        switch (mode) {
+            case 1:
+                System.out.println("AUTO");
+                break;
+            case 2:
+                System.out.println("TELEOP");
+                break;
+            case 3:
+                System.out.println("ENDGAME");
+                break;
+            default:
+                System.out.println("UNKNOWN");
+                break;
+        }
+    }
+}
+```
+
+Click **Run**. The console should show `TELEOP`.
+
+Java compares `mode` to each `case` value. `2` matches `case 2`, so that block runs. `break` leaves the switch. The later cases do not run.
+
+`default` runs when no `case` matches. Change `mode` to `9` and Run again. The console should show `UNKNOWN`.
+
+<RulesBox title="How a switch runs">
+
+- Java looks for a `case` that equals the value in `switch (...)`
+- That case runs until `break` or the end of the switch
+- `default` runs when nothing matches
+- A `case` label is an exact value, not a range
+
+</RulesBox>
+
+### Forgotten break
+
+Without `break`, Java keeps going into the next case. That is called fall-through. It is almost always a bug.
+
+```java
+public class Main {
+    public static void main(String[] args) {
+        int mode = 1;
+
+        switch (mode) {
+            case 1:
+                System.out.println("AUTO");
+            case 2:
+                System.out.println("TELEOP");
+            case 3:
+                System.out.println("ENDGAME");
+        }
+    }
+}
+```
+
+`mode` is `1`, but the console prints three lines: `AUTO`, `TELEOP`, and `ENDGAME`. Put `break` after each case you want to finish.
+
+### Stacked cases
+
+Fall-through is useful when two values should do the same work. Stack the labels and put the body on the last one.
+
+```java
+public class Main {
+    public static void main(String[] args) {
+        int button = 2;
+
+        switch (button) {
+            case 1:
+            case 2:
+                System.out.println("intake");
+                break;
+            case 3:
+                System.out.println("outtake");
+                break;
+            default:
+                System.out.println("none");
+                break;
+        }
+    }
+}
+```
+
+`1` and `2` both print `intake`. Only `3` prints `outtake`.
+
+### Switch on a String
+
+[Conditional Statements](/java/java-conditionals) compared text with `.equals()`. A `switch` can do the same when each option is an exact string.
+
+```java
+public class Main {
+    public static void main(String[] args) {
+        String command = "spin";
+
+        switch (command) {
+            case "drive":
+                System.out.println("DRIVE");
+                break;
+            case "spin":
+                System.out.println("SHOOTER");
+                break;
+            case "stop":
+                System.out.println("STOP");
+                break;
+            default:
+                System.out.println("IGNORE");
+                break;
+        }
+    }
+}
+```
+
+The match is case-sensitive. `"Spin"` would hit `default`, not `case "spin"`.
+
+### Keep if for ranges
+
+`switch` cannot test `battery > 50` or combine facts with `&&` / `||`. Those stay as `if`.
+
+```java
+public class Main {
+    public static void main(String[] args) {
+        int battery = 72;
+
+        if (battery > 50) {
+            System.out.println("OK");
+        } else {
+            System.out.println("LOW");
+        }
+    }
+}
+```
+
+Use `switch` when the value is one of a known list. Use `if` when the test is a range or more than one fact.
+
+<JavaPlayground id="java-switch" />
+
+<ExerciseBox title="Try It Yourself" answers={[{"task":"alliance station","content":"public class Main {\n    public static void main(String[] args) {\n        int station = 2;\n\n        switch (station) {\n            case 1:\n                System.out.println(\"RED\");\n                break;\n            case 2:\n                System.out.println(\"BLUE\");\n                break;\n            default:\n                System.out.println(\"INVALID\");\n                break;\n        }\n    }\n}"},{"task":"string command","content":"public class Main {\n    public static void main(String[] args) {\n        String command = \"stop\";\n\n        switch (command) {\n            case \"drive\":\n                System.out.println(\"DRIVE\");\n                break;\n            case \"spin\":\n                System.out.println(\"SHOOTER\");\n                break;\n            case \"stop\":\n                System.out.println(\"STOP\");\n                break;\n            default:\n                System.out.println(\"IGNORE\");\n                break;\n        }\n    }\n}"}]}>
+
+Fill in each starter, click Run, then open Show Answers when you want to compare.
+
+- Print `RED` when `station` is `1`, `BLUE` when it is `2`, and `INVALID` for any other value
+
+```java
+public class Main {
+    public static void main(String[] args) {
+        int station = 2;
+
+        // TODO: switch on station
+    }
+}
+```
+
+- Print `DRIVE`, `SHOOTER`, `STOP`, or `IGNORE` from the string `command`
+
+```java
+public class Main {
+    public static void main(String[] args) {
+        String command = "stop";
+
+        // TODO: switch on command
+        // drive, spin, stop, or anything else
+    }
+}
+```
+
+</ExerciseBox>

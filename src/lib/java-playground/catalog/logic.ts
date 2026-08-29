@@ -17,6 +17,22 @@ OK`,
     [{ name: 'Two readings', stdout: 'LOW\nOK' }],
   ),
   pg(
+    'java-switch',
+    'Practice: switch',
+    `Mode codes are 1, 2, and 9. For each, print AUTO if the code is 1, TELEOP if it is 2, and UNKNOWN for anything else.
+
+Expected:
+
+AUTO
+TELEOP
+UNKNOWN`,
+    main(`        int first = 1;
+        int second = 2;
+        int third = 9;
+        // Print AUTO, TELEOP, or UNKNOWN for each code`),
+    [{ name: 'Three modes', stdout: 'AUTO\nTELEOP\nUNKNOWN' }],
+  ),
+  pg(
     'java-methods',
     'Practice: methods',
     `Write a method named doubleIt that takes an int and returns twice that value.

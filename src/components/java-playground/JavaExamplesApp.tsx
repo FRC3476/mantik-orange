@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import RunnableJavaExample from '@/components/java-playground/RunnableJavaExample';
 import { looksLikeRunnableJava } from '@/lib/java-playground/exampleSource';
-import { pickLiveEditors } from '@/lib/java-playground/monacoSlots';
-import { preloadJavaRuntimeOnIdle } from '@/lib/java-playground/preloadJavaRuntime';
+import { preloadJavaRuntimeSoon } from '@/lib/java-playground/preloadJavaRuntime';
 
 interface ExampleItem {
   id: string;
@@ -84,12 +83,10 @@ function scanExamples(): ExampleItem[] {
 
 export default function JavaExamplesApp() {
   const [items, setItems] = useState<ExampleItem[]>([]);
-  const [visibility, setVisibility] = useState<Record<string, boolean>>({});
   const [editing, setEditing] = useState<Record<string, boolean>>({});
-  const prevLiveRef = useRef<string[]>([]);
 
   useEffect(() => {
-    preloadJavaRuntimeOnIdle();
+    preloadJavaRuntimeSoon();
   }, []);
 
   useEffect(() => {
@@ -98,25 +95,6 @@ export default function JavaExamplesApp() {
     document.addEventListener('astro:page-load', apply);
     return () => document.removeEventListener('astro:page-load', apply);
   }, []);
-
-  useEffect(() => {
-    if (items.length === 0) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        setVisibility((prev) => {
-          const next = { ...prev };
-          for (const entry of entries) {
-            const id = (entry.target as HTMLElement).dataset.jpId;
-            if (id) next[id] = entry.isIntersecting;
-          }
-          return next;
-        });
-      },
-      { rootMargin: '200px' },
-    );
-    for (const item of items) observer.observe(item.root);
-    return () => observer.disconnect();
-  }, [items]);
 
   const handleEditingChange = useCallback((id: string, isEditing: boolean) => {
     setEditing((prev) => {
@@ -132,19 +110,6 @@ export default function JavaExamplesApp() {
     }
   }, [editing, items]);
 
-  const liveList = useMemo(() => {
-    const needing = items
-      .filter((item) => item.inExercise || Boolean(editing[item.id]))
-      .map((item) => item.id);
-    const intersecting = items.filter((item) => visibility[item.id]).map((item) => item.id);
-    return pickLiveEditors(needing, intersecting, prevLiveRef.current);
-  }, [editing, items, visibility]);
-
-  useEffect(() => {
-    prevLiveRef.current = liveList;
-  }, [liveList]);
-
-  const liveIds = useMemo(() => new Set(liveList), [liveList]);
   const footnoteId = items[0]?.id;
 
   return (
@@ -156,7 +121,6 @@ export default function JavaExamplesApp() {
             id={item.id}
             original={item.original}
             inExercise={item.inExercise}
-            mountEditor={liveIds.has(item.id)}
             showFootnote={item.id === footnoteId}
             onEditingChange={handleEditingChange}
           />,

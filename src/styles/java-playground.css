@@ -49,6 +49,11 @@
   height: 280px;
 }
 
+.jp-cm,
+.jp-cm .cm-editor {
+  height: 100%;
+}
+
 .jp-editor-loading {
   margin: 0;
   padding: 1rem;
@@ -113,6 +118,16 @@
 
 .jp-btn-check:hover:not(:disabled),
 .jp-btn-reset:hover:not(:disabled) {
+  background: var(--color-background-hover);
+}
+
+.jp-btn-stop {
+  background: var(--color-background-primary);
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+
+.jp-btn-stop:hover:not(:disabled) {
   background: var(--color-background-hover);
 }
 

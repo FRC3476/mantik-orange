@@ -18,3 +18,4 @@ out/
 /comp/
 .env.example
 public/java-playground/ecj.jar
+public/java-playground/ecj-*.jar

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import JavaEditorPane from '@/components/java-playground/JavaEditorPane';
 import { getExercise } from '@/lib/java-playground/exercises';
-import { preloadJavaRuntimeOnIdle } from '@/lib/java-playground/preloadJavaRuntime';
+import { preloadJavaRuntimeSoon } from '@/lib/java-playground/preloadJavaRuntime';
 import type { CheckResult } from '@/lib/java-playground/types';
 
 interface Props {
@@ -22,10 +22,15 @@ export default function JavaPlayground({ id }: Props) {
   const [check, setCheck] = useState<CheckResult | null>(null);
 
   useEffect(() => {
-    preloadJavaRuntimeOnIdle();
+    preloadJavaRuntimeSoon();
   }, []);
 
   const busy = phase === 'working';
+
+  const handleStop = useCallback(async () => {
+    const { cancel } = await import('@/lib/java-playground/cheerpjRunner');
+    cancel('Stopped.');
+  }, []);
 
   const handleRun = useCallback(async () => {
     if (!exercise || busy) return;
@@ -135,9 +140,15 @@ export default function JavaPlayground({ id }: Props) {
         <button type="button" className="jp-btn jp-btn-check" onClick={handleCheck} disabled={busy}>
           Check
         </button>
-        <button type="button" className="jp-btn jp-btn-reset" onClick={handleReset} disabled={busy}>
-          Reset
-        </button>
+        {busy ? (
+          <button type="button" className="jp-btn jp-btn-stop" onClick={handleStop}>
+            Stop
+          </button>
+        ) : (
+          <button type="button" className="jp-btn jp-btn-reset" onClick={handleReset}>
+            Reset
+          </button>
+        )}
       </div>
 
       <div
@@ -172,8 +183,8 @@ export default function JavaPlayground({ id }: Props) {
       )}
 
       <p className="jp-footnote">
-        Java compiles and runs in your browser using CheerpJ. The first Run downloads the runtime and can
-        take a while. If the page stops responding, reload it.
+        Java compiles and runs in your browser. The first Run may download the runtime. Use Stop if a
+        program runs too long.
       </p>
     </section>
   );

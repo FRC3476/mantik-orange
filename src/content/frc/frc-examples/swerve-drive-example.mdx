@@ -8,7 +8,7 @@ groupOrder: 7
 order: 3
 difficulty: advanced
 duration: 45 min
-description: A full swerve drivetrain — generated constants from Tuner X, an IO layer per module, and Drive owning odometry and path following.
+description: A full swerve drivetrain — generated constants from Tuner X, an IO layer per module, and Drive owning odometry and BLine path following.
 ---
 
 ### Overview
@@ -24,7 +24,7 @@ This walkthrough follows the structure of the AdvantageKit swerve template (Team
     ["<code>generated/TunerConstants.java</code>", "Module offsets, gear ratios, gains, CAN IDs &mdash; <strong>generated, not hand-written</strong>"],
     ["<code>ModuleIO</code> + implementations", "One swerve module's hardware"],
     ["<code>Module</code>", "One module's logic: optimize, log, convert units"],
-    ["<code>Drive</code>", "Kinematics, odometry, pose estimation, PathPlanner, SysId"],
+    ["<code>Drive</code>", "Kinematics, odometry, pose estimation, BLine path following, SysId"],
     ["<code>GyroIO</code> / <code>GyroIOPigeon2</code>", "Heading"],
     ["<code>PhoenixOdometryThread</code>", "Samples odometry faster than the main loop"]
   ]}
@@ -70,7 +70,7 @@ If a value needs to change, change it in the generator's input and regenerate. I
 
 </RulesBox>
 
-Everything downstream reads from it — `Drive` computes its drive base radius from the generated module locations, and PathPlanner's robot config uses the generated wheel radius and gear ratio.
+Everything downstream reads from it — `Drive` computes its drive base radius from the generated module locations. BLine does not need a generated robot-mass config; it follows from the pose supplier and robot-relative chassis speeds.
 
 ### One Module, Four Times
 
@@ -158,24 +158,22 @@ Each loop delivers several samples rather than one, and `Drive` feeds all of the
 
 ### Path Following
 
-`Drive` configures PathPlanner in its own constructor, keeping drivetrain concerns out of `RobotContainer`:
+`Drive` builds a reusable `FollowPath.Builder` in its own constructor, keeping drivetrain concerns out of `RobotContainer`:
 
 ```java
-AutoBuilder.configure(
-    this::getPose,
-    this::setPose,
-    this::getChassisSpeeds,
-    this::runVelocity,
-    new PPHolonomicDriveController(
-        new PIDConstants(translationalAutoP, 0.0, 0.0),
-        new PIDConstants(rotationalAutoP, 0.0, 0.0)),
-    PP_CONFIG,
-    () -> DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red,
-    this);
-Pathfinding.setPathfinder(new LocalADStarAK());
+pathBuilder = new FollowPath.Builder(
+        this,
+        this::getPose,
+        this::getRobotRelativeSpeeds,
+        this::driveRobotRelative,
+        new PIDController(translationalAutoP, 0.0, 0.0),
+        new PIDController(rotationalAutoP, 0.0, 0.0),
+        new PIDController(crossTrackAutoP, 0.0, 0.0))
+        .withTRatioBasedTranslationHandoffs(true)
+        .withDefaultShouldFlip();
 ```
 
-`PP_CONFIG` is built from the generated constants plus the robot's mass and moment of inertia. Full detail in [PathPlanner](/frc/pathplanner).
+The builder needs a field-relative pose and robot-relative chassis speeds — not a mass or MOI config. Load a named path with `pathBuilder.build(new Path("score-left"))`. Full detail in [BLine](/frc/bline).
 
 ### Driving It
 
@@ -223,10 +221,11 @@ Run these on a clear floor with plenty of space. They drive the robot with no hu
 
 - **Editing `TunerConstants.java` by hand.** Regenerate instead.
 - **Module array out of order.** FL, FR, BL, BR — always.
-- **Stale robot mass** in the PathPlanner config after a mechanism is added.
+- **Feeding field-relative or driver-perspective speeds** into `FollowPath`. The consumer must be robot-relative.
+- **Resetting pose from the authored blue-origin start** after the builder has already flipped the path for red.
 - **Forgetting the joystick negations,** giving a robot that drives backwards.
 - **Skipping re-characterization after new tread.** The effective wheel radius really does change.
 
 </RulesBox>
 
-<LinkGrid links={[{"label":"Hardware Abstraction with IO Layers","id":"io-layer"},{"label":"PathPlanner","id":"pathplanner"},{"label":"Odometry","id":"odometry"},{"label":"Tunable Constants and Characterization","id":"tunable-constants"},{"label":"CTRE Hardware Setup","id":"ctre-hardware-setup"},{"label":"Tuner X Swerve Generator","url":"https://v6.docs.ctr-electronics.com/en/stable/docs/tuner/tuner-swerve/index.html"}]} title="Resources" section="frc" />
+<LinkGrid links={[{"label":"Hardware Abstraction with IO Layers","id":"io-layer"},{"label":"BLine","id":"bline"},{"label":"Odometry","id":"odometry"},{"label":"Tunable Constants and Characterization","id":"tunable-constants"},{"label":"CTRE Hardware Setup","id":"ctre-hardware-setup"},{"label":"Tuner X Swerve Generator","url":"https://v6.docs.ctr-electronics.com/en/stable/docs/tuner/tuner-swerve/index.html"}]} title="Resources" section="frc" />

@@ -185,7 +185,7 @@ Adding characterization routines as chooser options is a convenient way to run t
 - **Reading a joystick axis into a variable** instead of passing a supplier.
 - **Runtime logic in `RobotContainer`.** It configures; it does not decide.
 - **A missing default command,** so a mechanism never stops.
-- **Building the auto chooser before registering named commands.** PathPlanner resolves the names at build time.
+- **Composing the auto before registering BLine event triggers.** `FollowPath` looks up each `lib_key` when the path runs; register the actions first.
 - **Two bindings whose commands require the same subsystem,** so pressing one silently cancels the other.
 
 </RulesBox>

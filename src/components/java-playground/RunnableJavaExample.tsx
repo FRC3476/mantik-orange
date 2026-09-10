@@ -11,7 +11,6 @@ interface Props {
   id: string;
   original: string;
   inExercise: boolean;
-  mountEditor: boolean;
   showFootnote: boolean;
   onEditingChange: (id: string, editing: boolean) => void;
 }
@@ -39,7 +38,6 @@ export default function RunnableJavaExample({
   id,
   original,
   inExercise,
-  mountEditor,
   showFootnote,
   onEditingChange,
 }: Props) {
@@ -76,6 +74,11 @@ export default function RunnableJavaExample({
     setStatus('');
   };
 
+  const handleStop = useCallback(async () => {
+    const { cancel } = await import('@/lib/java-playground/cheerpjRunner');
+    cancel('Stopped.');
+  }, []);
+
   const handleRun = useCallback(async () => {
     if (busy) return;
     setBusy(true);
@@ -105,7 +108,6 @@ export default function RunnableJavaExample({
           onChange={setCode}
           status={status}
           busy={busy}
-          active={mountEditor}
         />
       )}
 
@@ -132,9 +134,15 @@ export default function RunnableJavaExample({
             {editing ? 'Hide editor' : 'Edit'}
           </button>
         )}
-        <button type="button" className="jp-btn jp-btn-reset" onClick={handleReset} disabled={busy}>
-          Reset
-        </button>
+        {busy ? (
+          <button type="button" className="jp-btn jp-btn-stop" onClick={handleStop}>
+            Stop
+          </button>
+        ) : (
+          <button type="button" className="jp-btn jp-btn-reset" onClick={handleReset}>
+            Reset
+          </button>
+        )}
         {status && !showEditor ? <span className="jp-status jp-example-status">{status}</span> : null}
       </div>
 
@@ -154,8 +162,8 @@ export default function RunnableJavaExample({
 
       {showFootnote && (
         <p className="jp-footnote jp-example-note">
-          Runs in the browser as Java 8. Robot libraries are not included. Infinite loops can freeze the
-          tab.
+          Runs in the browser as Java 8. Robot libraries are not included. Use Stop if a program runs
+          too long.
         </p>
       )}
     </div>

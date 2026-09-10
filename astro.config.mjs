@@ -59,7 +59,19 @@ export default defineConfig({
       },
     },
     optimizeDeps: {
-      include: ['@monaco-editor/react', 'monaco-editor', 'uplot'],
+      include: [
+        '@monaco-editor/react',
+        'monaco-editor',
+        'uplot',
+        '@codemirror/state',
+        '@codemirror/view',
+        '@codemirror/language',
+        '@codemirror/commands',
+        '@codemirror/lang-java',
+      ],
+    },
+    worker: {
+      format: 'iife',
     },
     ssr: {
       noExternal: ['pagefind'],
@@ -85,7 +97,13 @@ export default defineConfig({
             if (id.includes('node_modules/monaco-editor') || id.includes('node_modules/@monaco-editor')) {
               return 'monaco';
             }
-            if (id.includes('/lib/java-playground/cheerpjRunner') || id.includes('/lib/java-playground/runChecks')) {
+            if (id.includes('node_modules/@codemirror') || id.includes('node_modules/@lezer')) {
+              return 'codemirror';
+            }
+            if (id.includes('/lib/java-playground/worker/')) {
+              return;
+            }
+            if (id.includes('/lib/java-playground/')) {
               return 'java-playground';
             }
             if (

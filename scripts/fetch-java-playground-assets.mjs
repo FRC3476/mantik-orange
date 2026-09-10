@@ -2,7 +2,7 @@
 /**
  * Downloads Eclipse Compiler for Java (ECJ) into public/ so CheerpJ can
  * compile student code in the browser. Skips the download when a large
- * enough jar is already present.
+ * enough versioned jar is already present.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -10,7 +10,9 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const destDir = path.resolve(__dirname, '../public/java-playground');
-const dest = path.join(destDir, 'ecj.jar');
+const filename = 'ecj-3.16.0.jar';
+const dest = path.join(destDir, filename);
+const legacy = path.join(destDir, 'ecj.jar');
 // 3.16.0 is Java 8 bytecode and does not need jrt-fs (CheerpJ has no Java 11 modules).
 const ECJ_URL = 'https://repo1.maven.org/maven2/org/eclipse/jdt/ecj/3.16.0/ecj-3.16.0.jar';
 const MIN_BYTES = 500_000;
@@ -22,6 +24,13 @@ if (!force && fs.existsSync(dest) && fs.statSync(dest).size >= MIN_BYTES) {
 }
 
 fs.mkdirSync(destDir, { recursive: true });
+
+if (!force && fs.existsSync(legacy) && fs.statSync(legacy).size >= MIN_BYTES) {
+  fs.copyFileSync(legacy, dest);
+  console.log(`java-playground: copied ${path.relative(process.cwd(), legacy)} → ${filename}`);
+  process.exit(0);
+}
+
 console.log('java-playground: downloading ECJ from Maven Central…');
 
 const res = await fetch(ECJ_URL);

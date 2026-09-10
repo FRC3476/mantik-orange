@@ -1,0 +1,324 @@
+---
+title: "BLine: Geometric Path Generation and Following"
+lessonId: bline
+section: frc
+group: frc-external-tools
+groupLabel: External Tools
+groupOrder: 9
+order: 2
+difficulty: intermediate
+duration: 55 min
+description: ""
+---
+
+### What is BLine?
+
+BLine is a path authoring and following suite for FRC holonomic drivetrains (swerve, mecanum). You describe a path as a polyline — a sequence of straight segments — then `FollowPath` steers from the robot's **live pose** toward the next geometric target each loop.
+
+The suite has two parts. **BLine Web** is a browser and desktop editor for drawing paths on the current field and exporting JSON. **BLine-Lib** is the Java library that loads those files, or builds the same `Path` model in code, and follows it. The editor is convenient, not required.
+
+This course uses BLine for autonomous paths and teleop alignment. The samples below match BLine-Lib v0.9.1 on WPILib 2026. Check [Versions & Support](https://bline-docs.pages.dev/reference/versions/) when you upgrade.
+
+Learn more: [BLine Documentation](https://bline-docs.pages.dev/) | [BLine Web](https://bline-web.pages.dev/) | [BLine-Lib Javadoc](https://edanliahovetsky.github.io/BLine-Lib/)
+
+### Geometric vs time-parameterized following
+
+A BLine path says **where** to go and what limits to respect. The follower computes the next chassis-speed request from the current pose. It does not play back a timed trajectory.
+
+Time-parameterized tools such as [PathPlanner](https://pathplanner.dev/home.html) and [Choreo](https://choreo.autos/) generate a trajectory first, then track a pose and velocity indexed by elapsed time. That can produce a feasible, time-optimal route when the robot model is accurate. After a delay or collision, those followers may chase a setpoint that has already moved ahead unless they pause or replan.
+
+<ContentTable
+  title="What each model optimizes"
+  headers={["", "BLine", "Time-parameterized (PathPlanner, Choreo)"]}
+  rows={[
+    ["Desired state", "Progress and targets from the live pose", "Pose and velocity indexed by time"],
+    ["Path shape", "Polyline of straight segments", "Bézier or optimized spline"],
+    ["After a bump or delay", "Continues from current geometric progress", "May chase a setpoint that has moved ahead"],
+    ["Dynamic feasibility", "Constraints guide the request; not proven by the follower", "A dynamics-aware generator can prove a trajectory when its model is right"],
+    ["Runtime drive-to-pose", "A one-waypoint path, built when the command is scheduled", "Usually needs generation or pathfinding first"],
+    ["This course", "Used for autos and alignment", "Industry alternatives; official docs only"]
+  ]}
+/>
+
+A sharp polyline corner is not slowed just because it is sharp. Add a ranged velocity limit, or accept that the chassis may cut the corner. A blocked robot can keep trying forever unless the command composition adds a timeout.
+
+Hybrid routines are valid: BLine for a geometric align, another tool for an open-field optimized run. This course stays on BLine. See [How BLine Works](https://bline-docs.pages.dev/concepts/design-philosophy/).
+
+### Key Concepts
+
+**Path:** The runtime model: translation elements, rotation elements, event triggers, and constraints. Load it from JSON or construct it in Java. ([Create Paths](https://bline-docs.pages.dev/lib/path-construction/))
+
+**Waypoint:** A translation target and a holonomic rotation target at the same place.
+
+**Translation target:** An XY point that shapes the polyline. Intermediate targets are usually pass-through anchors, not stops.
+
+**Rotation target:** A heading to hold or interpolate, placed along a segment with `t_ratio`.
+
+**Handoff radius:** How close the robot must get (or how far along the segment it must progress) before the follower advances to the next translation target.
+
+**t_ratio:** Normalized progress along a segment, from 0 to 1. Rotation targets and event triggers use it.
+
+**FollowPath:** A WPILib `Command` that reads pose, runs three PID controllers, applies active constraints, and sends robot-relative `ChassisSpeeds`. ([Follow Paths](https://bline-docs.pages.dev/lib/follow-path/))
+
+**Event trigger:** A `lib_key` fired at a `t_ratio` along a segment. The key must be registered to a `Runnable` or `Command` before the path runs.
+
+### What you need first
+
+BLine does not own your drivetrain or your pose estimator. It needs three contracts from a holonomic `Drive` subsystem:
+
+- a field-relative `Pose2d` supplier
+- a robot-relative `ChassisSpeeds` supplier
+- a robot-relative `ChassisSpeeds` consumer
+
+Driver-perspective transforms that make joysticks feel natural must not wrap autonomous output. If teleop inverts axes for the driver, keep that in the joystick command, not in `drive(...)`.
+
+Localization is a separate layer. BLine trusts the pose it is given — wheel odometry, vision fusion, or both. A wrong scale, a flipped gyro, or a pose jump changes handoffs, rotation targets, and events. Cameras are not required for a short, slow routine; they matter more once paths get long, turn-heavy, or used for teleop align. See [Pose Estimation](/frc/pose-estimation-intro).
+
+BLine follows the elements it receives. It does not pathfind around a new obstacle.
+
+### Installing BLine-Lib
+
+Install the vendordep in the robot project. Open **WPILib: Manage Vendor Libraries**, choose **Install new libraries (online)**, and paste:
+
+```text
+https://bline-metrics.edan-liahovetsky.workers.dev/vendor/BLine-Lib.json
+```
+
+If that endpoint is unavailable, use the source file:
+
+```text
+https://raw.githubusercontent.com/edanliahovetsky/BLine-Lib/main/BLine-Lib.json
+```
+
+After Gradle refreshes, this import should resolve:
+
+```java
+import frc.robot.lib.BLine.*;
+```
+
+BLine Web runs in a [desktop browser](https://bline-web.pages.dev/) with no install, or as a desktop app that can write directly into `src/main/deploy/autos`. Browser storage is not a backup — export into version control. Full install steps: [Installation](https://bline-docs.pages.dev/getting-started/installation/).
+
+### Configuring FollowPath.Builder
+
+Build one configured builder on `Drive` and reuse it for named paths. Give each builder its own PID objects, and do not run two commands from the same builder at once.
+
+```java
+import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.lib.BLine.FollowPath;
+import frc.robot.lib.BLine.Path;
+
+public class Drive extends SubsystemBase {
+    private final FollowPath.Builder pathBuilder;
+
+    public Drive(/* ... */) {
+        // ... hardware init ...
+
+        pathBuilder = new FollowPath.Builder(
+                this,
+                this::getPose,
+                this::getRobotRelativeSpeeds,
+                this::driveRobotRelative,
+                new PIDController(5.0, 0.0, 0.0),  // translation — starting point
+                new PIDController(3.0, 0.0, 0.0),  // rotation — starting point
+                new PIDController(2.0, 0.0, 0.0)   // cross-track — starting point
+        )
+                .withTRatioBasedTranslationHandoffs(true)
+                .withDefaultShouldFlip();
+    }
+
+    public FollowPath.Builder pathBuilder() {
+        return pathBuilder;
+    }
+}
+```
+
+Those PID numbers are starting points, not a finished tune. The three controllers have different jobs:
+
+- **Translation** turns remaining polyline distance into a speed magnitude toward the active target.
+- **Rotation** turns heading error into angular velocity. Continuous input is enabled inside `FollowPath`.
+- **Cross-track** adds a lateral correction so the robot stays on the active segment.
+
+`withTRatioBasedTranslationHandoffs(true)` is recommended for pass-through shaping points. It is **off by default** in v0.9.1. The follower then advances when the robot enters the handoff radius **or** its projected progress along the segment passes a threshold. Use radius-only handoff when an intermediate target is a must-enter gate.
+
+`withDefaultShouldFlip()` authors the path from the blue-origin field and mirrors it when the Driver Station reports red. Do not also flip the same path by hand unless you have accounted for both transforms.
+
+<RulesBox title="Pose reset belongs on the first path only">
+
+`withPoseReset(drive::resetPose)` is captured by every command built while the option is set. For a multi-path auto, set it for the first `build`, then clear it:
+
+```java
+Command first = builder
+        .withPoseReset(drive::resetPose)
+        .build(firstPath);
+
+builder.withPoseReset(ignored -> {});
+Command second = builder.build(secondPath);
+```
+
+`drive.resetPose(firstPath.getStartPose())` uses the authored blue-origin pose. The builder flips its private copy at initialize. If those disagree, the robot starts on the wrong side of the field.
+
+</RulesBox>
+
+### Authoring and running paths
+
+Two workflows produce the same `Path` model.
+
+**BLine Web.** Draw on the current field, set constraints and handoff radii, preview idealized motion, and export into the robot project:
+
+```text
+src/main/deploy/autos/
+  config.json
+  paths/
+    score-left.json
+```
+
+Load by filename without `.json`:
+
+```java
+Path scoreLeft = new Path("score-left");
+Command followScore = drive.pathBuilder().build(scoreLeft);
+```
+
+`config.json` becomes the process-wide default constraints for file-based loads. Deploy it with the path files. A missing config can fail loading at runtime.
+
+**Java construction.** Set defaults once if you are not deploying `config.json`, then assemble elements:
+
+```java
+Path.setDefaultGlobalConstraints(new Path.DefaultGlobalConstraints(
+        4.5,    // max translation velocity, m/s
+        12.0,   // max translation acceleration, m/s²
+        720.0,  // max rotation velocity, deg/s
+        1500.0, // max rotation acceleration, deg/s²
+        0.03,   // end translation tolerance, m
+        2.0,    // end rotation tolerance, deg
+        0.45    // intermediate handoff radius, m
+));
+
+Path align = new Path(
+        new Path.Waypoint(new Translation2d(4.0, 2.0), Rotation2d.fromDegrees(0)),
+        new Path.TranslationTarget(new Translation2d(6.0, 2.8)),
+        new Path.RotationTarget(Rotation2d.fromDegrees(90), 0.5, true),
+        new Path.EventTrigger(0.7, "deployIntake"),
+        new Path.Waypoint(new Translation2d(7.5, 3.4), Rotation2d.fromDegrees(90))
+);
+```
+
+Those constraint numbers match the current BLine Web defaults. They are not a characterization of your robot.
+
+`build` copies the path. Later edits to the original object do not change a command that was already built. Prefer constructing a finished `Path` over mutating one; v0.9.1 validates at construction and does not re-validate after every mutation.
+
+**Runtime drive-to-pose.** Do not sample live pose while `RobotContainer` is constructing. Defer the path until the command is scheduled:
+
+```java
+controller.a().whileTrue(
+        Commands.deferredProxy(() ->
+                runtimeBuilder.build(new Path(new Path.Waypoint(targetPose)))));
+```
+
+A single final waypoint is enough. `FollowPath` starts from the live pose. Use a dedicated builder with no flip, mirror, or pose-reset when `targetPose` is already in the current field frame.
+
+A blocked geometric follower can run forever. Add a timeout or fallback where getting stuck would make the rest of the auto unsafe:
+
+```java
+Command guarded = builder.build(path).withTimeout(3.0);
+```
+
+See [First Path Tutorial](https://bline-docs.pages.dev/getting-started/quick-start/) for the editor-to-robot walkthrough.
+
+### Constraints and handoff
+
+Constraints have different jobs from PID gains.
+
+- **Controller gains** turn geometric error into a requested speed.
+- **Maximum velocity** clips that request. It is a ceiling, not a promise the robot reaches that speed.
+- **Maximum acceleration** limits how quickly BLine may change its previous commanded speed. It is a slew limit, not a drivetrain model or a traction guarantee.
+- **End tolerances** decide when the command may finish. v0.9.1 does not also require low measured velocity.
+
+Ranged constraints apply a limit to a span of translation or rotation ordinals. Use a lower maximum velocity on a tight turn or a punctual approach. The editor preview is idealized motion — it does not predict wheel slip, battery sag, or localization error.
+
+Handoff radius controls when the follower leaves an intermediate target. A large radius cuts geometry; a small one can be impossible to enter at speed. Final-target tolerances are separate: the command finishes only when the last translation and rotation elements are active and both errors are inside tolerance.
+
+### Event triggers and BLineCommands
+
+Register each `lib_key` before the path that uses it. Registrations are static and persist across runs.
+
+```java
+FollowPath.registerEventTrigger("deployIntake", intake.deployCommand());
+FollowPath.registerEventTrigger("shoot", shooter.shootCommand());
+```
+
+The `Command` overload schedules through `CommandScheduler`. The `Runnable` overload runs inline from `FollowPath.execute()` — keep it short.
+
+A raw `Commands.sequence` that already requires the shooter can cancel the whole auto when an event schedules another shooter command. `BLineCommands` proxies children so those requirements do not collide that way:
+
+```java
+import static frc.robot.lib.BLine.BLineCommands.sequence;
+
+Command auto = sequence(
+        shooter.prepareCommand(),
+        drive.pathBuilder().build(pathWithShootEvent),
+        shooter.finishCommand()
+);
+```
+
+`FollowPath` still requires the drivetrain. An event command that also requires the drivetrain will interrupt the path. Keep mechanism events off the drive requirement. See [Events & Command Groups](https://bline-docs.pages.dev/lib/event-triggers/).
+
+### Tuning order
+
+Wire logging before changing gains. `FollowPath` publishes through process-wide consumers; by default they do nothing.
+
+```java
+FollowPath.setDoubleLoggingConsumer(
+        value -> Logger.recordOutput(value.getFirst(), value.getSecond()));
+FollowPath.setBooleanLoggingConsumer(
+        value -> Logger.recordOutput(value.getFirst(), value.getSecond()));
+FollowPath.setPoseLoggingConsumer(
+        value -> Logger.recordOutput(value.getFirst(), value.getSecond()));
+FollowPath.setTranslationListLoggingConsumer(
+        value -> Logger.recordOutput(value.getFirst(), value.getSecond()));
+```
+
+All keys start with `FollowPath/`. Compare remaining path distance, requested translation speed, and **measured** chassis speed from your drivetrain. BLine does not publish measured speed.
+
+Tune translation first, rotation second, and cross-track last so each plot has one main unknown. A low gain, a short path, or a drivetrain that cannot realize the request may never reach the velocity ceiling — that is expected.
+
+Do not drop maximum acceleration just to make a first test “gentle.” A low velocity ceiling with a high acceleration ceiling still lets the follower brake near the endpoint. Changing acceleration changes how the command lags the PID in both directions, so retune if you change the envelope you will deploy.
+
+Full plot lists and gain-direction checks: [Tune Your Robot](https://bline-docs.pages.dev/getting-started/tuning/) and [Logging & AdvantageScope](https://bline-docs.pages.dev/lib/logging/). Visual analysis: [AdvantageScope](/frc/advantagescope).
+
+### Alliance flip, rotation override, and Field2d
+
+Author paths from the blue origin. `withDefaultShouldFlip()` applies the opposite-alliance transform from the Driver Station. For an already alliance-specific live target, use a builder with no flip.
+
+`FollowPath.overrideRotation(...)` lets vision or another controller own omega while translation still follows the polyline. The override is static and affects every `FollowPath` until cleared. Clear it in `finallyDo` on the wrapper command, not only on the path child.
+
+An override changes output, not the finish test. If vision holds a heading that is not the final waypoint heading, the path can reach XY and never finish. Clear the override before the endpoint, author a compatible heading, or add a timeout.
+
+`BLineField.drawPath(field, "ScoreLeft", path)` publishes the authored polyline on a WPILib `Field2d` for Elastic or Glass. It is optional. It shows planned translation anchors, not rotation targets, events, or a physics preview. Draw a transformed copy if the dashboard should show the alliance-side route the command will actually follow.
+
+Before an aggressive start, pre-orient the swerve modules. See [Pre-Match](https://bline-docs.pages.dev/lib/pre-match/).
+
+<RulesBox title="BLine tips">
+
+- Keep autonomous `ChassisSpeeds` robot-relative. Driver-perspective inversion belongs in the joystick command.
+- Enable t-ratio handoffs for pass-through anchors; leave radius-only for a deliberate gate.
+- Register event keys before composing the auto. A missing `lib_key` is skipped or warned, not a compile error.
+- Reset pose on the first path only, using the builder so flip and reset share one transform.
+- Export BLine Web projects into git. Browser storage is per profile and site.
+- Log `FollowPath/` keys and measured drive speed before changing PID.
+- Give a blocked path a timeout. Geometric completion waits on tolerance, not on a clock.
+
+</RulesBox>
+
+<LinkGrid links={[
+  {"label":"Swerve Drive Example","id":"swerve-drive-example"},
+  {"label":"Pose Estimation","id":"pose-estimation-intro"},
+  {"label":"AdvantageScope","id":"advantagescope"},
+  {"label":"Command-Based Programming","id":"intro-to-command-based"},
+  {"label":"BLine Docs","url":"https://bline-docs.pages.dev/"},
+  {"label":"BLine Web","url":"https://bline-web.pages.dev/"},
+  {"label":"BLine-Lib Javadoc","url":"https://edanliahovetsky.github.io/BLine-Lib/"},
+  {"label":"Chief Delphi thread","url":"https://www.chiefdelphi.com/t/introducing-bline-a-new-rapid-polyline-autonomous-path-planning-suite/509778"}
+]} title="Resources" section="frc" />

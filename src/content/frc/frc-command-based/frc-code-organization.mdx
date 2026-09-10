@@ -97,7 +97,7 @@ public final class Constants {
     }
 
     public static class FieldConstants { /* field geometry, tag layout */ }
-    public static class PathPlannerConstants { /* robot mass, MOI, auto gains */ }
+    public static class BLineConstants { /* follower PIDs, default path constraints */ }
 }
 ```
 
@@ -273,7 +273,7 @@ public class PhoenixUtil {
 }
 ```
 
-Others worth having: deadband and clamp helpers, a tunable-constant wrapper (see [Tunable Constants and Characterization](/frc/tunable-constants)), and a logged pathfinder wrapper if you use PathPlanner with AdvantageKit.
+Others worth having: deadband and clamp helpers, and a tunable-constant wrapper (see [Tunable Constants and Characterization](/frc/tunable-constants)).
 
 <RulesBox title="General Organization Rules" subtitle="Best practices:">
 

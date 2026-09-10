@@ -262,10 +262,10 @@
       "source": "mantik"
     },
     {
-      "id": "frc-official-documentation-pathplanner-docs",
-      "title": "PathPlanner Docs",
-      "description": "PathPlanner hub: GUI path authoring, PathPlannerLib API for holonomic and differential autos, event markers, and integration with WPILib pose estimation.",
-      "url": "https://pathplanner.dev/home.html",
+      "id": "frc-official-documentation-bline-docs",
+      "title": "BLine Docs",
+      "description": "BLine hub: geometric polyline path authoring in BLine Web, BLine-Lib FollowPath API for holonomic autos, event triggers, and live-pose tracking.",
+      "url": "https://bline-docs.pages.dev/",
       "major": "frc",
       "minor": "Official Documentation",
       "tags": [
@@ -275,10 +275,10 @@
       "source": "mantik"
     },
     {
-      "id": "frc-autonomous-pathplanner-getting-started",
-      "title": "PathPlanner Getting Started",
-      "description": "PathPlanner GUI tutorial: draw paths and constraints, set ideal starting pose, export to deploy folder, and wire PathPlannerAuto in RobotContainer.",
-      "url": "https://pathplanner.dev/gui-getting-started.html",
+      "id": "frc-autonomous-bline-first-path",
+      "title": "BLine First Path Tutorial",
+      "description": "BLine first-path tutorial: draw a polyline on the current field, export to deploy/autos, wire FollowPath.Builder, and run it on a holonomic drive.",
+      "url": "https://bline-docs.pages.dev/getting-started/quick-start/",
       "major": "frc",
       "minor": "Autonomous",
       "tags": [

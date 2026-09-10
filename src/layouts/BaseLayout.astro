@@ -7,6 +7,8 @@ import SidebarBehavior from '@/components/layout/SidebarBehavior.astro';
 import KeyboardShortcuts from '@/components/layout/KeyboardShortcuts.astro';
 import Search from '@/components/layout/Search.astro';
 import { siteConfig } from '@/config/navigation';
+import { CHEERPJ_LOADER } from '@/lib/java-playground/constants';
+import { ECJ_FILENAME, LAUNCHER_FILENAME, playgroundPublicUrl } from '@/lib/java-playground/assets';
 import type { SidebarGroup } from '@/lib/content';
 
 interface Props {
@@ -31,9 +33,8 @@ const {
 
 const fullTitle = title === siteConfig.title ? title : `${title} | Mantik`;
 const canonicalUrl = canonical ?? new URL(currentPath, siteConfig.url).href;
-const base = import.meta.env.BASE_URL;
-const baseWithSlash = base.endsWith('/') ? base : `${base}/`;
-const ecjHref = `${baseWithSlash}java-playground/ecj.jar`;
+const ecjHref = playgroundPublicUrl(ECJ_FILENAME);
+const launcherHref = playgroundPublicUrl(LAUNCHER_FILENAME);
 ---
 
 <!doctype html>
@@ -82,7 +83,9 @@ const ecjHref = `${baseWithSlash}java-playground/ecj.jar`;
     <link rel="icon" href={`${import.meta.env.BASE_URL}${siteConfig.brand.iconLight}`} type="image/svg+xml" />
 
     {javaExamples && <link rel="preconnect" href="https://cjrtnc.leaningtech.com" />}
-    {javaExamples && <link rel="prefetch" href={ecjHref} />}
+    {javaExamples && <link rel="preload" as="script" href={CHEERPJ_LOADER} crossorigin="anonymous" />}
+    {javaExamples && <link rel="preload" as="fetch" href={ecjHref} crossorigin="anonymous" />}
+    {javaExamples && <link rel="preload" as="fetch" href={launcherHref} crossorigin="anonymous" />}
 
     <script is:inline>
       (function () {

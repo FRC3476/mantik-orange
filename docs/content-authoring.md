@@ -98,7 +98,7 @@ System.out.println("Hello");
 </ExerciseBox>
 ```
 
-On Java coding lessons, each Try It Yourself / Practice task needs a **compilable scaffold** in its own ` ```java ` fence. Students edit and click **Run** in the same Monaco editor used by `<JavaPlayground>`, then open Show Answers or Hints when they want to compare. The scaffold must compile as Java 8, include sample data and empty method bodies, and omit the solution. Skip a fence only for non-code tasks (IDE shortcuts, Git, reflection questions). Intended compile errors stay as a commented line the student can uncomment.
+On Java coding lessons, each Try It Yourself / Practice task needs a **compilable scaffold** in its own ` ```java ` fence. Students edit and click **Run** in the same CodeMirror editor used by `<JavaPlayground>`, then open Show Answers or Hints when they want to compare. The scaffold must compile as Java 8, include sample data and empty method bodies, and omit the solution. Skip a fence only for non-code tasks (IDE shortcuts, Git, reflection questions). Intended compile errors stay as a commented line the student can uncomment.
 
 Legacy prop style still works (`items={[]}`, `tasks={[]}`) but prefer slots for new content.
 
@@ -114,11 +114,13 @@ Do not use it for open-ended prompts such as “print your name,” Git lessons,
 
 The `id` must match a lesson id in `src/lib/java-playground/catalog/` (merged in `exercises.ts`). Keep the existing `ExerciseBox` after the playground.
 
-The first Run downloads a Java runtime (CheerpJ) and the Eclipse compiler jar from `public/java-playground/ecj.jar` (fetched by `scripts/fetch-java-playground-assets.mjs` on `npm run dev` / `npm run build`).
+Compile and run happen in a Web Worker via CheerpJ. The first visit downloads the Java runtime (CheerpJ CDN), `public/java-playground/ecj-3.16.0.jar` (fetched by `scripts/fetch-java-playground-assets.mjs` on `npm run dev` / `npm run build`), and the committed `jp-launcher-*.jar` (built by `scripts/build-java-launcher.mjs`). Students can click **Stop** if a program runs too long.
+
+To refresh CheerpJ parallel-download hints after a representative Run, in the browser console: `await window.__jpDumpResources()`, then replace `src/lib/java-playground/cheerpjPreload.json`. Set `localStorage.jpDebug = '1'` to log compile/run timings.
 
 ### Runnable Java examples
 
-Fenced `java` blocks on Java course pages get a **Run** control automatically. In Try It Yourself / Practice boxes, the fence is the same Monaco editor window as `<JavaPlayground>` (no Check button). In-lesson examples stay as highlighted code until the student clicks **Edit**, which opens that same editor.
+Fenced `java` blocks on Java course pages get a **Run** control automatically. In Try It Yourself / Practice boxes, the fence is the same CodeMirror editor as `<JavaPlayground>` (no Check button). In-lesson examples stay as highlighted code until the student clicks **Edit**, which opens that same editor.
 
 You do not wrap examples in a component. Write a normal fence:
 

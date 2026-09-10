@@ -96,7 +96,7 @@ const {
     document.addEventListener('keydown', (e) => {
       if (!e.ctrlKey && !e.metaKey) return;
       const target = e.target as HTMLElement;
-      if (target.closest('input, textarea, select, .monaco-editor, [contenteditable="true"]')) return;
+      if (target.closest('input, textarea, select, .monaco-editor, .cm-editor, .cm-content, [contenteditable="true"]')) return;
 
       if (e.key === 'ArrowLeft' || e.key === '<') {
         e.preventDefault();

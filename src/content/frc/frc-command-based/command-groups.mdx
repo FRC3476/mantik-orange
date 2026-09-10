@@ -143,7 +143,7 @@ public Command getAutoCommand() {
 }
 ```
 
-For anything path-based, PathPlanner generates these for you from event markers — see [PathPlanner](/frc/pathplanner).
+For anything path-based, BLine fires registered commands from event triggers along the polyline — see [BLine](/frc/bline). Compose those autos with `BLineCommands` so an event that schedules a mechanism command does not cancel the surrounding group.
 
 <ContentTable
   title="Where a composition belongs"

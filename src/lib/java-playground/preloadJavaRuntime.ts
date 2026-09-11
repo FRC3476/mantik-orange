@@ -1,10 +1,12 @@
-/** Start CheerpJ in a worker as soon as the lesson hydrates. */
+import { dumpCheerpjResources, preloadJavaRuntime } from './cheerpjRunner';
+
+/** Start Java and warm the compiler immediately, independently of editor hydration. */
 export function preloadJavaRuntimeSoon(): void {
-  void import('./cheerpjRunner').then((mod) => {
-    void mod.preloadJavaRuntime();
-    if (typeof window !== 'undefined') {
-      (window as unknown as { __jpDumpResources?: typeof mod.dumpCheerpjResources }).__jpDumpResources =
-        mod.dumpCheerpjResources;
-    }
+  if (typeof window !== 'undefined') {
+    (window as unknown as { __jpDumpResources?: typeof dumpCheerpjResources }).__jpDumpResources =
+      dumpCheerpjResources;
+  }
+  void preloadJavaRuntime().catch(() => {
+    // Background startup is optional; Run reports errors and allows a retry.
   });
 }

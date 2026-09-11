@@ -9,4 +9,6 @@ interface Props {
 const { id } = Astro.props;
 ---
 
-<JavaPlaygroundApp client:visible id={id} />
+<div data-jp-playground>
+  <JavaPlaygroundApp client:visible id={id} />
+</div>

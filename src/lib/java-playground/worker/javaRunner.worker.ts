@@ -56,7 +56,7 @@ self.onmessage = (event: MessageEvent<WorkerRequest>) => {
         reply({ id: data.id, type: 'result', result: getRuntimeResourcesJson() });
         return;
       }
-      reply({ id: data.id, type: 'error', message: `Unknown worker request: ${String(data.type)}` });
+
     } catch (err) {
       reply({
         id: data.id,

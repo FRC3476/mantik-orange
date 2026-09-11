@@ -24,6 +24,15 @@ interface Pending {
 let worker: Worker | null = null;
 let workerFailed = false;
 let nextId = 1;
+let generation = 0;
+let preloadPromise: Promise<void> | null = null;
+let startupStatus = '';
+const startupListeners = new Set<StatusFn>();
+
+function reportStartup(message: string): void {
+  startupStatus = message;
+  for (const listener of startupListeners) listener(message);
+}
 let runChain: Promise<unknown> = Promise.resolve();
 const pending = new Map<number, Pending>();
 
@@ -108,8 +117,10 @@ function rejectAll(error: Error): void {
   pending.clear();
 }
 
+type RequestPayload<T = WorkerRequest> = T extends WorkerRequest ? Omit<T, 'id'> : never;
+
 function request<T>(
-  payload: Omit<WorkerRequest, 'id'>,
+  payload: RequestPayload,
   onStatus?: StatusFn,
   safetyMs = INIT_TIMEOUT_MS,
 ): Promise<T> {
@@ -137,8 +148,16 @@ function request<T>(
   });
 }
 
-function enqueue<T>(fn: () => Promise<T>): Promise<T> {
-  const run = runChain.then(fn, fn);
+function enqueue<T>(fn: () => Promise<T>, onStatus?: StatusFn): Promise<T> {
+  const queuedGeneration = generation;
+  onStatus?.(startupStatus || 'Waiting for Java…');
+  if (onStatus) startupListeners.add(onStatus);
+  const start = () => {
+    if (onStatus) startupListeners.delete(onStatus);
+    if (queuedGeneration !== generation) throw new JavaRunCancelledError();
+    return fn();
+  };
+  const run = runChain.then(start, start);
   runChain = run.then(
     () => undefined,
     () => undefined,
@@ -197,26 +216,44 @@ async function compileThenRunOnBackend(options: {
 
 /** Start CheerpJ without compiling student code. Safe to call from page load. */
 export function preloadJavaRuntime(onStatus?: StatusFn): Promise<void> {
-  return enqueue(async () => {
-    if (workerFailed) {
-      const runtime = await import('./cheerpjRuntime');
-      await runtime.ensureRuntime(onStatus);
-      return;
-    }
-    try {
-      await request<null>({ type: 'init' }, onStatus, INIT_TIMEOUT_MS);
-    } catch (err) {
-      if (err instanceof JavaRunCancelledError) throw err;
-      workerFailed = true;
-      worker?.terminate();
-      worker = null;
-      const runtime = await import('./cheerpjRuntime');
-      await runtime.ensureRuntime(onStatus);
-    }
+  if (onStatus) startupListeners.add(onStatus);
+  if (startupStatus) onStatus?.(startupStatus);
+  if (!preloadPromise) {
+    const startedGeneration = generation;
+    reportStartup('Loading Java runtime…');
+    preloadPromise = enqueue(async () => {
+      if (workerFailed) {
+        const runtime = await import('./cheerpjRuntime');
+        await runtime.ensureRuntime(reportStartup);
+        return;
+      }
+      try {
+        await request<null>({ type: 'init' }, reportStartup, INIT_TIMEOUT_MS);
+      } catch (err) {
+        if (err instanceof JavaRunCancelledError) throw err;
+        workerFailed = true;
+        worker?.terminate();
+        worker = null;
+        const runtime = await import('./cheerpjRuntime');
+        await runtime.ensureRuntime(reportStartup);
+      }
+    }).finally(() => {
+      if (startedGeneration === generation) {
+        startupStatus = '';
+        preloadPromise = null;
+      }
+    });
+  }
+  return preloadPromise.finally(() => {
+    if (onStatus) startupListeners.delete(onStatus);
   });
 }
 
 export function cancel(message = 'Stopped.'): void {
+  generation += 1;
+  preloadPromise = null;
+  startupStatus = '';
+  startupListeners.clear();
   const error = new JavaRunCancelledError(message);
   rejectAll(error);
   if (worker) {
@@ -225,7 +262,7 @@ export function cancel(message = 'Stopped.'): void {
   }
   runChain = Promise.resolve();
   if (!workerFailed) {
-    void preloadJavaRuntime();
+    void preloadJavaRuntime().catch(() => { /* A later Run can retry startup. */ });
   }
 }
 
@@ -244,6 +281,7 @@ export async function compileAndRun(
       onStatus,
       runMain: true,
     }),
+    onStatus,
   );
 }
 
@@ -265,6 +303,7 @@ export async function compileAndRunExample(
       onStatus,
       runMain: prepared.hasMain,
     }),
+    onStatus,
   );
 }
 
@@ -292,7 +331,7 @@ export async function compileAndRunCases(
       }
       throw err;
     }
-  });
+  }, onStatus);
 }
 
 export async function dumpCheerpjResources(): Promise<string | null> {

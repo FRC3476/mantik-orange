@@ -41,6 +41,18 @@ const launcherHref = playgroundPublicUrl(LAUNCHER_FILENAME);
 <html lang="en" data-theme="light">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      // Module scripts run after HTML is parsed, before React hydration is needed.
+      function startJavaForPage() {
+        if (document.querySelector('[data-jp-example], [data-jp-playground]')) {
+          void import('@/lib/java-playground/preloadJavaRuntime')
+            .then(({ preloadJavaRuntimeSoon }) => preloadJavaRuntimeSoon())
+            .catch(() => { /* Run can retry if background loading fails. */ });
+        }
+      }
+      startJavaForPage();
+      document.addEventListener('astro:page-load', startJavaForPage);
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" content="#fafaf9" />

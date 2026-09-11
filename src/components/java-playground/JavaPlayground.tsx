@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import JavaEditorPane from '@/components/java-playground/JavaEditorPane';
 import { getExercise } from '@/lib/java-playground/exercises';
-import { preloadJavaRuntimeSoon } from '@/lib/java-playground/preloadJavaRuntime';
 import type { CheckResult } from '@/lib/java-playground/types';
 
 interface Props {
@@ -21,10 +20,6 @@ export default function JavaPlayground({ id }: Props) {
   const [consoleKind, setConsoleKind] = useState<'empty' | 'out' | 'error'>('empty');
   const [check, setCheck] = useState<CheckResult | null>(null);
 
-  useEffect(() => {
-    preloadJavaRuntimeSoon();
-  }, []);
-
   const busy = phase === 'working';
 
   const handleStop = useCallback(async () => {
@@ -37,6 +32,8 @@ export default function JavaPlayground({ id }: Props) {
     setPhase('working');
     setCheck(null);
     setStatus('Starting…');
+    setConsoleText('');
+    setConsoleKind('empty');
     try {
       const { compileAndRun } = await import('@/lib/java-playground/cheerpjRunner');
       const result = await compileAndRun(code, exercise.showStdin ? stdin : '', setStatus);
@@ -64,6 +61,8 @@ export default function JavaPlayground({ id }: Props) {
     setPhase('working');
     setCheck(null);
     setStatus('Checking…');
+    setConsoleText('');
+    setConsoleKind('empty');
     try {
       const { runHiddenTests } = await import('@/lib/java-playground/runChecks');
       const result = await runHiddenTests(code, exercise.tests, setStatus);
@@ -117,6 +116,7 @@ export default function JavaPlayground({ id }: Props) {
         onChange={setCode}
         status={status}
         busy={busy}
+        onRun={handleRun}
       />
 
       {exercise.showStdin && (
@@ -157,7 +157,7 @@ export default function JavaPlayground({ id }: Props) {
         aria-label="Program output"
       >
         <div className="jp-console-header">Console</div>
-        <pre>{consoleText || 'Output appears here after Run or Check.'}</pre>
+        <pre>{busy ? status : consoleText || 'Output appears here after Run or Check.'}</pre>
       </div>
 
       {check && (

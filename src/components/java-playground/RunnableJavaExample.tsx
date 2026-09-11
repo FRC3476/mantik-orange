@@ -83,6 +83,8 @@ export default function RunnableJavaExample({
     if (busy) return;
     setBusy(true);
     setStatus('Starting…');
+    setConsoleText('');
+    setConsoleKind('empty');
     setConsoleOpen(true);
     try {
       const { compileAndRunExample } = await import('@/lib/java-playground/cheerpjRunner');
@@ -108,6 +110,7 @@ export default function RunnableJavaExample({
           onChange={setCode}
           status={status}
           busy={busy}
+          onRun={handleRun}
         />
       )}
 
@@ -154,7 +157,7 @@ export default function RunnableJavaExample({
         >
           <div className="jp-console-header">Console</div>
           <pre>
-            {consoleText ||
+            {busy ? status : consoleText ||
               (inExercise ? 'Output appears here after Run.' : '')}
           </pre>
         </div>

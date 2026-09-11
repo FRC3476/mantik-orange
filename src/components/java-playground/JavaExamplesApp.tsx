@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import RunnableJavaExample from '@/components/java-playground/RunnableJavaExample';
 import { looksLikeRunnableJava } from '@/lib/java-playground/exampleSource';
-import { preloadJavaRuntimeSoon } from '@/lib/java-playground/preloadJavaRuntime';
 
 interface ExampleItem {
   id: string;
@@ -84,10 +83,6 @@ function scanExamples(): ExampleItem[] {
 export default function JavaExamplesApp() {
   const [items, setItems] = useState<ExampleItem[]>([]);
   const [editing, setEditing] = useState<Record<string, boolean>>({});
-
-  useEffect(() => {
-    preloadJavaRuntimeSoon();
-  }, []);
 
   useEffect(() => {
     const apply = () => setItems(scanExamples());

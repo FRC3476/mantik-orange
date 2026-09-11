@@ -301,3 +301,9 @@
   font: 13px/1.5 var(--font-stack--monospace);
   tab-size: 4;
 }
+
+.jp-runtime-status {
+  margin: 0 0 1rem;
+  color: var(--color-foreground-muted);
+  font-size: 0.85rem;
+}

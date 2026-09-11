@@ -318,10 +318,10 @@ async function runWarmup(): Promise<void> {
   if (warmupDone) return;
   const started = nowMs();
   initStatus?.('Warming up compiler…');
-  const failed = await compileIfNeeded(WARMUP_SOURCE, WARMUP_CLASS, initStatus);
-  if (!failed) {
-    await runEntry(WARMUP_CLASS, '', undefined, true);
-  }
+  const failed = await compileIfNeeded(WARMUP_SOURCE, WARMUP_CLASS);
+  if (failed) throw new Error(failed.compileOutput || 'Java compiler warmup failed.');
+  const result = await runEntry(WARMUP_CLASS, '', undefined, true);
+  if (!result.ok) throw new Error(result.stderr || 'Java runtime warmup failed.');
   warmupDone = true;
   lastTimings.warmup = nowMs() - started;
 }

@@ -54,6 +54,8 @@ const {
     )}
   </div>
 
+  {javaExamples && <p class="jp-runtime-status" data-jp-runtime-status role="status" hidden />}
+
   {/* Pagefind ignores pages with no data-pagefind-body, which keeps unlisted lessons out of search. */}
   <div class="lesson-content" data-pagefind-body={unlisted ? undefined : true}>
     <slot />

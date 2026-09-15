@@ -225,7 +225,9 @@
 }
 
 .jp-example-in-exercise > pre,
-.jp-example-editing > pre {
+.jp-example-editing > pre,
+.jp-example-in-exercise > .code-scroll-shell,
+.jp-example-editing > .code-scroll-shell {
   display: none !important;
 }
 

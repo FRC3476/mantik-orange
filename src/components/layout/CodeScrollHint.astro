@@ -1,0 +1,11 @@
+---
+---
+
+<script>
+  import { initCodeScrollHints } from '@/lib/codeScrollHint';
+
+  initCodeScrollHints();
+  document.addEventListener('astro:page-load', () => {
+    initCodeScrollHints();
+  });
+</script>

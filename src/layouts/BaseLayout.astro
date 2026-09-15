@@ -5,6 +5,7 @@ import HeaderBehavior from '@/components/layout/HeaderBehavior.astro';
 import Sidebar from '@/components/layout/Sidebar.astro';
 import SidebarBehavior from '@/components/layout/SidebarBehavior.astro';
 import KeyboardShortcuts from '@/components/layout/KeyboardShortcuts.astro';
+import CodeScrollHint from '@/components/layout/CodeScrollHint.astro';
 import Search from '@/components/layout/Search.astro';
 import { siteConfig } from '@/config/navigation';
 import { CHEERPJ_LOADER } from '@/lib/java-playground/constants';
@@ -112,6 +113,7 @@ const launcherHref = playgroundPublicUrl(LAUNCHER_FILENAME);
     </label>
 
     <KeyboardShortcuts />
+    <CodeScrollHint />
     <Search />
     <HeaderBehavior />
     <SidebarBehavior />

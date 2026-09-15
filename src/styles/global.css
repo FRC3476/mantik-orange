@@ -4049,10 +4049,15 @@ html[data-theme="dark"] .astro-code span {
 
 /* Fenced Shiki blocks — standalone fences in lessons (not inside CodeTabs panels) */
 .lesson-content > pre.astro-code,
+.lesson-content > .code-scroll-shell > pre.astro-code,
 .exercise-box-body > pre.astro-code,
+.exercise-box-body > .code-scroll-shell > pre.astro-code,
 .rules-box-content > pre.astro-code,
+.rules-box-content > .code-scroll-shell > pre.astro-code,
 .steps-box-content > pre.astro-code,
-#furo-main-content .lesson-content > pre.astro-code {
+.steps-box-content > .code-scroll-shell > pre.astro-code,
+#furo-main-content .lesson-content > pre.astro-code,
+#furo-main-content .lesson-content > .code-scroll-shell > pre.astro-code {
     background: var(--color-code-background) !important;
     border: 1px solid var(--color-background-border) !important;
     border-radius: 0;
@@ -4086,10 +4091,15 @@ html[data-theme="dark"] .astro-code span {
 }
 
 .lesson-content .jp-example > pre.astro-code,
+.lesson-content .jp-example > .code-scroll-shell > pre.astro-code,
 .exercise-box-body .jp-example > pre.astro-code,
+.exercise-box-body .jp-example > .code-scroll-shell > pre.astro-code,
 .rules-box-content .jp-example > pre.astro-code,
+.rules-box-content .jp-example > .code-scroll-shell > pre.astro-code,
 .steps-box-content .jp-example > pre.astro-code,
-#furo-main-content .lesson-content .jp-example > pre.astro-code {
+.steps-box-content .jp-example > .code-scroll-shell > pre.astro-code,
+#furo-main-content .lesson-content .jp-example > pre.astro-code,
+#furo-main-content .lesson-content .jp-example > .code-scroll-shell > pre.astro-code {
     background: var(--color-code-background) !important;
     border: none !important;
     border-radius: 0;
@@ -4182,15 +4192,25 @@ html[data-theme="dark"] .astro-code span {
 }
 
 html[data-theme="dark"] .lesson-content > pre.astro-code,
+html[data-theme="dark"] .lesson-content > .code-scroll-shell > pre.astro-code,
 html[data-theme="dark"] .exercise-box-body > pre.astro-code,
+html[data-theme="dark"] .exercise-box-body > .code-scroll-shell > pre.astro-code,
 html[data-theme="dark"] .rules-box-content > pre.astro-code,
+html[data-theme="dark"] .rules-box-content > .code-scroll-shell > pre.astro-code,
 html[data-theme="dark"] .steps-box-content > pre.astro-code,
+html[data-theme="dark"] .steps-box-content > .code-scroll-shell > pre.astro-code,
 html[data-theme="dark"] #furo-main-content .lesson-content > pre.astro-code,
+html[data-theme="dark"] #furo-main-content .lesson-content > .code-scroll-shell > pre.astro-code,
 html[data-theme="dark"] .lesson-content .jp-example > pre.astro-code,
+html[data-theme="dark"] .lesson-content .jp-example > .code-scroll-shell > pre.astro-code,
 html[data-theme="dark"] .exercise-box-body .jp-example > pre.astro-code,
+html[data-theme="dark"] .exercise-box-body .jp-example > .code-scroll-shell > pre.astro-code,
 html[data-theme="dark"] .rules-box-content .jp-example > pre.astro-code,
+html[data-theme="dark"] .rules-box-content .jp-example > .code-scroll-shell > pre.astro-code,
 html[data-theme="dark"] .steps-box-content .jp-example > pre.astro-code,
-html[data-theme="dark"] #furo-main-content .lesson-content .jp-example > pre.astro-code {
+html[data-theme="dark"] .steps-box-content .jp-example > .code-scroll-shell > pre.astro-code,
+html[data-theme="dark"] #furo-main-content .lesson-content .jp-example > pre.astro-code,
+html[data-theme="dark"] #furo-main-content .lesson-content .jp-example > .code-scroll-shell > pre.astro-code {
     background: var(--color-code-background) !important;
     border-color: var(--color-background-border) !important;
     /* Shiki inlines the light theme's foreground on the pre; any token without its own
@@ -4213,13 +4233,21 @@ html[data-theme="dark"] .code-tabs-container pre.astro-code {
 
 @media (max-width: 48em) {
     .lesson-content > pre.astro-code,
+    .lesson-content > .code-scroll-shell > pre.astro-code,
     .exercise-box-body > pre.astro-code,
+    .exercise-box-body > .code-scroll-shell > pre.astro-code,
     .rules-box-content > pre.astro-code,
+    .rules-box-content > .code-scroll-shell > pre.astro-code,
     .steps-box-content > pre.astro-code,
+    .steps-box-content > .code-scroll-shell > pre.astro-code,
     .lesson-content .jp-example > pre.astro-code,
+    .lesson-content .jp-example > .code-scroll-shell > pre.astro-code,
     .exercise-box-body .jp-example > pre.astro-code,
+    .exercise-box-body .jp-example > .code-scroll-shell > pre.astro-code,
     .rules-box-content .jp-example > pre.astro-code,
+    .rules-box-content .jp-example > .code-scroll-shell > pre.astro-code,
     .steps-box-content .jp-example > pre.astro-code,
+    .steps-box-content .jp-example > .code-scroll-shell > pre.astro-code,
     .code-tabs-container pre.astro-code,
     .lesson-content > pre:not(.astro-code),
     .exercise-box-body pre:not(.astro-code),
@@ -4227,6 +4255,196 @@ html[data-theme="dark"] .code-tabs-container pre.astro-code {
     .steps-box-content pre:not(.astro-code) {
         font-size: 0.9rem;
         padding: 1rem 0.75rem;
+    }
+}
+
+/* Scrollable code examples — keep overflow obvious (macOS overlay scrollbars hide it) */
+.code-scroll-shell {
+    position: relative;
+}
+
+.lesson-content > .code-scroll-shell,
+.exercise-box-body > .code-scroll-shell,
+.rules-box-content > .code-scroll-shell,
+.steps-box-content > .code-scroll-shell,
+#furo-main-content .lesson-content > .code-scroll-shell {
+    margin: 1.5rem 0;
+}
+
+.lesson-content > .code-scroll-shell > pre.astro-code,
+.exercise-box-body > .code-scroll-shell > pre.astro-code,
+.rules-box-content > .code-scroll-shell > pre.astro-code,
+.steps-box-content > .code-scroll-shell > pre.astro-code,
+#furo-main-content .lesson-content > .code-scroll-shell > pre.astro-code,
+.jp-example > .code-scroll-shell > pre.astro-code {
+    margin: 0;
+}
+
+.jp-example > .code-scroll-shell {
+    margin: 0;
+}
+
+.lesson-content pre.astro-code,
+.exercise-box-body pre.astro-code,
+.rules-box-content pre.astro-code,
+.steps-box-content pre.astro-code,
+.code-block pre,
+.code-tabs-content {
+    scrollbar-width: auto;
+    scrollbar-color: var(--color-brand-content) color-mix(in srgb, var(--color-foreground-primary) 14%, var(--color-code-background));
+}
+
+.lesson-content pre.astro-code::-webkit-scrollbar,
+.exercise-box-body pre.astro-code::-webkit-scrollbar,
+.rules-box-content pre.astro-code::-webkit-scrollbar,
+.steps-box-content pre.astro-code::-webkit-scrollbar,
+.code-block pre::-webkit-scrollbar,
+.code-tabs-content::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+.lesson-content pre.astro-code::-webkit-scrollbar-track,
+.exercise-box-body pre.astro-code::-webkit-scrollbar-track,
+.rules-box-content pre.astro-code::-webkit-scrollbar-track,
+.steps-box-content pre.astro-code::-webkit-scrollbar-track,
+.code-block pre::-webkit-scrollbar-track,
+.code-tabs-content::-webkit-scrollbar-track {
+    background: color-mix(in srgb, var(--color-foreground-primary) 8%, var(--color-code-background));
+}
+
+.lesson-content pre.astro-code::-webkit-scrollbar-thumb,
+.exercise-box-body pre.astro-code::-webkit-scrollbar-thumb,
+.rules-box-content pre.astro-code::-webkit-scrollbar-thumb,
+.steps-box-content pre.astro-code::-webkit-scrollbar-thumb,
+.code-block pre::-webkit-scrollbar-thumb,
+.code-tabs-content::-webkit-scrollbar-thumb {
+    background: var(--color-brand-content);
+    border: 2px solid var(--color-code-background);
+}
+
+.lesson-content pre.astro-code::-webkit-scrollbar-thumb:hover,
+.exercise-box-body pre.astro-code::-webkit-scrollbar-thumb:hover,
+.rules-box-content pre.astro-code::-webkit-scrollbar-thumb:hover,
+.steps-box-content pre.astro-code::-webkit-scrollbar-thumb:hover,
+.code-block pre::-webkit-scrollbar-thumb:hover,
+.code-tabs-content::-webkit-scrollbar-thumb:hover {
+    background: var(--btn-1-bg-hover);
+}
+
+.code-scroll-hint {
+    display: none;
+    position: absolute;
+    left: 1px;
+    right: 13px;
+    bottom: 1px;
+    z-index: 3;
+    align-items: flex-end;
+    justify-content: center;
+    min-height: 5.5rem;
+    padding: 2.75rem 0.75rem 0.7rem;
+    background: linear-gradient(
+        to top,
+        var(--color-code-background) 0.55rem,
+        color-mix(in srgb, var(--color-code-background) 92%, transparent) 2.4rem,
+        color-mix(in srgb, var(--color-code-background) 55%, transparent) 3.8rem,
+        transparent 100%
+    );
+    pointer-events: none;
+}
+
+.code-scroll-hint.is-visible {
+    display: flex;
+}
+
+.code-scroll-hint::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 3px;
+    background: var(--color-brand-content);
+}
+
+.code-scroll-hint__btn {
+    pointer-events: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0;
+    padding: 0.4rem 0.7rem;
+    border: 1px solid var(--color-foreground-primary);
+    background: var(--color-background-primary);
+    color: var(--color-foreground-primary);
+    font-family: var(--font-stack);
+    font-size: var(--font-size--small);
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+}
+
+.code-scroll-hint__btn:hover,
+.code-scroll-hint__btn:focus-visible {
+    background: var(--color-background-hover);
+    color: var(--color-brand-content);
+    border-color: var(--color-brand-content);
+}
+
+.code-scroll-hint__btn:focus-visible {
+    outline: 2px solid var(--color-foreground-primary);
+    outline-offset: 2px;
+}
+
+.code-scroll-hint__chevron {
+    display: inline-block;
+    width: 0.42em;
+    height: 0.42em;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(45deg) translateY(-0.12em);
+    transform-origin: center;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .code-scroll-hint.is-visible .code-scroll-hint__chevron {
+        animation: code-scroll-chevron 1.15s ease-in-out infinite;
+    }
+}
+
+@keyframes code-scroll-chevron {
+    0%, 100% {
+        transform: rotate(45deg) translateY(-0.16em);
+    }
+    50% {
+        transform: rotate(45deg) translateY(0.14em);
+    }
+}
+
+.code-scroll-shell.has-code-overflow-above::before {
+    content: '';
+    position: absolute;
+    left: 1px;
+    right: 13px;
+    top: 1px;
+    height: 1.5rem;
+    z-index: 2;
+    pointer-events: none;
+    background: linear-gradient(to bottom, var(--color-code-background), transparent);
+}
+
+@media print {
+    .code-scroll-hint {
+        display: none !important;
+    }
+
+    .code-scroll-shell > pre,
+    .code-block pre,
+    .code-tabs-content,
+    .lesson-content pre.astro-code {
+        max-height: none !important;
+        overflow: visible !important;
     }
 }
 

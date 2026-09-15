@@ -53,7 +53,7 @@ Example numbers (replace with your measurements): 0.32 m forward, 0.27 m up, −
 
 ### Fusion, not a reset
 
-Odometry drift is real. Vision should be a **weighted correction** into `SwerveDrivePoseEstimator.addVisionMeasurement`, not a hard `resetPose` on every tag. The next two lessons show that insertion path.
+Odometry drift is real. Vision should be a **weighted correction** into `CommandSwerveDrivetrain.addVisionMeasurement`, not a hard `resetPose` on every tag. The next two lessons show that insertion path.
 
 <ExerciseBox title="Limelight setup" description="Check 2D targeting versus 3D pose." answers={[{"task":"tx/ty are image offsets in degrees. They are not field X/Y. Read the sign from your Limelight UI/docs."},{"task":"ta increases because the tag occupies more of the image."},{"task":"Wheel odometry accumulates slip. A valid AprilTag field pose is an absolute reference you fuse, not a reason to ignore odometry."}]}>
 

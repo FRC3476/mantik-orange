@@ -27,11 +27,11 @@ Use the field layout that matches the physical field. For 2026 that is welded or
 
 ### One camera reader
 
-Construct **one** `VisionSubsystem` for the software path you chose. `Drive.periodic()` updates odometry first, then calls `m_vision.pollEstimates()` **once**.
+Construct **one** `VisionSubsystem` for the software path you chose. Do not register it as a `SubsystemBase`. Construct one `VisionFusion` in `RobotContainer` with the drivetrain and that reader. `VisionFusion.periodic()` is the sole caller of `pollEstimates()`.
 
-`pollEstimates()` owns camera reads, the pose solve, and vendor quality checks. It returns only estimates that pass those checks. `Drive` then applies timestamp / history checks before `addVisionMeasurement`.
+`pollEstimates()` owns camera reads, the pose solve, and vendor quality checks. It returns only estimates that pass those checks. `VisionFusion` then applies timestamp checks and calls `drivetrain.addVisionMeasurement`. Phoenix updates odometry on its own thread — do not call an old `updateOdometry()` from robot code.
 
-Do not register `VisionSubsystem` as a `SubsystemBase` whose `periodic()` also reads the camera. Two readers will steal frames from each other.
+Two readers will steal frames from each other. Do not also poll from `CommandSwerveDrivetrain` telemetry.
 
 PhotonVision: call `getAllUnreadResults()` once per loop. The queue is destructive and bounded. Process every accepted capture in timestamp order. Do not keep only the newest pose in a multi-frame batch.
 
@@ -181,7 +181,7 @@ public class VisionSubsystem {
         return m_camera.isConnected();
     }
 
-    /** Call once per Drive loop. Drains the PhotonVision FIFO. */
+    /** Call once from VisionFusion.periodic(). Drains the PhotonVision FIFO. */
     public List<VisionEstimate> pollEstimates() {
         List<VisionEstimate> accepted = new ArrayList<>();
         if (!m_camera.isConnected()) {
@@ -357,7 +357,7 @@ public class VisionSubsystem {
         return true;
     }
 
-    /** Call once per Drive loop. Zero or one fresh MegaTag1 estimate. */
+    /** Call once from VisionFusion.periodic(). Zero or one fresh MegaTag1 estimate. */
     public List<VisionEstimate> pollEstimates() {
         List<VisionEstimate> accepted = new ArrayList<>();
         PoseEstimate estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue(m_cameraName);

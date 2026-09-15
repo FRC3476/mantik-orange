@@ -41,7 +41,13 @@ In a WPILib robot, the "simulationPeriodic()" method in your "Robot" or "Subsyst
 
 5. **Robot Code:** Reads the sensors in the next loop, perceiving the motion.
 
-### Basic Drivetrain Simulation Example
+### CommandSwerveDrivetrain simulation
+
+Generated `CommandSwerveDrivetrain` already starts a simulation notifier and calls `updateSimState` with measured dt and battery voltage. Do not also call `updateSimState` from `simulationPeriodic`.
+
+That built-in sim checks that control requests reach simulated motors. It does not prove traction, real calibration, or vision accuracy. See [Swerve Drive Example](/frc/swerve-drive-example).
+
+The tank example below is a WPILib `DifferentialDrivetrainSim` walkthrough for a subsystem you write yourself. It is not the course swerve stack.
 
 ```java
 package frc.robot.subsystems;
@@ -286,5 +292,5 @@ In replay mode the recorded inputs from a real match are fed back into your curr
 
 </RulesBox>
 
-<LinkGrid links={[{"label":"Hardware Abstraction with IO Layers","id":"io-layer"},{"label":"Unit Testing","id":"frc-unit-testing"},{"label":"AdvantageKit","id":"advantagekit"},{"label":"AdvantageScope","id":"advantagescope"}]} title="Resources" section="frc" />
+<LinkGrid links={[{"label":"Swerve Drive Example","id":"swerve-drive-example"},{"label":"Hardware Abstraction with IO Layers","id":"io-layer"},{"label":"Unit Testing","id":"frc-unit-testing"},{"label":"AdvantageKit","id":"advantagekit"},{"label":"AdvantageScope","id":"advantagescope"}]} title="Resources" section="frc" />
 

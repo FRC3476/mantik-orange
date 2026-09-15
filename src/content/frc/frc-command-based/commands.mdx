@@ -112,7 +112,7 @@ Write a class extending `Command` when an action coordinates **several subsystem
 
 Aiming a shooter from field pose is the standard example: distance from the drivetrain pose selects flywheel speed (and, on a hooded shooter, hood angle), and the feeder may run only while those mechanisms are on target.
 
-Looking up speed from distance does **not** compensate for robot motion. The class below assumes the robot is already stationary and aligned, and that your pose estimate is trusted. Those checks are not inside `Pose2d`. The full table, hood map, dwell, and invalid-target cleanup are in [Shooter Shot Table](/frc/shooter-shot-table). `getVelo` there is `ShotTable.lookup` plus a flywheel-RPS adapter; the second map is hood degrees.
+Looking up speed from distance does **not** compensate for robot motion. The class below assumes the robot is already stationary and aligned, and that your pose estimate is trusted. Those checks are not inside `Pose2d`. Chassis heading to a field goal is [Swerve Aim at Goal](/frc/swerve-aim-at-goal). The full table, hood map, dwell, and invalid-target cleanup are in [Shooter Shot Table](/frc/shooter-shot-table). `getVelo` there is `ShotTable.lookup` plus a flywheel-RPS adapter; the second map is hood degrees.
 
 ```java norun
 package frc.robot.commands;
@@ -123,7 +123,6 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.constants.FieldConstants;
 import frc.robot.subsystems.Conveyor;
-import frc.robot.subsystems.Drive;
 import frc.robot.subsystems.Shooter;
 import frc.robot.subsystems.Transfer;
 import frc.robot.util.ShotSetpoint;
@@ -141,14 +140,18 @@ public class SmartShootCommand extends Command {
     private final Supplier<Pose2d> pose;
 
     public SmartShootCommand(
-            Drive drive, Shooter shooter, Transfer transfer, Conveyor conveyor, ShotTable table) {
+            Supplier<Pose2d> pose,
+            Shooter shooter,
+            Transfer transfer,
+            Conveyor conveyor,
+            ShotTable table) {
         this.table = table;
         this.shooter = shooter;
         this.transfer = transfer;
         this.conveyor = conveyor;
-        this.pose = drive::getPose;
+        this.pose = pose;
         addRequirements(shooter, transfer, conveyor);
-        // Drive is read, not required — joystick drive must keep running.
+        // Pose is read, not required — teleop FieldCentric must keep running.
     }
 
     @Override
@@ -219,7 +222,7 @@ Commands declare subsystem requirements to prevent conflicts. The scheduler ensu
 
 Four subsystems are passed into the constructor above. Only three are required.
 
-`drive` is deliberately left out, because the command only *reads* the drive pose — it never commands the drivetrain. Requiring it would interrupt the joystick drive, and the driver would lose control the instant they pressed the shoot button.
+`drivetrain` is deliberately left out, because the command only *reads* pose — it never commands the drivetrain. Requiring it would interrupt FieldCentric drive, and the driver would lose translation the instant they pressed the shoot button.
 
 Over-requiring is the more common mistake and the harder one to debug: the mechanism works, but pressing the button silently cancels something else.
 
@@ -229,7 +232,7 @@ Over-requiring is the more common mistake and the harder one to debug: the mecha
 
 `isFinished()` returning `false` means the command runs until something cancels it — correct for a `whileTrue` binding, where the trigger controls its lifetime.
 
-That makes `end()` load-bearing. It runs on interruption as well as normal completion, and it must stop **everything** the command started. Default commands only cover subsystems this command required; anything else left commanded here stays commanded.
+That makes `end()` load-bearing. It runs on interruption as well as normal completion, and it must stop **everything** the command started. Default commands only cover subsystems this command required; anything else left commanded here stays commanded. A default command is not a substitute for that `end()`.
 
 ### Logging From a Command
 
@@ -258,4 +261,4 @@ Log the intermediate values, not just the final output. When a shot misses, `dis
 
 </RulesBox>
 
-<LinkGrid links={[{"label":"Shooter Shot Table","id":"shooter-shot-table"},{"label":"Command Groups","id":"command-groups"},{"label":"RobotContainer & Bindings","id":"robot-container-and-bindings"},{"label":"Subsystems","id":"subsystems"},{"label":"WPILib Commands Documentation","url":"https://docs.wpilib.org/en/stable/docs/software/commandbased/commands.html"}]} title="Resources" section="frc" />
+<LinkGrid links={[{"label":"Shooter Shot Table","id":"shooter-shot-table"},{"label":"Swerve Aim at Goal","id":"swerve-aim-at-goal"},{"label":"Command Groups","id":"command-groups"},{"label":"RobotContainer & Bindings","id":"robot-container-and-bindings"},{"label":"Subsystems","id":"subsystems"},{"label":"WPILib Commands Documentation","url":"https://docs.wpilib.org/en/stable/docs/software/commandbased/commands.html"}]} title="Resources" section="frc" />

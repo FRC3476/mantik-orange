@@ -11,8 +11,6 @@ export const VISION_FRESHNESS = {
   maxFutureSlackS: 0.02,
   /** Reject captures older than this even if the pose buffer still holds them. */
   maxAgeS: 0.5,
-  /** WPILib PoseEstimator default pose-buffer length. */
-  poseHistoryS: 1.5,
 } as const;
 
 export interface FreshnessState {
@@ -72,9 +70,6 @@ export function rejectFreshness(
   const age = nowSeconds - timestampSeconds;
   if (age > VISION_FRESHNESS.maxAgeS) {
     return 'stale';
-  }
-  if (age > VISION_FRESHNESS.poseHistoryS) {
-    return 'outside_history';
   }
   if (timestampSeconds <= state.lastAcceptedTimestamp) {
     return timestampSeconds === state.lastAcceptedTimestamp ? 'duplicate_timestamp' : 'out_of_order';

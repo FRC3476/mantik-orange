@@ -54,15 +54,15 @@
       "source": "mantik"
     },
     {
-      "id": "frc-autonomous-advantagekit-swerve-template",
-      "title": "AdvantageKit Swerve Template",
-      "description": "AdvantageKit Talon FX swerve template: pre-wired odometry, module optimization, SysId hooks, and log replay for CTRE swerve drivetrains.",
+      "id": "frc-advanced-tools-advantagekit-talon-fx-swerve-template",
+      "title": "AdvantageKit Talon FX Swerve Template",
+      "description": "Optional later architecture: AdvantageKit Talon FX swerve template with IO layers and log replay. Not how this course writes swerve.",
       "url": "https://docs.advantagekit.org/getting-started/template-projects/talonfx-swerve-template/",
       "major": "frc",
-      "minor": "Autonomous",
+      "minor": "Advanced Tools",
       "tags": [
         "frc",
-        "autonomous"
+        "advanced-tools"
       ],
       "source": "mantik"
     },
@@ -284,6 +284,19 @@
       "tags": [
         "frc",
         "official-documentation"
+      ],
+      "source": "mantik"
+    },
+    {
+      "id": "frc-autonomous-ctre-swerve-overview",
+      "title": "CTRE Swerve Overview",
+      "description": "CTRE Phoenix 6 swerve overview: Tuner X generated CommandSwerveDrivetrain, SwerveRequest, applyRequest, and odometry owned by Phoenix — the drivetrain API this course uses.",
+      "url": "https://v6.docs.ctr-electronics.com/en/latest/docs/api-reference/mechanisms/swerve/swerve-overview.html",
+      "major": "frc",
+      "minor": "Autonomous",
+      "tags": [
+        "frc",
+        "autonomous"
       ],
       "source": "mantik"
     },
@@ -665,6 +678,19 @@
       "source": "mantik"
     },
     {
+      "id": "frc-autonomous-phoenix-6-swervewithchoreo",
+      "title": "Phoenix 6 SwerveWithChoreo",
+      "description": "Official CTRE Java example of CommandSwerveDrivetrain. This course uses the same drivetrain class with BLine, not Choreo, for path following.",
+      "url": "https://github.com/CrossTheRoadElec/Phoenix6-Examples/tree/main/java/SwerveWithChoreo",
+      "major": "frc",
+      "minor": "Autonomous",
+      "tags": [
+        "frc",
+        "autonomous"
+      ],
+      "source": "mantik"
+    },
+    {
       "id": "frc-vision-photonvision-photonposeestimator",
       "title": "PhotonPoseEstimator",
       "description": "PhotonPoseEstimator 2026.3.4: coprocessor MultiTag, lowest-ambiguity fallback, getAllUnreadResults, and addVisionMeasurement timestamps.",
@@ -986,6 +1012,19 @@
       "tags": [
         "ftc",
         "debugging-best-practices"
+      ],
+      "source": "mantik"
+    },
+    {
+      "id": "frc-autonomous-tuner-x-swerve-generator",
+      "title": "Tuner X Swerve Generator",
+      "description": "Phoenix Tuner X Swerve Project Generator: module configuration, validation, and generation of TunerConstants plus CommandSwerveDrivetrain.",
+      "url": "https://v6.docs.ctr-electronics.com/en/stable/docs/tuner/tuner-swerve/index.html",
+      "major": "frc",
+      "minor": "Autonomous",
+      "tags": [
+        "frc",
+        "autonomous"
       ],
       "source": "mantik"
     },

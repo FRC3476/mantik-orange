@@ -16,6 +16,8 @@ export const FRC_VISION_VERSIONS = {
   limelightHelpers: '1.14',
   limelightOs: '2026.0 or later',
   limelightHelpersSource:
-    'https://raw.githubusercontent.com/LimelightVision/limelightlib-wpijava/master/LimelightHelpers.java',
+    'https://raw.githubusercontent.com/LimelightVision/limelightlib-wpijava/7a3f813935f0db89e99dbaebd4b075a5946cc1cd/LimelightHelpers.java',
   limelightHelpersPackage: 'src/main/java/frc/robot/LimelightHelpers.java',
+  phoenix6: '26.3.0',
+  blineLib: 'v0.9.1',
 } as const;

@@ -23,6 +23,8 @@ It is the companion tool to [AdvantageKit](https://docs.advantagekit.org/) but w
 
 Learn more: [AdvantageScope Documentation](https://docs.advantagescope.org) | [Download AdvantageScope](https://github.com/Mechanical-Advantage/AdvantageScope/releases)
 
+This course's swerve stack logs through Phoenix `registerTelemetry` and `SignalLogger` (`.hoot`). AdvantageKit keys remain valid if you later adopt that library. Opening a log file is not the same as deterministic robot-code replay.
+
 ### Key Features
 
 **1. Multi-Format Support:** Opens WPILib data logs (.wpilog), AdvantageKit logs (.rlog), CTRE logs (.hoot), and Driver Station logs (.dslog). ([Loading Data Documentation](https://docs.advantagescope.org/overview/log-files/))
@@ -43,32 +45,48 @@ Learn more: [AdvantageScope Documentation](https://docs.advantagescope.org) | [D
 
 **5. Console Log Review:** Filter and search through robot console output synchronized with the data. ([Console View Documentation](https://docs.advantagescope.org/tab-reference/console/))
 
+### Using AdvantageScope with Tuner X swerve
+
+`CommandSwerveDrivetrain.registerTelemetry` runs on the odometry thread. Keep the callback short: publish structs, then return. Do not poll cameras or schedule commands there.
+
+```java
+drivetrain.registerTelemetry(m_logger::telemeterize);
+```
+
+The course `Telemetry` class starts `SignalLogger` and publishes these keys:
+
+<ContentTable
+  title="DriveState keys from registerTelemetry"
+  headers={["Sink", "Key", "Type"]}
+  rows={[
+    ["NT + SignalLogger", "<code>DriveState/Pose</code>", "<code>Pose2d</code> struct"],
+    ["NT + SignalLogger", "<code>DriveState/Speeds</code>", "<code>ChassisSpeeds</code> struct (robot-relative)"],
+    ["NT + SignalLogger", "<code>DriveState/ModuleStates</code>", "<code>SwerveModuleState[]</code>"],
+    ["NT + SignalLogger", "<code>DriveState/ModuleTargets</code>", "<code>SwerveModuleState[]</code>"],
+    ["NT + SignalLogger", "<code>DriveState/ModulePositions</code>", "<code>SwerveModulePosition[]</code>"],
+    ["SignalLogger", "<code>DriveState/OdometryPeriod</code>", "seconds"],
+    ["SignalLogger", "<code>DriveState/FailedDaqs</code>", "integer"]
+  ]}
+/>
+
+Live NT4 and recorded `.hoot` files are separate paths. Plot NT live during a run. After the run, import the Hoot file when AdvantageScope's [Hoot log format](https://docs.advantagescope.org/overview/log-files/) requirements are met (Phoenix SignalLogger recording, supported Hoot version). Importing Hoot is visualization, not AdvantageKit log replay.
+
+See [Swerve Drive Example](/frc/swerve-drive-example) for the callback implementation.
+
 ### Using AdvantageScope with WPILib
 
 To get the most out of AdvantageScope, you should use ["DataLogManager"](https://github.wpilib.org/allwpilib/docs/release/java/edu/wpi/first/wpilibj/DataLogManager.html) in your WPILib code to record data to a USB stick or the RIO's internal storage. ([Recording Data Documentation](https://docs.advantagescope.org/overview/live-sources/))
 
-
-
 **Structured Data:** AdvantageScope supports the new WPILib "Struct" serialization. This allows you to log complex objects like "Pose2d", "Translation2d", or custom classes efficiently, and AdvantageScope will automatically recognize them as 3D objects or vectors. ([Structured Data Documentation](https://docs.advantagescope.org/tab-reference/line-graph/units/#-struct-units))
 
-### Logging for Visualization
+### Logging for visualization (optional AdvantageKit)
+
+If AdvantageKit is already in the project, `Logger.recordOutput` writes structured keys that AdvantageScope can plot. This is not required for the Tuner X drivetrain.
 
 ```java
-// In your robot code (RobotPeriodic or Subsystem)
-
-// Log a Pose2d for 3D field visualization
-// See: https://docs.advantagescope.org/tab-reference/3d-field/
-Logger.recordOutput("Odometry/RobotPose", m_drive.getPose());
-
-// Log a Trajectory to see the path
-Logger.recordOutput("Auto/Trajectory", m_trajectory);
-
-// Log mechanism states (e.g. Arm Angle)
+Logger.recordOutput("Odometry/RobotPose", drivetrain.getState().Pose);
 Logger.recordOutput("Arm/AngleDegrees", m_arm.getAngle());
-
-// Log Swerve Module States for vector visualization
-// See: https://docs.advantagescope.org/tab-reference/swerve/
-Logger.recordOutput("Swerve/ModuleStates", m_drive.getModuleStates());
+Logger.recordOutput("Swerve/ModuleStates", drivetrain.getState().ModuleStates);
 ```
 
 ### Naming Log Keys
@@ -82,7 +100,8 @@ AdvantageScope builds its tree from the slashes in a key, so `Intake/Position` a
     ["<code>Mechanism/targetPos</code> vs <code>Mechanism/Position</code>", "Commanded and actual position", "Tuning &mdash; overshoot, steady-state error"],
     ["<code>Shooter/leftVelocity</code>, <code>/rightVelocity</code>", "Both flywheel sides", "Spin-up time and recovery after a shot"],
     ["<code>Mechanism/dutyCycle</code> vs <code>/velocity</code>", "Commanded output and resulting speed", "Spotting a stalled mechanism"],
-    ["<code>Drive/Module0</code> &hellip; <code>Module3</code>", "Per-module IO inputs", "A module that is disconnected or fighting"],
+    ["<code>DriveState/Pose</code>, <code>/Speeds</code>, <code>/ModuleStates</code>", "Phoenix telemetry structs", "Tuner X swerve live NT or Hoot"],
+    ["<code>Drive/Module0</code> &hellip; <code>Module3</code>", "Per-module IO inputs", "AdvantageKit swerve alternative only"],
     ["<code>FollowPath/pathTranslations</code>", "The active BLine polyline", "Autonomous path tracking on the 2D/3D field"],
     ["<code>TunableNumbers/*</code>", "Every tunable value at the time", "Confirming what the robot was actually running"],
     ["<code>CommandName/*</code>", "A command's intermediate values", "Whether a miss was the pose estimate or the math"],
@@ -94,15 +113,15 @@ The single most useful habit is to log **commanded alongside measured**. If your
 
 <RulesBox title="Analysis Workflow" subtitle="How to debug effectively:">
 
-- Download the log file from the robot after a run. AdvantageKit writes it to the USB stick at `/U/logs` — no stick, no log.
+- Download the log after a run. Phoenix `SignalLogger` writes `.hoot`. AdvantageKit writes `.wpilog` / `.rlog` to `/U/logs` when that stack is installed. No stick, no log.
 - Open in AdvantageScope. ([Loading Data Guide](https://docs.advantagescope.org/overview/log-files/))
-- Check `RealMetadata/GitSHA` and `GitDirty` first, so you know what code produced the log.
-- Drag 'Odometry/RobotPose' to the '3D Field' tab to verify location. ([3D Field View Guide](https://docs.advantagescope.org/tab-reference/3d-field/))
+- For Tuner X, drag `DriveState/Pose` to the 3D Field tab. ([3D Field View Guide](https://docs.advantagescope.org/tab-reference/3d-field/))
+- Drag `DriveState/ModuleStates` and `DriveState/ModuleTargets` to the Swerve tab.
 - Drag target vs actual values (e.g. 'Intake/targetPos' vs 'Intake/Position') to a 'Line Graph' to check tuning. ([Graph View Guide](https://docs.advantagescope.org/tab-reference/line-graph/))
 - If investigating a crash/error, look at the 'Console' tab. ([Console View Guide](https://docs.advantagescope.org/tab-reference/console/))
 - Sync match video if available to correlate physical behavior with data. ([Video Sync Guide](https://docs.advantagescope.org/tab-reference/video#automatic-synchronization))
 
 </RulesBox>
 
-<LinkGrid links={[{"label":"Tunable Constants and Characterization","id":"tunable-constants"},{"label":"Simulation Basics","id":"simulation-basics"},{"label":"AdvantageKit","id":"advantagekit"},{"label":"Pose Estimation","id":"pose-estimation-intro"},{"label":"Download AdvantageScope","url":"https://github.com/Mechanical-Advantage/AdvantageScope/releases"},{"label":"AdvantageScope Documentation","url":"https://docs.advantagescope.org"}]} title="Resources" section="frc" />
+<LinkGrid links={[{"label":"Swerve Drive Example","id":"swerve-drive-example"},{"label":"Tunable Constants and Characterization","id":"tunable-constants"},{"label":"Simulation Basics","id":"simulation-basics"},{"label":"AdvantageKit","id":"advantagekit"},{"label":"Pose Estimation","id":"pose-estimation-intro"},{"label":"Download AdvantageScope","url":"https://github.com/Mechanical-Advantage/AdvantageScope/releases"},{"label":"AdvantageScope Documentation","url":"https://docs.advantagescope.org"}]} title="Resources" section="frc" />
 

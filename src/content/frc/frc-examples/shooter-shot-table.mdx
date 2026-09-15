@@ -43,7 +43,7 @@ The elevator example shows position control. Its gravity model is not a hood rec
 
 The table is for a **stationary robot already pointed at a fixed target**.
 
-Recomputing distance while the robot drives can spin the flywheel up for the next shot. It does not compensate for chassis speed, release delay, or flight time. Heading stays with the driver or a drivetrain command you already have.
+Recomputing distance while the robot drives can spin the flywheel up for the next shot. It does not compensate for chassis speed, release delay, or flight time. Heading stays with the driver or the drivetrain command in [Swerve Aim at Goal](/frc/swerve-aim-at-goal).
 
 Automatic feeding requires all of the following at once:
 
@@ -314,7 +314,7 @@ Public methods:
 - Shooter: `setFlywheelRps`, `getFlywheelRps`, `stopFlywheel`, `isHealthy`
 - Hood: `setAngleDeg`, `getAngleDeg`, `getAngularVelocityDegPerSec`, `holdCurrentAngle`, `applyFaultPolicy`, `isCalibrated`, `isHealthy`
 - Feeder: `setDutyCycle`, `stop`
-- Drive (read only): `getPose`, `getChassisSpeeds`
+- Drivetrain (read only): `getStateCopy().Pose`, `getStateCopy().Speeds`
 
 `ShotTable` stays out of those classes. The command passes selected values in.
 
@@ -537,7 +537,7 @@ If your robot uses separate transfer and conveyor motors, require **both**, and 
 
 ### Aim command
 
-One class coordinates shooter, hood, and feeder. Drive is read through suppliers and is **not** required, so joystick drive can keep running.
+One class coordinates shooter, hood, and feeder. The drivetrain is read through suppliers and is **not** required, so teleop FieldCentric can keep running.
 
 Configure motors and build the table outside `execute()`. Sending a new velocity or position target every 20 ms is normal. Re-applying `TalonFXConfiguration` every 20 ms is not.
 
@@ -817,23 +817,32 @@ Releasing fire stops the feeder. The aiming command can keep tracking. Releasing
 
 ### RobotContainer wiring
 
-`poseTrusted` and `aligned` are **your** robot's signals. Replace the bodies. `FieldConstants.getGoal` is called every loop through the supplier, not captured at startup.
+`poseTrusted` is **your** estimator signal — `VisionFusion::isPoseTrusted` when that class is installed. Alignment comes from the heading command in [Swerve Aim at Goal](/frc/swerve-aim-at-goal): keep that instance and pass `aim::isAligned`. `FieldConstants.getGoal` is called every loop through the supplier, not captured at startup.
+
+The heading command requires the drivetrain. `AimFromTableCommand` still only reads pose and speeds. Bind them in parallel on the same hold. Default FieldCentric drive stays installed and resumes after `end()`. Right bumper holds aim. Left bumper is heading seed. Right trigger is explicit feed.
 
 ```java norun
 package frc.robot;
 
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
+import frc.robot.commands.AimAtGoalCommand;
 import frc.robot.commands.AimFromTableCommand;
+import frc.robot.commands.DriverFieldSpeeds;
 import frc.robot.constants.FieldConstants;
-import frc.robot.subsystems.Drive;
+import frc.robot.generated.TunerConstants;
+import frc.robot.subsystems.CommandSwerveDrivetrain;
 import frc.robot.subsystems.Feeder;
 import frc.robot.subsystems.Hood;
 import frc.robot.subsystems.Shooter;
+import frc.robot.subsystems.VisionFusion;
 import frc.robot.util.ShotTable;
 import java.util.function.BooleanSupplier;
 
 public class RobotContainer {
-    private final Drive m_drive = new Drive();
+    public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
+    private final VisionFusion m_fusion;
     private final Shooter m_shooter = new Shooter();
     private final Hood m_hood = new Hood();
     private final Feeder m_feeder = new Feeder();
@@ -841,37 +850,52 @@ public class RobotContainer {
     private final CommandXboxController m_driver = new CommandXboxController(0);
 
     public RobotContainer() {
-        // Pose2d has no confidence field. Replace with your estimator's trust signal.
-        BooleanSupplier poseTrusted = () -> m_drive.visionAgeSeconds() < 0.3;
-        // Replace with your heading controller's on-target check.
-        BooleanSupplier aligned = () -> Math.abs(m_drive.getHeadingErrorRad()) < 0.05;
+        m_fusion = new VisionFusion(drivetrain, new VisionSubsystem());
+        BooleanSupplier poseTrusted = m_fusion::isPoseTrusted;
 
-        m_driver.leftBumper()
+        AimAtGoalCommand aim =
+                AimAtGoalCommand.aimAtTargetCommand(
+                        drivetrain,
+                        FieldConstants::getGoal,
+                        poseTrusted,
+                        () -> teleopTranslation().getX(),
+                        () -> teleopTranslation().getY());
+
+        m_driver.rightBumper().and(RobotModeTriggers.teleop()).whileTrue(aim)
                 .whileTrue(
                         new AimFromTableCommand(
                                 m_shotTable,
                                 m_shooter,
                                 m_hood,
                                 m_feeder,
-                                m_drive::getPose,
+                                () -> drivetrain.getStateCopy().Pose,
                                 FieldConstants::getGoal,
-                                m_drive::getChassisSpeeds,
+                                () -> drivetrain.getStateCopy().Speeds,
                                 poseTrusted,
-                                aligned,
+                                aim::isAligned,
                                 () -> m_driver.rightTrigger().getAsBoolean()));
+    }
+
+    private Translation2d teleopTranslation() {
+        return DriverFieldSpeeds.fromAllianceRelativeAxes(
+                drivetrain,
+                -m_driver.getLeftY(),
+                -m_driver.getLeftX(),
+                AimAtGoalCommand.kDefaultMaxTranslationMps);
     }
 }
 ```
 
-`Drive` in that snippet is the drivetrain you already have. This lesson needs only:
+`CommandSwerveDrivetrain` in that snippet is the Tuner X drivetrain from [Swerve Drive Example](/frc/swerve-drive-example). This lesson needs only:
 
 <ContentTable
-  title="Drive methods this command reads"
+  title="Drivetrain data this command reads"
   headers={["Method", "Units / meaning"]}
   rows={[
-    ["<code>getPose()</code>", "<code>Pose2d</code> in the same blue-origin frame as <code>FieldConstants</code>"],
-    ["<code>getChassisSpeeds()</code>", "Field- or robot-relative <code>ChassisSpeeds</code> used only for the stationary gate"],
-    ["Trust / align (your code)", "Boolean suppliers you provide. Not WPILib APIs."]
+    ["<code>getStateCopy().Pose</code>", "<code>Pose2d</code> in the same blue-origin frame as <code>FieldConstants</code>"],
+    ["<code>getStateCopy().Speeds</code>", "Robot-relative <code>ChassisSpeeds</code> used only for the stationary gate"],
+    ["Trust", "<code>VisionFusion::isPoseTrusted</code> when vision is installed. Not a WPILib API."],
+    ["Align", "<code>AimAtGoalCommand::isAligned</code> from Swerve Aim at Goal. Not a drivetrain method."]
   ]}
 />
 
@@ -921,13 +945,14 @@ When a shot misses, compare `distanceM`, requested vs measured RPS, requested vs
 
 ### What you still have to fill in
 
-Replace fictional field coordinates, `ShotTable.exampleTable()` rows, CAN IDs, gear ratios, `zeroDeg`, Slot0, Motion Magic limits, current limits, and the pose-trust / heading-align suppliers. Homing, vision fusion, and a per-piece feed state machine are outside this page.
+Replace fictional field coordinates, `ShotTable.exampleTable()` rows, CAN IDs, gear ratios, `zeroDeg`, Slot0, Motion Magic limits, current limits, and the pose-trust supplier. Heading alignment is the command in [Swerve Aim at Goal](/frc/swerve-aim-at-goal). Homing, vision fusion, and a per-piece feed state machine are outside this page.
 
 <LinkGrid
   title="Related"
   section="frc"
   links={[
     { "label": "Shooter Example", "id": "shooter-example" },
+    { "label": "Swerve Aim at Goal", "id": "swerve-aim-at-goal" },
     { "label": "Tunable Constants", "id": "tunable-constants" },
     { "label": "Commands", "id": "commands" },
     { "label": "PID Tuning Practice - Shooter", "id": "pid-tuning-practice-shooter" },

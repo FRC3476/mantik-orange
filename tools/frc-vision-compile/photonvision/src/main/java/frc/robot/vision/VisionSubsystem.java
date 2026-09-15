@@ -19,9 +19,9 @@ import org.photonvision.targeting.PhotonPipelineResult;
 import org.photonvision.targeting.PhotonTrackedTarget;
 
 /**
- * PhotonVision camera reader. Call pollEstimates() once per Drive loop.
+ * PhotonVision camera reader. Call pollEstimates() once from VisionFusion.periodic().
  * Do not schedule this class as a SubsystemBase — CommandScheduler would otherwise
- * compete with Drive for camera reads.
+ * compete with VisionFusion for camera reads.
  */
 public class VisionSubsystem {
   public static final String kCameraName = "AprilTagCam";

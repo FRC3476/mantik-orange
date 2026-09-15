@@ -108,6 +108,6 @@ If odometry is well calibrated, you can lower state stddevs. If MultiTag at clos
 var stateStdDevs = VecBuilder.fill(0.05, 0.05, 0.05);
 ```
 
-The complete `Drive` class from the fusion lesson already inserts vision with the three-argument `addVisionMeasurement` and the same quality policy as `VisionSubsystem`. Do not ship a calibration copy that skips ambiguity and distance checks.
+The complete `VisionFusion` class from the fusion lesson already inserts vision with the three-argument `addVisionMeasurement` and the same quality policy as `VisionSubsystem`. Do not ship a calibration copy that skips ambiguity and distance checks.
 
 <LinkGrid links={[{"label":"Fused Pose Estimation","id":"vision-pose-estimation-fusion"},{"label":"Vision Subsystem","id":"vision-subsystem"},{"label":"PhotonVision setup","id":"photonvision"},{"label":"Limelight setup","id":"limelight"},{"label":"WPILib Pose Estimator","url":"https://docs.wpilib.org/en/stable/docs/software/advanced-controls/state-space/state-space-pose-estimators.html#pose-estimators"}]} title="Resources" section="frc" />

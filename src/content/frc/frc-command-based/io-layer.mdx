@@ -11,6 +11,14 @@ duration: 35 min
 description: Putting an interface between a subsystem and its hardware so the same code runs on the robot, in simulation, and against a recorded log.
 ---
 
+<RulesBox title="This page is optional">
+
+This course's swerve drivetrain is Tuner X `CommandSwerveDrivetrain`. Phoenix already owns the motors, odometry thread, and simulation notifier. You do not wrap that generated drivetrain in `ModuleIO`.
+
+This lesson is the replay pattern for subsystems you write yourself, or for teams that later adopt [AdvantageKit](/frc/advantagekit). The `ModuleIO` samples below are an **alternative AdvantageKit swerve architecture**. They do not plug into the generated drivetrain.
+
+</RulesBox>
+
 ### The Problem It Solves
 
 A normal subsystem calls the motor directly:
@@ -31,11 +39,11 @@ The **IO layer** puts one interface between the subsystem and the hardware. The 
 
 </RulesBox>
 
-This pattern comes from Team 6328's AdvantageKit template and is the standard way to structure a subsystem you intend to simulate or replay.
+This pattern comes from Team 6328's AdvantageKit template. Use it on mechanisms you own. Do not retrofit it onto Tuner X `CommandSwerveDrivetrain`.
 
 ### The Interface
 
-A swerve module's IO interface is nothing but data and empty defaults:
+The `ModuleIO` below is that **alternative AdvantageKit swerve** surface. It is nothing but data and empty defaults:
 
 ```java
 public interface ModuleIO {
@@ -144,6 +152,8 @@ The first argument becomes the prefix for every field in the struct — `Drive/M
 
 ### Swapping Implementations
 
+This REAL / SIM / REPLAY block belongs only to the AdvantageKit swerve alternative. A Tuner X project constructs `TunerConstants.createDrivetrain()` once and does not branch on `ModuleIO`.
+
 `RobotContainer` is the only place that knows which implementation to build:
 
 ```java
@@ -188,7 +198,8 @@ The IO layer costs an interface, an implementation per environment, and an input
 <ContentTable
   headers={["Subsystem", "IO layer?", "Why"]}
   rows={[
-    ["Drivetrain", "Yes", "Needs simulation, replay, and multiple hardware variants"],
+    ["Course swerve (Tuner X)", "No", "Phoenix already owns motors, odometry, and sim &mdash; do not wrap it in ModuleIO"],
+    ["AdvantageKit swerve (alternative)", "Yes", "Only if you adopt that architecture instead of CommandSwerveDrivetrain"],
     ["Vision", "Yes", "Camera data is the thing you most want to replay"],
     ["Elevator, arm, pivot", "Often", "Simulation is genuinely useful for a profiled mechanism"],
     ["Roller, conveyor, feeder", "Usually not", "Direct hardware plus <code>@AutoLogOutput</code> is enough"]

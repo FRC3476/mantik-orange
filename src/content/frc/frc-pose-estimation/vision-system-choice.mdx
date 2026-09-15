@@ -19,7 +19,7 @@ Odometry tracks the robot between camera updates. AprilTag vision supplies those
 
 **Limelight** is the software that ships on Limelight cameras. You configure pipelines in the Limelight UI and read results with LimelightHelpers.
 
-Choose by the software you will use in code, not only by the metal enclosure. Some hardware can run more than one stack. Both paths feed the same WPILib `SwerveDrivePoseEstimator`.
+Choose by the software you will use in code, not only by the metal enclosure. Some hardware can run more than one stack. Both paths feed `CommandSwerveDrivetrain.addVisionMeasurement` through the same `VisionFusion` class. The camera's own pose solver (`PhotonPoseEstimator` or Limelight botpose) is not a second drivetrain estimator.
 
 This course does not require a specific board or a purchase. If you do not have a camera yet, pick one path and follow its setup lesson, then the Java lessons.
 

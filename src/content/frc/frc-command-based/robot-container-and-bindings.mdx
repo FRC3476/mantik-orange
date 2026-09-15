@@ -93,14 +93,26 @@ controller.R2().and(controller.R1().negate()).and(controller.triangle().negate()
 
 R2 alone intakes; R2 with R1 held does something else entirely. No `if` statement in any periodic method.
 
-You can also bind several commands to one trigger, each requiring different subsystems:
+You can also bind several commands to one trigger, each requiring different subsystems. The heading factory returns `AimAtGoalCommand` so you can keep the instance and pass `aim::isAligned`. Translation suppliers are already **blue-frame m/s**, not raw joystick axes. There is no shooter argument — chassis heading does not require the shooter.
+
+`SmartShootCommand` here is only the parallel-binding shape. It must not require the drivetrain. It does not implement the shot table's feed gates. The complete composition is in [Swerve Aim at Goal](/frc/swerve-aim-at-goal). Right bumper holds aim. Left bumper is heading seed. Right trigger is explicit feed.
 
 ```java
-controller.R1().whileTrue(new SmartShootCommand(drive, shooter, transfer, conveyor))
-    .whileTrue(DriveCommands.aimAtTargetCommand(drive, shooter,
-        () -> -controller.getLeftY(),
-        () -> -controller.getLeftX()));
+controller.leftBumper().onTrue(drivetrain.runOnce(m_fusion::seedFieldCentric));
+
+AimAtGoalCommand aim =
+    AimAtGoalCommand.aimAtTargetCommand(
+        drivetrain,
+        FieldConstants::getGoal,
+        m_fusion::isPoseTrusted,
+        () -> teleopTranslation().getX(),
+        () -> teleopTranslation().getY());
+controller.rightBumper().and(RobotModeTriggers.teleop()).whileTrue(aim)
+    .whileTrue(new SmartShootCommand(
+        () -> drivetrain.getStateCopy().Pose, shooter, transfer, conveyor, table));
 ```
+
+On a PS controller the same hold is `R1()`.
 
 A `Trigger` is not limited to buttons — any `BooleanSupplier` works, so sensor conditions bind the same way:
 
@@ -117,68 +129,61 @@ Default commands run when no other command requires the subsystem. Set them with
 intake.setDefaultCommand(intake.setIntakeCommand(0));
 shooter.setDefaultCommand(shooter.setDutyCycleSetpointCommand(0));
 
-// The drivetrain's "resting state" is driver control
-drive.setDefaultCommand(
-    DriveCommands.joystickDrive(
-        drive,
-        () -> -controller.getLeftY(),
-        () -> -controller.getLeftX(),
-        () -> controller.getRightX()));
+// The drivetrain's "resting state" is driver control in teleop, Idle otherwise
+drivetrain.setDefaultCommand(
+    Commands.either(
+        drivetrain.applyRequest(() ->
+            drive.withVelocityX(-controller.getLeftY() * MaxSpeed)
+                .withVelocityY(-controller.getLeftX() * MaxSpeed)
+                .withRotationalRate(-controller.getRightX() * MaxAngularRate)),
+        drivetrain.applyRequest(() -> idle),
+        DriverStation::isTeleopEnabled));
 ```
 
 <RulesBox title="Default commands are how mechanisms stop">
 
-Release the trigger, the command is unscheduled, and the scheduler immediately starts the default command — which commands zero.
+Release the trigger, the command is unscheduled, and the scheduler can start the default command. That default is not a substitute for stopping hardware in `end()`.
 
-Without one, the last value stays applied and the roller keeps spinning. Every mechanism that can be left running needs a default command.
+Without a default command, the last request can stay applied. Every mechanism that can be left running needs a default command **and** an `end()` that writes a safe output.
 
-Note the joystick axes are passed as **suppliers**, not values. A value read once at binding time would be frozen forever; the supplier is read fresh every loop. The negations are because joysticks report forward as negative.
+Note the joystick axes are passed as **suppliers** inside `applyRequest`, not values captured once at binding time. The negations are because joysticks report forward as negative. Gate that default command to teleop so a finished auto cannot fall through to live sticks.
 
 </RulesBox>
 
-### Constructing Subsystems
+### Constructing the drivetrain
 
-Subsystems that use an [IO layer](/frc/io-layer) are constructed differently depending on the runtime mode, and `RobotContainer` is the only place that makes that choice:
+The course drivetrain is Tuner X `CommandSwerveDrivetrain`. Construct it once:
 
 ```java
-switch (Constants.currentMode) {
-    case REAL:
-        drive = new Drive(new GyroIOPigeon2(), new ModuleIOTalonFX(/* ... */));
-        break;
-    case SIM:
-        drive = new Drive(new GyroIO() {}, new ModuleIOSim(/* ... */));
-        break;
-    default: // REPLAY
-        drive = new Drive(new GyroIO() {}, new ModuleIO() {});
-        break;
-}
+public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
 ```
 
-Everything else — subsystems that talk to hardware directly — is constructed once, unconditionally.
+Intake, shooter, and other mechanisms you write yourself are still constructed once, unconditionally. REAL/SIM/REPLAY `ModuleIO` construction belongs only in the later [IO layer](/frc/io-layer) lesson, which is an optional AdvantageKit architecture — it does not plug into this generated drivetrain.
 
 ### The Auto Chooser
 
 ```java
-private final LoggedDashboardChooser<Command> autoChooser;
+private final SendableChooser<Command> autoChooser = new SendableChooser<>();
 
 public RobotContainer() {
-    registerNamedCommands();
-    autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
-
-    autoChooser.addOption(
-        "Drive Wheel Radius Characterization", DriveCommands.wheelRadiusCharacterization(drive));
-
+    autoChooser.setDefaultOption("Do nothing", Commands.none());
+    autoChooser.addOption("Score left", m_autos.followFirstPath("score-left"));
+    SmartDashboard.putData("Auto Chooser", autoChooser);
     configureButtonBindings();
 }
 
 public Command getAutonomousCommand() {
-    return autoChooser.get();
+    Command selected = autoChooser.getSelected();
+    SmartDashboard.putString("Auto/Selected", selected == null ? "none" : selected.getName());
+    return selected;
 }
 ```
 
-`LoggedDashboardChooser` is AdvantageKit's drop-in replacement for `SendableChooser`. It behaves identically on the dashboard but **records the selection into the log**, so a replay picks the same auto the robot ran. With a plain `SendableChooser`, that choice is invisible afterwards.
+`SendableChooser` is enough. Log the selected option when autonomous starts if you need the name in a match log. See [BLine](/frc/bline) for `followFirstPath` / later-path reset rules.
 
-Adding characterization routines as chooser options is a convenient way to run them from the dashboard without a separate code path. See [Tunable Constants and Characterization](/frc/tunable-constants).
+`Robot.java` schedules that command in `autonomousInit` and cancels it in `teleopInit` and `disabledInit`. Do not call subsystem `periodic()` by hand.
+
+Optional SysId belongs in a setup-only block that does not collide with heading seed or aim. See [Swerve Drive Example](/frc/swerve-drive-example).
 
 <RulesBox title="Common mistakes">
 
@@ -190,4 +195,4 @@ Adding characterization routines as chooser options is a convenient way to run t
 
 </RulesBox>
 
-<LinkGrid links={[{"label":"Commands","id":"commands"},{"label":"Command Groups","id":"command-groups"},{"label":"Controllers & Inputs","id":"controllers-and-bindings"},{"label":"WPILib RobotContainer Documentation","url":"https://docs.wpilib.org/en/stable/docs/software/commandbased/structuring-command-based-project.html"},{"label":"WPILib Binding Commands to Triggers","url":"https://docs.wpilib.org/en/stable/docs/software/commandbased/binding-commands-to-triggers.html"}]} title="Resources" section="frc" />
+<LinkGrid links={[{"label":"Commands","id":"commands"},{"label":"Command Groups","id":"command-groups"},{"label":"Swerve Aim at Goal","id":"swerve-aim-at-goal"},{"label":"Controllers & Inputs","id":"controllers-and-bindings"},{"label":"WPILib RobotContainer Documentation","url":"https://docs.wpilib.org/en/stable/docs/software/commandbased/structuring-command-based-project.html"},{"label":"WPILib Binding Commands to Triggers","url":"https://docs.wpilib.org/en/stable/docs/software/commandbased/binding-commands-to-triggers.html"}]} title="Resources" section="frc" />

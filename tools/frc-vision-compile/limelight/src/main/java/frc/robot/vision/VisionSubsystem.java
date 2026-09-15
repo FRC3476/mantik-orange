@@ -10,9 +10,9 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Limelight camera reader. Call pollEstimates() once per Drive loop.
+ * Limelight camera reader. Call pollEstimates() once from VisionFusion.periodic().
  * Do not schedule this class as a SubsystemBase — CommandScheduler would otherwise
- * compete with Drive for camera reads.
+ * compete with VisionFusion for camera reads.
  *
  * LimelightHelpers v1.14 requires Limelight OS 2026.0 or later. Place the helper at
  * src/main/java/frc/robot/LimelightHelpers.java.

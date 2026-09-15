@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const helpersUrl =
-  'https://raw.githubusercontent.com/LimelightVision/limelightlib-wpijava/master/LimelightHelpers.java';
+  'https://raw.githubusercontent.com/LimelightVision/limelightlib-wpijava/7a3f813935f0db89e99dbaebd4b075a5946cc1cd/LimelightHelpers.java';
 const helpersPath = path.join(root, 'limelight/src/main/java/frc/robot/LimelightHelpers.java');
 const isWin = process.platform === 'win32';
 
@@ -65,7 +65,12 @@ async function downloadHelpers() {
   const text = await response.text();
   fs.writeFileSync(helpersPath, text);
   const versionLine = text.split('\n').find((line) => line.includes('LimelightHelpers v'));
-  console.log(versionLine?.trim() || 'Downloaded LimelightHelpers (version line not found)');
+  if (!versionLine || !versionLine.includes('v1.14')) {
+    throw new Error(
+      `Pinned LimelightHelpers is not v1.14: ${versionLine?.trim() || '(version line missing)'}`,
+    );
+  }
+  console.log(versionLine.trim());
 }
 
 function runGradle(projectDir, gradle, env) {

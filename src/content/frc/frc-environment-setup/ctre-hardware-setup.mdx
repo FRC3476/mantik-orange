@@ -25,6 +25,16 @@ This guide covers setting up CTRE Phoenix 6 for Talon FX, CANcoder, and Pigeon 2
 
 Download [Phoenix Tuner X](https://github.com/CrossTheRoadElec/Phoenix-Tuner-Release/releases) to configure CAN IDs, update firmware, and license devices. **All devices must have unique CAN IDs.**
 
+The single-motor and follower examples below are Phoenix 6 control requests on one Talon FX. They are not a swerve template.
+
+### Swerve Project Generator
+
+For a swerve drivetrain, use Tuner X's **Swerve Project Generator**. Official steps: [Tuner Swerve](https://v6.docs.ctr-electronics.com/en/stable/docs/tuner/tuner-swerve/index.html) and [swerve system requirements](https://v6.docs.ctr-electronics.com/en/latest/docs/tuner/tuner-swerve/swerve-system-requirements.html).
+
+Before any drive test, matching firmware, vendordep, supported devices, CAN bus, IDs, encoder offsets, inversions, wheel radius, gearing, and module positions must be set in the generator. Some options depend on device licensing — follow CTRE's requirements, not a guess.
+
+Generation writes `TunerConstants.java` and `CommandSwerveDrivetrain.java`. Do not hand-edit constants. Preserve user files when regenerating. Course software on top of that generated drivetrain is in [Swerve Drive Example](/frc/swerve-drive-example).
+
 ### Talon FX Setup
 
 ```java
@@ -86,5 +96,5 @@ public class Drivetrain extends SubsystemBase {
 }
 ```
 
-<LinkGrid links={[{"label":"Sensors and Encoders","id":"sensors-and-encoders"},{"label":"Motor Configuration","id":"motor-controller-configuration"}]} title="Resources" section="frc" />
+<LinkGrid links={[{"label":"Swerve Drive Example","id":"swerve-drive-example"},{"label":"Tuner X Swerve Generator","url":"https://v6.docs.ctr-electronics.com/en/stable/docs/tuner/tuner-swerve/index.html"},{"label":"Sensors and Encoders","id":"sensors-and-encoders"},{"label":"Motor Configuration","id":"motor-controller-configuration"}]} title="Resources" section="frc" />
 

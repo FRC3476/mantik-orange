@@ -8,166 +8,177 @@ groupOrder: 8
 order: 7
 difficulty: advanced
 duration: 70 min
-description: Fuse wheel odometry with PhotonVision or Limelight measurements in Drive.
+description: Fuse wheel odometry with PhotonVision or Limelight measurements in CommandSwerveDrivetrain.
 ---
 
 <ChangeVisionSystem />
 
 ### Sensor fusion
 
-Odometry updates every robot loop from wheels and a gyro. Vision updates when a tag is visible. WPILib's `SwerveDrivePoseEstimator` combines both.
+Odometry updates on Phoenix's odometry thread from wheels and the Pigeon 2. Vision updates when a tag is visible. `CommandSwerveDrivetrain.addVisionMeasurement` inserts those captures into the drivetrain's estimator.
 
 Vision is not a GPS lock. A tag can be wrong, late, or missing. Fusion is useful because odometry is always there and vision, when it passes the checks from the previous lesson, pulls the estimate back toward the field.
 
-Learn more: [WPILib Pose Estimators](https://docs.wpilib.org/en/stable/docs/software/advanced-controls/state-space/state-space-pose-estimators.html#pose-estimators)
+Do not construct a second `SwerveDrivePoseEstimator`. Camera pose solving (`PhotonPoseEstimator` or Limelight's botpose) is still required. That is not a second drivetrain estimator.
 
-### How the estimator weights measurements
+Keep one drivetrain and one set of devices.
 
-Each `update()` from odometry and each `addVisionMeasurement()` from vision has a **standard deviation** (uncertainty) you configure. The filter computes a gain from those uncertainties. A smaller vision stddev trusts that measurement more.
+### How measurements are weighted
 
-The estimator does **not** automatically grow odometry uncertainty as time passes since the last tag. If vision has been gone for three seconds, the pose is whatever odometry integrated, with the stddevs you set.
+Each vision insert has a **standard deviation** (uncertainty) you supply in meters, meters, and radians. A smaller vision stddev trusts that measurement more. Heading is intentionally weaker than XY so the gyro still dominates yaw.
 
-`addVisionMeasurement(pose, timestamp, stdDevs)` uses the **capture** timestamp in WPILib's FPGA time base. PhotonLib and LimelightHelpers already compensate pipeline latency. Do not subtract latency again. A timestamp outside the pose buffer (default 1.5 s) or in the future is rejected.
+Do not assume Phoenix grows odometry uncertainty automatically the same way a WPILib textbook diagram might. If vision has been gone for several seconds, the pose is whatever odometry integrated.
 
-Initialize odometry before the first vision insert. On `resetPose`, drop captures from before the reset. If the camera reconnects, do not replay stale queued frames.
+`addVisionMeasurement(pose, timestamp, stdDevs)` takes the **capture** timestamp in WPILib FPGA seconds. PhotonLib and LimelightHelpers already compensate pipeline latency. Do not subtract latency again.
+
+The generated `CommandSwerveDrivetrain` overrides both `addVisionMeasurement` overloads (and `samplePoseAt`) and converts FPGA time with `Utils.fpgaToCurrentTime` **once**. Pass raw capture timestamps into those overrides. Do not convert them beforehand. If a generated file lacks the override, add the conversion at that single boundary only.
+
+A measurement rejected by application filters never reaches Phoenix. Phoenix's insert API is void — diagnostics mean "accepted by our filters," not confirmation from the estimator.
+
+Illustrative vision stddevs after quality checks: `0.3, 0.3, 0.9` for MultiTag and `0.5, 0.5, 2.0` for a single tag. Use finite numbers. Do not use infinity as a way to reject a measurement.
+
+### VisionFusion owns polling
+
+`VisionSubsystem` stays a plain camera reader. Construct one `VisionFusion extends SubsystemBase` in `RobotContainer` with the drivetrain and that reader. Its `periodic()` is the sole caller of `pollEstimates()`, freshness checks, fusion insertion, and cached diagnostics.
+
+Phoenix's thread updates odometry. Do not call an old `updateOdometry()` and do not add a second camera poller.
+
+```java
+public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
+VisionFusion fusion = new VisionFusion(drivetrain, new VisionSubsystem());
+```
+
+### Freshness
+
+Gate initial acceptance on `drivetrain.isOdometryValid()` and record the first ready time. Reject captures that predate initialized history. A nonzero pose does not prove readiness.
+
+Keep duplicate, out-of-order, future (> 20 ms ahead of FPGA time), stale (> 0.5 s old), disconnect, and pre-reset checks. This lesson still constructs only one camera reader.
+
+The 0.5 s age cap is an application policy. Do not treat a 1.5 s WPILib pose-buffer default as a Phoenix guarantee. Do not present `samplePoseAt().isPresent()` alone as proof that a timestamp is inside history.
 
 When a measurement is rejected, keep running odometry. Report connection, age, and rejection reason. Do not display an old vision pose as current.
 
-### Drive owns the estimator
-
-Reuse the existing `Drive` gyro, module positions, kinematics, and `SwerveDrivePoseEstimator`. Module order is FL, FR, BL, BR — the same order as the kinematics constructor.
-
-Do not construct a second gyro or a second estimator for vision.
-
-```java
-DriveHardware hardware = /* your existing Drive gyro + module positions */;
-VisionSubsystem vision = new VisionSubsystem();
-Drive drive = new Drive(hardware, vision);
-```
-
-```java
-import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.kinematics.SwerveModulePosition;
-
-m_poseEstimator = new SwerveDrivePoseEstimator(
-    m_hardware.getKinematics(),
-    m_hardware.getGyroRotation(),
-    m_hardware.getModulePositions(),
-    new Pose2d());
-```
-
-State stddevs (illustrative): `0.1, 0.1, 0.1` for x (m), y (m), heading (rad).
-
-Vision stddevs come from `VisionEstimate` after quality checks: `0.3, 0.3, 0.9` for MultiTag and `0.5, 0.5, 2.0` for a single tag. Heading is intentionally weak so the gyro still dominates yaw. Measure better values on your robot. Use finite numbers. Do not use infinity as a way to reject a measurement.
-
-### Periodic order
-
-```java
-@Override
-public void periodic() {
-    updateOdometry();
-    updateVision();
-    Pose2d pose = m_poseEstimator.getEstimatedPosition();
-}
-```
-
-```java
-public void updateOdometry() {
-    m_freshness.markOdometryReady(Timer.getFPGATimestamp());
-    m_poseEstimator.update(
-        m_hardware.getGyroRotation(),
-        m_hardware.getModulePositions());
-}
-```
-
-### Adding vision measurements
-
-`updateVision()` is the same Java for both vendors. `pollEstimates()` is the vendor difference.
-
-<CodeTabs group="frc-vision">
-<CodeTab label="PhotonVision" value="photonvision">
-
-```java
-public void updateVision() {
-    double now = Timer.getFPGATimestamp();
-    if (!m_vision.isCameraConnected()) {
-        m_freshness.markDisconnect();
-        m_vision.markDisconnected(now);
-        return;
-    }
-    if (!m_freshness.isConnected()) {
-        m_freshness.markReconnect();
-    }
-
-    // PhotonVision may return several captures. Insert each accepted one once.
-    for (VisionEstimate estimate : m_vision.pollEstimates()) {
-        var freshnessReject = m_freshness.reject(estimate.timestampSeconds, now);
-        if (freshnessReject.isPresent()) {
-            m_vision.recordFusionReject(freshnessReject.get(), now);
-            continue;
-        }
-        m_freshness.accept(estimate.timestampSeconds);
-        m_poseEstimator.addVisionMeasurement(
-            estimate.pose,
-            estimate.timestampSeconds,
-            estimate.stdDevs);
-        m_vision.recordFusionAccept(estimate, now);
-    }
-}
-```
-
-</CodeTab>
-<CodeTab label="Limelight" value="limelight">
-
-```java
-public void updateVision() {
-    double now = Timer.getFPGATimestamp();
-    if (!m_vision.isCameraConnected()) {
-        m_freshness.markDisconnect();
-        m_vision.markDisconnected(now);
-        return;
-    }
-    if (!m_freshness.isConnected()) {
-        m_freshness.markReconnect();
-    }
-
-    // Limelight returns zero or one fresh PoseEstimate per poll.
-    for (VisionEstimate estimate : m_vision.pollEstimates()) {
-        var freshnessReject = m_freshness.reject(estimate.timestampSeconds, now);
-        if (freshnessReject.isPresent()) {
-            m_vision.recordFusionReject(freshnessReject.get(), now);
-            continue;
-        }
-        m_freshness.accept(estimate.timestampSeconds);
-        m_poseEstimator.addVisionMeasurement(
-            estimate.pose,
-            estimate.timestampSeconds,
-            estimate.stdDevs);
-        m_vision.recordFusionAccept(estimate, now);
-    }
-}
-```
-
-</CodeTab>
-</CodeTabs>
-
-Freshness rejects duplicate or out-of-order timestamps, captures older than 0.5 s, timestamps ahead of FPGA time by more than 20 ms, captures older than the 1.5 s pose buffer, and captures from before the last `resetPose`.
-
 Do not reject a measurement because it disagrees with the *current* pose while the robot is moving. Latency makes that comparison misleading.
+
+### VisionFusion
+
+```java norun
+package frc.robot.subsystems;
+
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.vision.VisionDiagnostics;
+import frc.robot.vision.VisionEstimate;
+import frc.robot.vision.VisionFreshness;
+import frc.robot.vision.VisionSubsystem;
+import java.util.List;
+
+public class VisionFusion extends SubsystemBase {
+    private final CommandSwerveDrivetrain m_drivetrain;
+    private final VisionSubsystem m_vision;
+    private final VisionFreshness m_freshness = new VisionFreshness();
+
+    public VisionFusion(CommandSwerveDrivetrain drivetrain, VisionSubsystem vision) {
+        m_drivetrain = drivetrain;
+        m_vision = vision;
+    }
+
+    @Override
+    public void periodic() {
+        double now = Timer.getFPGATimestamp();
+        if (m_drivetrain.isOdometryValid()) {
+            m_freshness.markOdometryReady(now);
+        }
+        updateVision(now);
+        publishDiagnostics(now);
+    }
+
+    public void updateVision(double now) {
+        if (!m_vision.isCameraConnected()) {
+            m_freshness.markDisconnect();
+            m_vision.markDisconnected(now);
+            return;
+        }
+        if (!m_freshness.isConnected()) {
+            m_freshness.markReconnect();
+        }
+
+        List<VisionEstimate> estimates = m_vision.pollEstimates();
+        for (VisionEstimate estimate : estimates) {
+            var freshnessReject = m_freshness.reject(estimate.timestampSeconds, now);
+            if (freshnessReject.isPresent()) {
+                m_vision.recordFusionReject(freshnessReject.get(), now);
+                continue;
+            }
+            m_freshness.accept(estimate.timestampSeconds);
+            m_drivetrain.addVisionMeasurement(
+                estimate.pose, estimate.timestampSeconds, estimate.stdDevs);
+            m_vision.recordFusionAccept(estimate, now);
+        }
+    }
+
+    public boolean isPoseTrusted() {
+        return m_drivetrain.isOdometryValid() && m_freshness.isConnected();
+    }
+
+    public Double getVisionAgeSeconds() {
+        return m_vision.getDiagnostics(Timer.getFPGATimestamp()).ageSeconds;
+    }
+
+    public void resetPose(Pose2d newPose) {
+        invalidateAcceptedHistory();
+        m_drivetrain.resetPose(newPose);
+    }
+
+    public void resetRotation(Rotation2d rotation) {
+        invalidateAcceptedHistory();
+        m_drivetrain.resetRotation(rotation);
+    }
+
+    public void seedFieldCentric() {
+        invalidateAcceptedHistory();
+        m_drivetrain.seedFieldCentric();
+    }
+
+    private void invalidateAcceptedHistory() {
+        double now = Timer.getFPGATimestamp();
+        m_freshness.markPoseReset(now);
+        m_vision.notifyPoseReset(now);
+    }
+}
+```
+
+`updateVision` is the same Java for both camera vendors. `pollEstimates()` is the vendor difference. Process accepted PhotonVision frames in capture order.
+
+### Trust
+
+Keep three separate signals:
+
+- **Odometry valid** — `drivetrain.isOdometryValid()`
+- **Last accepted vision age** — `getVisionAgeSeconds()`
+- **Application pose trust** — `isPoseTrusted()`
+
+Do not implement trust as `getState().Pose != null`. Aim and the shot table use `VisionFusion::isPoseTrusted`.
 
 ### Reset
 
-```java
-public void resetPose(Pose2d newPose) {
-    double now = Timer.getFPGATimestamp();
-    m_freshness.markPoseReset(now);
-    m_vision.notifyPoseReset(now);
-    m_poseEstimator.resetPosition(
-        m_hardware.getGyroRotation(),
-        m_hardware.getModulePositions(),
-        newPose);
-}
-```
+`VisionFusion` exposes `resetPose`, `resetRotation`, and `seedFieldCentric`. Each invalidates accepted-history/trust and notifies the camera reader before delegating to the drivetrain. BLine's first-path reset and the driver heading-seed binding use these wrappers. Wrapping only `resetPose` is not enough.
 
-<LinkGrid links={[{"label":"Vision Subsystem","id":"vision-subsystem"},{"label":"Pose Estimation Calibration","id":"pose-estimation-calibration"},{"label":"Choose Your Vision System","id":"vision-system-choice"},{"label":"WPILib Pose Estimator","url":"https://docs.wpilib.org/en/stable/docs/software/advanced-controls/state-space/state-space-pose-estimators.html#pose-estimators"}]} title="Resources" section="frc" />
+On `resetPose`, drop captures from before the reset. If the camera reconnects, do not replay stale queued frames.
+
+Once fused pose is in `getStateCopy().Pose`, [Swerve Aim at Goal](/frc/swerve-aim-at-goal) uses that pose to servo chassis heading to a field target.
+
+<LinkGrid
+  title="Resources"
+  section="frc"
+  links={[
+    { "label": "Swerve Aim at Goal", "id": "swerve-aim-at-goal" },
+    { "label": "Vision Subsystem", "id": "vision-subsystem" },
+    { "label": "Pose Estimation Calibration", "id": "pose-estimation-calibration" },
+    { "label": "Choose Your Vision System", "id": "vision-system-choice" },
+    { "label": "Using the Swerve Drivetrain", "url": "https://v6.docs.ctr-electronics.com/en/latest/docs/api-reference/mechanisms/swerve/using-swerve-api.html" }
+  ]}
+/>

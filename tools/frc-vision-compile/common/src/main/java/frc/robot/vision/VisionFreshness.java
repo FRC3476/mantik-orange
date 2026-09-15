@@ -2,11 +2,10 @@ package frc.robot.vision;
 
 import java.util.Optional;
 
-/** Timestamp / pose-buffer checks applied by Drive after VisionSubsystem quality checks. */
+/** Timestamp checks applied by VisionFusion after VisionSubsystem quality checks. */
 public final class VisionFreshness {
   public static final double MAX_FUTURE_SLACK_S = 0.02;
   public static final double MAX_AGE_S = 0.5;
-  public static final double POSE_HISTORY_S = 1.5;
 
   private double lastAcceptedTimestamp = Double.NEGATIVE_INFINITY;
   private double resetTimestamp = Double.NEGATIVE_INFINITY;
@@ -53,9 +52,6 @@ public final class VisionFreshness {
     double age = nowSeconds - timestampSeconds;
     if (age > MAX_AGE_S) {
       return Optional.of("stale");
-    }
-    if (age > POSE_HISTORY_S) {
-      return Optional.of("outside_history");
     }
     if (timestampSeconds < lastAcceptedTimestamp) {
       return Optional.of("out_of_order");

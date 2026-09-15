@@ -11,6 +11,8 @@ repositories {
     mavenCentral()
     maven { url = 'https://frcmaven.wpi.edu/artifactory/release' }
     maven { url = 'https://maven.photonvision.org/repository/internal' }
+    maven { url = 'https://maven.ctr-electronics.com/release/' }
+    maven { url = 'https://jitpack.io' }
 }
 
 sourceSets {
@@ -36,4 +38,7 @@ dependencies {
     implementation 'edu.wpi.first.cameraserver:cameraserver-java:2026.2.2'
     implementation 'org.photonvision:photonlib-java:v2026.3.4'
     implementation 'org.photonvision:photontargeting-java:v2026.3.4'
+    implementation 'com.ctre.phoenix6:wpiapi-java:26.3.0'
+    implementation 'com.github.edanliahovetsky:BLine-Lib:v0.9.1'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
 }

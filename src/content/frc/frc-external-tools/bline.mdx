@@ -64,17 +64,19 @@ Hybrid routines are valid: BLine for a geometric align, another tool for an open
 
 ### What you need first
 
-BLine does not own your drivetrain or your pose estimator. It needs three contracts from a holonomic `Drive` subsystem:
+BLine does not own your drivetrain or your pose estimator. It needs three contracts from `CommandSwerveDrivetrain`:
 
-- a field-relative `Pose2d` supplier
-- a robot-relative `ChassisSpeeds` supplier
-- a robot-relative `ChassisSpeeds` consumer
+- a field-relative `Pose2d` supplier — `() -> drivetrain.getStateCopy().Pose`
+- a robot-relative `ChassisSpeeds` supplier — `() -> drivetrain.getStateCopy().Speeds`
+- a robot-relative `ChassisSpeeds` consumer — `setControl(ApplyRobotSpeeds)` with `DriveRequestType.Velocity`
 
-Driver-perspective transforms that make joysticks feel natural must not wrap autonomous output. If teleop inverts axes for the driver, keep that in the joystick command, not in `drive(...)`.
+Driver-perspective transforms that make joysticks feel natural must not wrap autonomous output. Keep stick inversion in the FieldCentric default command.
 
 Localization is a separate layer. BLine trusts the pose it is given — wheel odometry, vision fusion, or both. A wrong scale, a flipped gyro, or a pose jump changes handoffs, rotation targets, and events. Cameras are not required for a short, slow routine; they matter more once paths get long, turn-heavy, or used for teleop align. See [Pose Estimation](/frc/pose-estimation-intro).
 
 BLine follows the elements it receives. It does not pathfind around a new obstacle.
+
+CTRE's GitHub [SwerveWithChoreo](https://github.com/CrossTheRoadElec/Phoenix6-Examples/tree/main/java/SwerveWithChoreo) example uses the same `CommandSwerveDrivetrain` class with Choreo. This course stays on BLine.
 
 ### Installing BLine-Lib
 
@@ -100,36 +102,116 @@ BLine Web runs in a [desktop browser](https://bline-web.pages.dev/) with no inst
 
 ### Configuring FollowPath.Builder
 
-Build one configured builder on `Drive` and reuse it for named paths. Give each builder its own PID objects, and do not run two commands from the same builder at once.
+Keep one configured builder in `BLineAutos`, not inside generated Tuner files. The builder's subsystem argument is the **drivetrain**, not the helper. Reuse its three PID instances only across commands that cannot run concurrently.
 
-```java
+`ApplyRobotSpeeds` defaults to open-loop voltage. Set `DriveRequestType.Velocity` and leave wheel-speed desaturation enabled. Tuner-generated drive gains and feedforward must be valid before velocity-controlled tests.
+
+BLine v0.9.1 converts field output to robot-relative speeds and does not discretize. `ApplyRobotSpeeds` does not discretize either. Call `ChassisSpeeds.discretize(speeds, 0.020)` **once** in the adapter. That period is the follower update, not Phoenix's odometry or simulation thread. Do not discretize again in aim or teleop. Do not add Choreo wheel-force arrays.
+
+Inject `drivetrain::resetPose` without vision, and `fusion::resetPose` when `VisionFusion` exists. First path: `withPoseReset`. Later paths: `withPoseReset(pose -> {})`. A separate runtime-target builder has no flip and no reset.
+
+Zero output on completion and interruption. Add a timeout around a blocked route when you need one.
+
+```java norun
+package frc.robot.autos;
+
+import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
+import com.ctre.phoenix6.swerve.SwerveRequest;
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.Pair;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.lib.BLine.FollowPath;
 import frc.robot.lib.BLine.Path;
+import frc.robot.subsystems.CommandSwerveDrivetrain;
+import java.util.function.Consumer;
 
-public class Drive extends SubsystemBase {
-    private final FollowPath.Builder pathBuilder;
+public final class BLineAutos {
+    public static final double kFollowerPeriodSeconds = 0.020;
 
-    public Drive(/* ... */) {
-        // ... hardware init ...
+    private final CommandSwerveDrivetrain m_drivetrain;
+    private final Consumer<Pose2d> m_poseReset;
+    private final SwerveRequest.ApplyRobotSpeeds m_applyRobotSpeeds =
+            new SwerveRequest.ApplyRobotSpeeds()
+                    .withDriveRequestType(DriveRequestType.Velocity)
+                    .withDesaturateWheelSpeeds(true);
+    private final FollowPath.Builder m_builder;
 
-        pathBuilder = new FollowPath.Builder(
-                this,
-                this::getPose,
-                this::getRobotRelativeSpeeds,
-                this::driveRobotRelative,
-                new PIDController(5.0, 0.0, 0.0),  // translation — starting point
-                new PIDController(3.0, 0.0, 0.0),  // rotation — starting point
-                new PIDController(2.0, 0.0, 0.0)   // cross-track — starting point
-        )
-                .withTRatioBasedTranslationHandoffs(true)
-                .withDefaultShouldFlip();
+    public BLineAutos(CommandSwerveDrivetrain drivetrain, Consumer<Pose2d> poseReset) {
+        m_drivetrain = drivetrain;
+        m_poseReset = poseReset;
+        m_builder =
+                new FollowPath.Builder(
+                                drivetrain,
+                                () -> drivetrain.getStateCopy().Pose,
+                                () -> drivetrain.getStateCopy().Speeds,
+                                this::applyRobotRelative,
+                                new PIDController(5.0, 0.0, 0.0),
+                                new PIDController(3.0, 0.0, 0.0),
+                                new PIDController(2.0, 0.0, 0.0))
+                        .withTRatioBasedTranslationHandoffs(true)
+                        .withDefaultShouldFlip();
     }
 
-    public FollowPath.Builder pathBuilder() {
-        return pathBuilder;
+    public Command followFirstPath(String name) {
+        m_builder.withPoseReset(m_poseReset);
+        return wrap(m_builder.build(new Path(name)));
+    }
+
+    public Command followLaterPath(String name) {
+        m_builder.withPoseReset(pose -> {});
+        return wrap(m_builder.build(new Path(name)));
+    }
+
+    public FollowPath.Builder runtimeTargetBuilder() {
+        return new FollowPath.Builder(
+                        m_drivetrain,
+                        () -> m_drivetrain.getStateCopy().Pose,
+                        () -> m_drivetrain.getStateCopy().Speeds,
+                        this::applyRobotRelative,
+                        new PIDController(5.0, 0.0, 0.0),
+                        new PIDController(3.0, 0.0, 0.0),
+                        new PIDController(2.0, 0.0, 0.0))
+                .withTRatioBasedTranslationHandoffs(true);
+    }
+
+    public static void registerLogging() {
+        FollowPath.setDoubleLoggingConsumer(
+                value -> SmartDashboard.putNumber(value.getFirst(), value.getSecond()));
+        FollowPath.setBooleanLoggingConsumer(
+                value -> SmartDashboard.putBoolean(value.getFirst(), value.getSecond()));
+        FollowPath.setPoseLoggingConsumer(BLineAutos::putPose);
+        FollowPath.setTranslationListLoggingConsumer(BLineAutos::putTranslations);
+    }
+
+    private Command wrap(Command follow) {
+        return follow.finallyDo(interrupted -> applyRobotRelative(new ChassisSpeeds()));
+    }
+
+    private void applyRobotRelative(ChassisSpeeds speeds) {
+        m_drivetrain.setControl(
+                m_applyRobotSpeeds.withSpeeds(
+                        ChassisSpeeds.discretize(speeds, kFollowerPeriodSeconds)));
+    }
+
+    private static void putPose(Pair<String, Pose2d> value) {
+        Pose2d pose = value.getSecond();
+        SmartDashboard.putNumberArray(
+                value.getFirst(),
+                new double[] {pose.getX(), pose.getY(), pose.getRotation().getDegrees()});
+    }
+
+    private static void putTranslations(Pair<String, Translation2d[]> value) {
+        Translation2d[] translations = value.getSecond();
+        double[] xy = new double[translations.length * 2];
+        for (int i = 0; i < translations.length; i++) {
+            xy[i * 2] = translations[i].getX();
+            xy[i * 2 + 1] = translations[i].getY();
+        }
+        SmartDashboard.putNumberArray(value.getFirst(), xy);
     }
 }
 ```
@@ -146,18 +228,14 @@ Those PID numbers are starting points, not a finished tune. The three controller
 
 <RulesBox title="Pose reset belongs on the first path only">
 
-`withPoseReset(drive::resetPose)` is captured by every command built while the option is set. For a multi-path auto, set it for the first `build`, then clear it:
+`withPoseReset(...)` is captured by every command built while the option is set. For a multi-path auto, set it for the first `build`, then clear it. Use `fusion::resetPose` when `VisionFusion` exists so the first path and cameras stay on one pose.
 
 ```java
-Command first = builder
-        .withPoseReset(drive::resetPose)
-        .build(firstPath);
-
-builder.withPoseReset(ignored -> {});
-Command second = builder.build(secondPath);
+Command first = m_autos.followFirstPath("score-left");
+Command second = m_autos.followLaterPath("backup");
 ```
 
-`drive.resetPose(firstPath.getStartPose())` uses the authored blue-origin pose. The builder flips its private copy at initialize. If those disagree, the robot starts on the wrong side of the field.
+`resetPose(firstPath.getStartPose())` uses the authored blue-origin pose. The builder flips its private copy at initialize. If those disagree, the robot starts on the wrong side of the field.
 
 </RulesBox>
 
@@ -178,7 +256,7 @@ Load by filename without `.json`:
 
 ```java
 Path scoreLeft = new Path("score-left");
-Command followScore = drive.pathBuilder().build(scoreLeft);
+Command followScore = m_autos.followFirstPath("score-left");
 ```
 
 `config.json` becomes the process-wide default constraints for file-based loads. Deploy it with the path files. A missing config can fail loading at runtime.
@@ -214,7 +292,7 @@ Those constraint numbers match the current BLine Web defaults. They are not a ch
 ```java
 controller.a().whileTrue(
         Commands.deferredProxy(() ->
-                runtimeBuilder.build(new Path(new Path.Waypoint(targetPose)))));
+                m_autos.runtimeTargetBuilder().build(new Path(new Path.Waypoint(targetPose)))));
 ```
 
 A single final waypoint is enough. `FollowPath` starts from the live pose. Use a dedicated builder with no flip, mirror, or pose-reset when `targetPose` is already in the current field frame.
@@ -258,25 +336,46 @@ import static frc.robot.lib.BLine.BLineCommands.sequence;
 
 Command auto = sequence(
         shooter.prepareCommand(),
-        drive.pathBuilder().build(pathWithShootEvent),
+        m_autos.followFirstPath("score-left"),
         shooter.finishCommand()
 );
 ```
 
-`FollowPath` still requires the drivetrain. An event command that also requires the drivetrain will interrupt the path. Keep mechanism events off the drive requirement. See [Events & Command Groups](https://bline-docs.pages.dev/lib/event-triggers/).
+`FollowPath` still requires `CommandSwerveDrivetrain`. An event command that also requires the drivetrain will interrupt the path. Keep mechanism events off the drivetrain requirement. See [Events & Command Groups](https://bline-docs.pages.dev/lib/event-triggers/).
 
 ### Tuning order
 
-Wire logging before changing gains. `FollowPath` publishes through process-wide consumers; by default they do nothing.
+Wire logging before changing gains. `FollowPath` publishes through process-wide consumers; by default they do nothing. Register callbacks **once**. Pose and translation-array consumers must match `Pair<String, Pose2d>` and `Pair<String, Translation2d[]>`.
 
 ```java
 FollowPath.setDoubleLoggingConsumer(
-        value -> Logger.recordOutput(value.getFirst(), value.getSecond()));
+        value -> SmartDashboard.putNumber(value.getFirst(), value.getSecond()));
 FollowPath.setBooleanLoggingConsumer(
-        value -> Logger.recordOutput(value.getFirst(), value.getSecond()));
+        value -> SmartDashboard.putBoolean(value.getFirst(), value.getSecond()));
 FollowPath.setPoseLoggingConsumer(
-        value -> Logger.recordOutput(value.getFirst(), value.getSecond()));
+        value -> SmartDashboard.putNumberArray(
+                value.getFirst(),
+                new double[] {
+                    value.getSecond().getX(),
+                    value.getSecond().getY(),
+                    value.getSecond().getRotation().getDegrees()
+                }));
 FollowPath.setTranslationListLoggingConsumer(
+        value -> {
+            Translation2d[] translations = value.getSecond();
+            double[] xy = new double[translations.length * 2];
+            for (int i = 0; i < translations.length; i++) {
+                xy[i * 2] = translations[i].getX();
+                xy[i * 2 + 1] = translations[i].getY();
+            }
+            SmartDashboard.putNumberArray(value.getFirst(), xy);
+        });
+```
+
+Optional AdvantageKit alternative, only if that library is already in the project:
+
+```java
+FollowPath.setDoubleLoggingConsumer(
         value -> Logger.recordOutput(value.getFirst(), value.getSecond()));
 ```
 
@@ -302,7 +401,7 @@ Before an aggressive start, pre-orient the swerve modules. See [Pre-Match](https
 
 <RulesBox title="BLine tips">
 
-- Keep autonomous `ChassisSpeeds` robot-relative. Driver-perspective inversion belongs in the joystick command.
+- Keep autonomous `ChassisSpeeds` robot-relative. Driver-perspective inversion belongs in the FieldCentric default command.
 - Enable t-ratio handoffs for pass-through anchors; leave radius-only for a deliberate gate.
 - Register event keys before composing the auto. A missing `lib_key` is skipped or warned, not a compile error.
 - Reset pose on the first path only, using the builder so flip and reset share one transform.

@@ -1,0 +1,39 @@
+---
+import { withBasePath } from '@/lib/withBase';
+
+interface Props {
+  value: 'photonvision' | 'limelight';
+}
+
+const { value } = Astro.props;
+const label = value === 'photonvision' ? 'PhotonVision' : 'Limelight';
+---
+
+<p>
+  <button type="button" class="vision-path-use" data-vision-use={value}>
+    Use {label} as my vision system
+  </button>
+  <a class="vision-path-change" href={withBasePath('/frc/vision-system-choice')}>Change vision system</a>
+</p>
+
+<script>
+  import { applyExplicitVisionPath } from '@/lib/frc-vision/pathClient';
+
+  function initUseButtons() {
+    document.querySelectorAll<HTMLButtonElement>('[data-vision-use]').forEach((button) => {
+      if (button.dataset.initialized) return;
+      button.dataset.initialized = 'true';
+      button.addEventListener('click', () => {
+        const value = button.dataset.visionUse;
+        if (!value) return;
+        const applied = applyExplicitVisionPath(value, button);
+        if (applied) {
+          button.textContent = `Using ${applied === 'photonvision' ? 'PhotonVision' : 'Limelight'}`;
+        }
+      });
+    });
+  }
+
+  initUseButtons();
+  document.addEventListener('astro:page-load', initUseButtons);
+</script>

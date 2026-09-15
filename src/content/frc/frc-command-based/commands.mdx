@@ -53,7 +53,9 @@ public class Intake extends SubsystemBase {
   ]}
 />
 
-Which one you want follows from what the hardware needs. A **duty cycle** must be re-commanded every loop or the motor safety watchdog cuts it off, so use `run()`. A **closed-loop setpoint** is held by the motor controller itself, so `runOnce()` is enough — re-sending it 50 times a second achieves nothing.
+Which one you want follows from what the hardware needs. A **duty cycle** must be re-commanded every loop or the motor safety watchdog cuts it off, so use `run()`. A **fixed** closed-loop setpoint is held by the motor controller itself, so `runOnce()` is enough.
+
+When the target is a **live lookup** from pose, recompute distance and send the new flywheel/hood setpoints every loop while the aiming command is scheduled. `runOnce()` would freeze the first distance.
 
 <RulesBox title="Requirements come free">
 
@@ -108,50 +110,96 @@ Note the subsystem passed as the second argument — with the static form, requi
 
 Write a class extending `Command` when an action coordinates **several subsystems that must react to each other**, every loop. A factory cannot express that, because `run` and `runOnce` require exactly one subsystem.
 
-Shooting while moving is the standard example: the drive pose determines the flywheel speed, the flywheel speed determines whether the feeder may run, and all of it is recomputed continuously.
+Aiming a shooter from field pose is the standard example: distance from the drivetrain pose selects flywheel speed (and, on a hooded shooter, hood angle), and the feeder may run only while those mechanisms are on target.
 
-```java
+Looking up speed from distance does **not** compensate for robot motion. The class below assumes the robot is already stationary and aligned, and that your pose estimate is trusted. Those checks are not inside `Pose2d`. The full table, hood map, dwell, and invalid-target cleanup are in [Shooter Shot Table](/frc/shooter-shot-table). `getVelo` there is `ShotTable.lookup` plus a flywheel-RPS adapter; the second map is hood degrees.
+
+```java norun
 package frc.robot.commands;
 
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.Command;
+import frc.robot.constants.FieldConstants;
+import frc.robot.subsystems.Conveyor;
+import frc.robot.subsystems.Drive;
+import frc.robot.subsystems.Shooter;
+import frc.robot.subsystems.Transfer;
+import frc.robot.util.ShotSetpoint;
+import frc.robot.util.ShotTable;
+import java.util.Optional;
+import java.util.function.Supplier;
+
 public class SmartShootCommand extends Command {
+    private static final double kFlywheelTolRps = 1.0;
+
+    private final ShotTable table;
     private final Shooter shooter;
     private final Transfer transfer;
     private final Conveyor conveyor;
-    private final Drive drive;
+    private final Supplier<Pose2d> pose;
 
-    public SmartShootCommand(Drive drive, Shooter shooter, Transfer transfer, Conveyor conveyor) {
+    public SmartShootCommand(
+            Drive drive, Shooter shooter, Transfer transfer, Conveyor conveyor, ShotTable table) {
+        this.table = table;
         this.shooter = shooter;
         this.transfer = transfer;
         this.conveyor = conveyor;
-        this.drive = drive;
+        this.pose = drive::getPose;
         addRequirements(shooter, transfer, conveyor);
+        // Drive is read, not required — joystick drive must keep running.
     }
 
     @Override
     public void initialize() {
-        transfer.feeding = false;
+        transfer.setTransferDutyCycle(0.0);
+        conveyor.setConveyorDutyCycle(0.0);
     }
 
     @Override
     public void execute() {
-        double distance = drive.getPose().getTranslation().getDistance(targetPose.getTranslation());
-        double setpoint = shooter.getVelo(distance);
-        shooter.setPIDSetpoint(setpoint);
+        Optional<Translation2d> goal = FieldConstants.getGoal();
+        Pose2d robotPose = pose.get();
+        if (goal.isEmpty() || robotPose == null) {
+            transfer.setTransferDutyCycle(0.0);
+            conveyor.setConveyorDutyCycle(0.0);
+            return;
+        }
 
-        Logger.recordOutput(getName() + "/distance", distance);
-        Logger.recordOutput(getName() + "/setpoint", setpoint);
+        double distanceM = robotPose.getTranslation().getDistance(goal.get());
+        Optional<ShotSetpoint> shot = table.lookup(distanceM);
 
-        if (shooter.atOrAboveSpeed()) {
+        SmartDashboard.putNumber("SmartShoot/distanceM", distanceM);
+        SmartDashboard.putBoolean("SmartShoot/tableHit", shot.isPresent());
+
+        if (shot.isEmpty()) {
+            transfer.setTransferDutyCycle(0.0);
+            conveyor.setConveyorDutyCycle(0.0);
+            return;
+        }
+
+        shooter.setFlywheelRps(shot.get().flywheelRps());
+        double speedError = Math.abs(shooter.getFlywheelRps() - shot.get().flywheelRps());
+        boolean onSpeed = speedError <= kFlywheelTolRps;
+
+        SmartDashboard.putNumber("SmartShoot/requestedRps", shot.get().flywheelRps());
+        SmartDashboard.putNumber("SmartShoot/measuredRps", shooter.getFlywheelRps());
+
+        if (onSpeed) {
             transfer.setTransferDutyCycle(1.0);
             conveyor.setConveyorDutyCycle(-1.0);
+        } else {
+            transfer.setTransferDutyCycle(0.0);
+            conveyor.setConveyorDutyCycle(0.0);
         }
     }
 
     @Override
     public void end(boolean interrupted) {
-        transfer.setTransferDutyCycle(0);
-        conveyor.setConveyorDutyCycle(0);
-        shooter.setDutyCycleSetpoint(0);
+        transfer.setTransferDutyCycle(0.0);
+        conveyor.setConveyorDutyCycle(0.0);
+        shooter.stopFlywheel();
     }
 
     @Override
@@ -160,6 +208,8 @@ public class SmartShootCommand extends Command {
     }
 }
 ```
+
+This simplified command still feeds whenever flywheel error is inside tolerance. It does not wait for hood settling, a dwell timer, an operator fire button, or a stationary/aligned gate. Do not copy it as a competition feed interlock — use the command in Shooter Shot Table.
 
 ### Requirements
 
@@ -183,13 +233,7 @@ That makes `end()` load-bearing. It runs on interruption as well as normal compl
 
 ### Logging From a Command
 
-```java
-Logger.recordOutput(getName() + "/distance", distance);
-```
-
-`getName()` returns the command's class name, so keys come out as `SmartShootCommand/distance` and follow the class if it is ever renamed.
-
-Log the intermediate values, not just the final output. When a shot misses, `distance` and `setpoint` are what tell you whether the pose estimate was wrong or the shot table was.
+Log the intermediate values, not just the final output. When a shot misses, `distanceM` and requested vs measured speed are what tell you whether the pose estimate was wrong or the shot table was. The keys above use `SmartDashboard` so this page does not require AdvantageKit. `Logger.recordOutput` is the same idea if that library is already in the project.
 
 <ContentTable
   title="Which form to use"
@@ -203,8 +247,9 @@ Log the intermediate values, not just the final output. When a shot misses, `dis
 
 <RulesBox title="Common mistakes">
 
-- **A `run()` factory for a closed-loop setpoint**, flooding the bus for no reason.
+- **A `run()` factory for a fixed closed-loop setpoint**, flooding the bus for no reason.
 - **A `runOnce()` factory for a duty cycle**, which motor safety will cut off.
+- **A `runOnce()` factory for a live pose lookup**, which freezes the first distance.
 - **Requiring a subsystem you only read from.**
 - **An `end()` that does not stop everything it started.**
 - **State initialised in the constructor instead of `initialize()`.** The constructor runs once at startup; the command may be scheduled hundreds of times.
@@ -213,4 +258,4 @@ Log the intermediate values, not just the final output. When a shot misses, `dis
 
 </RulesBox>
 
-<LinkGrid links={[{"label":"Command Groups","id":"command-groups"},{"label":"RobotContainer & Bindings","id":"robot-container-and-bindings"},{"label":"Subsystems","id":"subsystems"},{"label":"WPILib Commands Documentation","url":"https://docs.wpilib.org/en/stable/docs/software/commandbased/commands.html"}]} title="Resources" section="frc" />
+<LinkGrid links={[{"label":"Shooter Shot Table","id":"shooter-shot-table"},{"label":"Command Groups","id":"command-groups"},{"label":"RobotContainer & Bindings","id":"robot-container-and-bindings"},{"label":"Subsystems","id":"subsystems"},{"label":"WPILib Commands Documentation","url":"https://docs.wpilib.org/en/stable/docs/software/commandbased/commands.html"}]} title="Resources" section="frc" />

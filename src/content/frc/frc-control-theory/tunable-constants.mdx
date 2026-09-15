@@ -211,31 +211,33 @@ Clear the area, keep a hand on the disable, and give a drivetrain far more room 
 
 ### Interpolation Tables
 
-Not every tuned value is a gain. A shooter that must hit a target from varying distances needs a distance-to-velocity relationship, and the honest way to get one is to measure it:
+Not every tuned value is a gain. A shooter that must hit a target from varying distances needs a distance-to-velocity relationship, and the honest way to get one is to measure it.
 
-```java
-double[] distance = new double[] { 1.790, 1.900, 2.050, 2.200, 2.558, /* ... */ 4.947 };
-double[] velocity = new double[] { 40.00, 41.50, 42.00, 43.00, 44.50, /* ... */ 61.75 };
+The numbers below are **illustrative**. Keys are meters. Values are flywheel output rotations per second.
+
+```java norun
+import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
+
+InterpolatingDoubleTreeMap flywheelRps = new InterpolatingDoubleTreeMap();
+flywheelRps.put(1.790, 40.00);
+flywheelRps.put(1.900, 41.50);
+flywheelRps.put(2.050, 42.00);
+flywheelRps.put(2.200, 43.00);
+flywheelRps.put(2.558, 44.50);
+flywheelRps.put(4.947, 61.75);
+
+double rps = flywheelRps.get(distanceM);
 ```
 
-Then interpolate between the measured points, clamping outside them:
+`get` returns a stored value at an exact key and linearly interpolates between keys. Outside the keys it returns the nearest endpoint. An empty map returns `null`.
 
-```java
-public double veloInterpolate(double d) {
-    if (d < distance[0]) return velocity[0];
-    else if (d > distance[distance.length - 1]) return velocity[velocity.length - 1];
-    else {
-        for (int i = 1; i < distance.length; i++) {
-            if (distance[i] > d)
-                return (d - distance[i - 1]) / (distance[i] - distance[i - 1])
-                    * (velocity[i] - velocity[i - 1]) + velocity[i - 1];
-        }
-    }
-    return 0;
-}
-```
+That endpoint clamp is **not** a validated shooting range. A distance below 1.790 m still gets 40.00 RPS from the raw map; that does not mean the shot will score. Interpolation is exact at stored keys. Between keys it is an estimate, not a physics proof.
 
-Fitting a curve to the same data is the alternative, and it is worth keeping both. The equation extrapolates sensibly past the ends of the data; the table is exactly what was measured in between. Clamping to the endpoints, as above, keeps a bad pose estimate from asking for an absurd flywheel speed.
+A fitted curve is a different model. It also needs measured shots to validate. Do not assume it extrapolates safely past the distances you tested.
+
+A hand-written loop that interpolates an array pair is easy to get wrong: if the last key is an exact match and the loop only fires when `distance[i] > d`, the method falls through and returns 0. Use `InterpolatingDoubleTreeMap`, then wrap it with an inclusive measured-range check.
+
+The full paired table (flywheel RPS **and** hood degrees), alliance goal selection, and feed interlock are in [Shooter Shot Table](/frc/shooter-shot-table).
 
 <RulesBox title="Common mistakes">
 
@@ -248,4 +250,4 @@ Fitting a curve to the same data is the alternative, and it is worth keeping bot
 
 </RulesBox>
 
-<LinkGrid links={[{"label":"PID Control","id":"frc-pid-control"},{"label":"Advanced Control","id":"advanced-control-theory"},{"label":"PID Tuning Practice","id":"pid-tuning-practice-setup"},{"label":"AdvantageScope","id":"advantagescope"},{"label":"WPILib System Identification","url":"https://docs.wpilib.org/en/stable/docs/software/advanced-controls/system-identification/index.html"}]} title="Resources" section="frc" />
+<LinkGrid links={[{"label":"Shooter Shot Table","id":"shooter-shot-table"},{"label":"PID Control","id":"frc-pid-control"},{"label":"Advanced Control","id":"advanced-control-theory"},{"label":"PID Tuning Practice","id":"pid-tuning-practice-setup"},{"label":"AdvantageScope","id":"advantagescope"},{"label":"WPILib System Identification","url":"https://docs.wpilib.org/en/stable/docs/software/advanced-controls/system-identification/index.html"}]} title="Resources" section="frc" />

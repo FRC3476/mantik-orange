@@ -1,0 +1,72 @@
+---
+title: Limelight
+lessonId: limelight
+section: frc
+group: frc-pose-estimation
+groupLabel: Pose Estimation
+groupOrder: 8
+order: 5
+difficulty: intermediate
+duration: 35 min
+description: Configure Limelight for AprilTag pose estimation before writing robot code.
+---
+
+<VisionPathAction value="limelight" />
+
+### Hardware Manager
+
+For a walkthrough of the Limelight Hardware Manager and a simple auto-align, see [Limelight and Auto Align Explanation](https://www.youtube.com/watch?v=p0Ux8Mk1ycQ).
+
+Open the **Limelight Hardware Manager**. Find your camera and open its feed. Set the pipeline type to **AprilTags** and enable **Full 3D Targeting** for field pose.
+
+This course's Java uses LimelightHelpers **v1.14**, which requires Limelight OS **2026.0** or later. Put the helper at `src/main/java/frc/robot/LimelightHelpers.java`. Download it from [Limelight Lib](https://docs.limelightvision.io/docs/docs-limelight/apis/limelight-lib).
+
+### 2D targeting variables
+
+These NetworkTables values describe where a target sits in the image. They are not the robot's field X/Y.
+
+| Variable | Meaning |
+| --- | --- |
+| tx | Horizontal offset from the crosshair to the target, in degrees |
+| ty | Vertical offset from the crosshair to the target, in degrees |
+| ta | Target area as a percent of the image (0–100). Larger usually means closer. |
+| tl | Pipeline (processing) latency, milliseconds |
+| cl | Capture latency, milliseconds |
+
+Check the sign of `tx`/`ty` in the Limelight UI and the [NetworkTables API](https://docs.limelightvision.io/docs/docs-limelight/apis/complete-networktables-api) for your OS version. Do not treat them as WPILib field axes.
+
+`tl` and `cl` are separate. There is no single fixed latency such as 6 ms. LimelightHelpers pose timestamps are already latency-adjusted. Do not subtract `tl` or `cl` again in robot code.
+
+### 3D localization (MegaTag)
+
+`Robot Pose in Target Space` is the robot relative to the tag. `Robot Pose in Field Space` is the robot on the field. Fusion in this course uses the WPILib blue-origin field pose (`botpose_wpiblue` / `getBotPoseEstimate_wpiBlue`), for both alliances.
+
+This path teaches MegaTag1. MegaTag2 can be more stable when the gyro heading you send it is correct. It is optional further reading; it requires `SetRobotOrientation` every loop.
+
+### Camera mount
+
+Measure the camera relative to the robot origin (drivebase center, at the floor): forward/back, left/right, up, and roll/pitch/yaw.
+
+Keep the UI mount and any `setCameraPose_RobotSpace` call identical. If the UI already holds the measured mount, do not overwrite it from code with placeholder numbers. If code is the source of truth, write the measured meters and degrees there.
+
+Example numbers (replace with your measurements): 0.32 m forward, 0.27 m up, −15° pitch.
+
+### Fusion, not a reset
+
+Odometry drift is real. Vision should be a **weighted correction** into `SwerveDrivePoseEstimator.addVisionMeasurement`, not a hard `resetPose` on every tag. The next two lessons show that insertion path.
+
+<ExerciseBox title="Limelight setup" description="Check 2D targeting versus 3D pose." answers={[{"task":"tx/ty are image offsets in degrees. They are not field X/Y. Read the sign from your Limelight UI/docs."},{"task":"ta increases because the tag occupies more of the image."},{"task":"Wheel odometry accumulates slip. A valid AprilTag field pose is an absolute reference you fuse, not a reason to ignore odometry."}]}>
+
+- Are tx and ty the robot's field coordinates?
+- If the robot moves closer to the tag, what happens to ta?
+- Why fuse vision with odometry instead of using only wheel encoders?
+
+</ExerciseBox>
+
+<RulesBox title="After this page">
+
+Continue to [Vision Subsystem](/frc/vision-subsystem). Skip the PhotonVision setup lesson unless you are switching paths.
+
+</RulesBox>
+
+<LinkGrid links={[{"label":"Choose Your Vision System","id":"vision-system-choice"},{"label":"Vision Subsystem","id":"vision-subsystem"},{"label":"Limelight Lib","url":"https://docs.limelightvision.io/docs/docs-limelight/apis/limelight-lib"},{"label":"NetworkTables API","url":"https://docs.limelightvision.io/docs/docs-limelight/apis/complete-networktables-api"},{"label":"AprilTag tracking","url":"https://docs.limelightvision.io/docs/docs-limelight/pipeline-apriltag/apriltags"},{"label":"Robot localization","url":"https://docs.limelightvision.io/docs/docs-limelight/pipeline-apriltag/apriltag-robot-localization"}]} title="Resources" section="frc" />

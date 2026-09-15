@@ -1,5 +1,6 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
 import type { SectionId } from '@/config/navigation';
+import { frcVisionAdjacentOverride } from '@/lib/frc-vision/path';
 
 export type LessonEntry = CollectionEntry<'java' | 'ftc' | 'frc' | 'comp'>;
 
@@ -67,6 +68,10 @@ export async function getLesson(
   return lessons.find((l) => l.data.lessonId === lessonId);
 }
 
+function itemById(items: SidebarItem[], lessonId: string): SidebarItem | undefined {
+  return items.find((item) => item.lessonId === lessonId);
+}
+
 export async function getAdjacentLessons(
   section: SectionId,
   lessonId: string,
@@ -75,8 +80,18 @@ export async function getAdjacentLessons(
   const flat = groups.flatMap((g) => g.items);
   const index = flat.findIndex((item) => item.lessonId === lessonId);
 
-  return {
+  const adjacent = {
     prev: index > 0 ? flat[index - 1] : undefined,
     next: index >= 0 && index < flat.length - 1 ? flat[index + 1] : undefined,
+  };
+
+  if (section !== 'frc') return adjacent;
+
+  const override = frcVisionAdjacentOverride(lessonId);
+  if (!override) return adjacent;
+
+  return {
+    prev: override.prevId ? itemById(flat, override.prevId) : adjacent.prev,
+    next: override.nextId === null ? undefined : override.nextId ? itemById(flat, override.nextId) : adjacent.next,
   };
 }

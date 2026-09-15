@@ -1,0 +1,43 @@
+---
+title: Choose Your Vision System
+lessonId: vision-system-choice
+section: frc
+group: frc-pose-estimation
+groupLabel: Pose Estimation
+groupOrder: 8
+order: 3
+difficulty: beginner
+duration: 15 min
+description: Pick PhotonVision or Limelight before writing pose-estimation Java.
+---
+
+### Two complete paths
+
+Odometry tracks the robot between camera updates. AprilTag vision supplies those updates. This curriculum has two full software paths. Pick the software that is actually running on your camera coprocessor.
+
+**PhotonVision** is open-source vision software. It runs on several coprocessors with ordinary cameras. You configure pipelines in its web UI and read results with PhotonLib.
+
+**Limelight** is the software that ships on Limelight cameras. You configure pipelines in the Limelight UI and read results with LimelightHelpers.
+
+Choose by the software you will use in code, not only by the metal enclosure. Some hardware can run more than one stack. Both paths feed the same WPILib `SwerveDrivePoseEstimator`.
+
+This course does not require a specific board or a purchase. If you do not have a camera yet, pick one path and follow its setup lesson, then the Java lessons.
+
+<RulesBox title="Compatible versions (recorded 2026-09-15)">
+
+- WPILib / GradleRIO **2026.2.2**, Java **17**
+- PhotonLib and PhotonVision coprocessor image **2026.3.4**
+- LimelightHelpers **v1.14**, Limelight OS **2026.0** or later
+- Field layout: `AprilTagFields.k2026RebuiltWelded` or `k2026RebuiltAndymark`, matching the physical field
+
+</RulesBox>
+
+### Choose a path
+
+The card you click is saved in this browser and selects the PhotonVision or Limelight code tabs later in the unit. Opening a setup page by itself does not change that choice.
+
+After setup, skip the other setup lesson and continue at Vision Subsystem.
+
+<VisionPathChooser />
+
+<LinkGrid links={[{"label":"Odometry","id":"odometry"},{"label":"PhotonVision setup","id":"photonvision"},{"label":"Limelight setup","id":"limelight"},{"label":"Vision Subsystem","id":"vision-subsystem"}]} title="Next" section="frc" />

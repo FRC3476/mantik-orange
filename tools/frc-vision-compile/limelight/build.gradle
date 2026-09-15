@@ -1,0 +1,36 @@
+plugins {
+    id 'java'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://frcmaven.wpi.edu/artifactory/release' }
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src/main/java', '../common/src/main/java']
+        }
+    }
+}
+
+dependencies {
+    implementation 'edu.wpi.first.wpilibj:wpilibj-java:2026.2.2'
+    implementation 'edu.wpi.first.wpimath:wpimath-java:2026.2.2'
+    implementation 'edu.wpi.first.wpiunits:wpiunits-java:2026.2.2'
+    implementation 'edu.wpi.first.wpiutil:wpiutil-java:2026.2.2'
+    implementation 'edu.wpi.first.wpinet:wpinet-java:2026.2.2'
+    implementation 'edu.wpi.first.ntcore:ntcore-java:2026.2.2'
+    implementation 'edu.wpi.first.hal:hal-java:2026.2.2'
+    implementation 'edu.wpi.first.apriltag:apriltag-java:2026.2.2'
+    implementation 'edu.wpi.first.wpilibNewCommands:wpilibNewCommands-java:2026.2.2'
+    implementation 'edu.wpi.first.cscore:cscore-java:2026.2.2'
+    implementation 'edu.wpi.first.cameraserver:cameraserver-java:2026.2.2'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+}

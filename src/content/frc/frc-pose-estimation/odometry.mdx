@@ -37,7 +37,7 @@ Odometry works through dead reckoning - calculating position by integrating move
 
 
 
-**Integrating Wheel Movements:** Encoders measure how far each wheel has rotated. By knowing wheel diameter and encoder counts per revolution, odometry converts encoder readings into distance traveled.
+**Integrating Wheel Movements:** Encoders measure shaft rotation. Combined with wheel diameter — and gear ratio, if the encoder is on the motor shaft rather than the wheel shaft — odometry converts those counts into distance traveled.
 
 
 
@@ -336,7 +336,7 @@ Understanding odometry limitations is crucial for effective use:
 
 - Use vision-based pose estimation to periodically correct drift
 
-- Implement sensor fusion (see [Vision-Based Pose Estimation](#vision-pose-estimation-complete) lesson)
+- Implement sensor fusion (see [Fused Pose Estimation](/frc/vision-pose-estimation-fusion) and [Choose Your Vision System](/frc/vision-system-choice))
 
 - Design mechanisms to minimize wheel slippage
 
@@ -503,5 +503,5 @@ Following these practices ensures the most accurate odometry possible:
 
 - Check for mechanical play in drivetrain
 
-<LinkGrid links={[{"label":"Pose Estimation Introduction","id":"pose-estimation-intro"},{"label":"Vision-Based Pose Estimation","id":"vision-pose-estimation-fusion"},{"label":"WPILib Kinematics and Odometry","url":"https://docs.wpilib.org/en/stable/docs/software/kinematics-and-odometry/index.html"},{"label":"Sensors and Encoders","id":"sensors-and-encoders"}]} title="Resources" section="frc" />
+<LinkGrid links={[{"label":"Pose Estimation Introduction","id":"pose-estimation-intro"},{"label":"Choose Your Vision System","id":"vision-system-choice"},{"label":"Fused Pose Estimation","id":"vision-pose-estimation-fusion"},{"label":"WPILib Kinematics and Odometry","url":"https://docs.wpilib.org/en/stable/docs/software/kinematics-and-odometry/index.html"},{"label":"Sensors and Encoders","id":"sensors-and-encoders"}]} title="Resources" section="frc" />
 

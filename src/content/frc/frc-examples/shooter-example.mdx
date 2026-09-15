@@ -94,10 +94,12 @@ import frc.robot.subsystems.Indexer;
  */
 public Command getShootSequence() {
     return new SequentialCommandGroup(
-        // Step 1: Start spinning up shooter to 4000 RPS
-        new InstantCommand(() -> m_shooter.setSpeed(4000), m_shooter),
-        // Step 2: Wait until shooter reaches target speed
-        new WaitUntilCommand(() -> m_shooter.isReady(4000)),
+        // Intended speed: 4000 RPM. Talon FX setSpeed() in this lesson takes RPS.
+        // 4000 / 60 = 66.67 RPS. Keep setSpeed and isReady in the same units.
+        // SPARK MAX tab: setSpeed/isReady use RPM, so pass 4000 there instead.
+        final double targetRps = 4000.0 / 60.0;
+        new InstantCommand(() -> m_shooter.setSpeed(targetRps), m_shooter),
+        new WaitUntilCommand(() -> m_shooter.isReady(targetRps)),
         // Step 3: Feed note into shooter
         new FeedCommand(m_indexer)
     );
@@ -135,10 +137,12 @@ import frc.robot.subsystems.Indexer;
  */
 public Command getShootSequence() {
     return new SequentialCommandGroup(
-        // Step 1: Start spinning up shooter to 4000 RPS
-        new InstantCommand(() -> m_shooter.setSpeed(4000), m_shooter),
-        // Step 2: Wait until shooter reaches target speed
-        new WaitUntilCommand(() -> m_shooter.isReady(4000)),
+        // Intended speed: 4000 RPM. Talon FX setSpeed() in this lesson takes RPS.
+        // 4000 / 60 = 66.67 RPS. Keep setSpeed and isReady in the same units.
+        // SPARK MAX tab: setSpeed/isReady use RPM, so pass 4000 there instead.
+        final double targetRps = 4000.0 / 60.0;
+        new InstantCommand(() -> m_shooter.setSpeed(targetRps), m_shooter),
+        new WaitUntilCommand(() -> m_shooter.isReady(targetRps)),
         // Step 3: Feed note into shooter
         new FeedCommand(m_indexer)
     );
@@ -162,5 +166,7 @@ Shooters often need a state machine: **Idle** → **SpinUp** → **Ready** → *
 
 WPILib provides tuning documentation for velocity controllers, including feedforward control strategies essential for flywheels. Use these guides to practice tuning velocity controllers and understanding feedforward principles.
 
-<LinkGrid links={[{"label":"Elevator Example","id":"elevator-example"},{"label":"PID Control","id":"frc-pid-control"},{"label":"WPILib: Feedforward Control (Practice)","url":"https://docs.wpilib.org/en/stable/docs/software/advanced-controls/controllers/feedforward.html"}]} title="Resources" section="frc" />
+Once velocity control holds a speed, [Shooter Shot Table](/frc/shooter-shot-table) selects flywheel **output RPS** and hood angle from field pose. That lesson converts those RPS values to Talon FX rotor units with an explicit gear ratio. This page's `setSpeed` still talks to the motor in the units of each vendor tab.
+
+<LinkGrid links={[{"label":"Shooter Shot Table","id":"shooter-shot-table"},{"label":"Elevator Example","id":"elevator-example"},{"label":"PID Control","id":"frc-pid-control"},{"label":"WPILib: Feedforward Control (Practice)","url":"https://docs.wpilib.org/en/stable/docs/software/advanced-controls/controllers/feedforward.html"}]} title="Resources" section="frc" />
 

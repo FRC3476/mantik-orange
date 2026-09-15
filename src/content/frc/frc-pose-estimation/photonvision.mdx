@@ -1,0 +1,104 @@
+---
+title: PhotonVision
+lessonId: photonvision
+section: frc
+group: frc-pose-estimation
+groupLabel: Pose Estimation
+groupOrder: 8
+order: 4
+difficulty: intermediate
+duration: 40 min
+description: Configure PhotonVision for AprilTag pose estimation before writing robot code.
+---
+
+<VisionPathAction value="photonvision" />
+
+### What PhotonVision is
+
+PhotonVision is software that runs on a coprocessor. It captures camera frames, detects AprilTags, and publishes results to the roboRIO over NetworkTables. Robot code uses **PhotonLib**, the WPILib vendor library that reads those results.
+
+Imaging, wiring, and networking are documented in the [PhotonVision Quick Start](https://docs.photonvision.org/en/latest/docs/quick-start/index.html). This lesson does not replace that guide and does not require a specific coprocessor.
+
+### Readiness check
+
+Before writing pose Java, confirm all of the following:
+
+- The PhotonVision UI loads in a browser on the same network as the robot.
+- The coprocessor and roboRIO use the team's robot network (not a leftover home Wi-Fi).
+- The camera name in the UI is a stable name you will type exactly in `new PhotonCamera("...")`.
+
+If the UI is up but robot code reports a disconnected camera, the names do not match or NetworkTables is not reaching the coprocessor.
+
+### Focus, resolution, then lens calibration
+
+Focus the lens so a tag at your scoring distance is sharp. Pick the resolution you will use in a match. Then run [camera calibration](https://docs.photonvision.org/en/latest/docs/quick-start/camera-calibration.html) in PhotonVision.
+
+Lens calibration estimates how this camera and lens bend light. It is separate from measuring where the camera is bolted to the robot.
+
+Recheck calibration if you change the lens, rotate the camera in its mount, or switch cameras. A calibrated camera with the wrong mount transform still reports the wrong robot pose.
+
+### AprilTag pipeline and MultiTag
+
+Create an AprilTag 3D pipeline. Enable coprocessor MultiTag and load the same field layout you will load in Java.
+
+The 2026 game has two official layouts: **welded** and **AndyMark**. The physical field, the PhotonVision UI, and `AprilTagFieldLayout.loadField(...)` must use the same one. `AprilTagFields.kDefaultField` follows the WPILib version you installed. It is not proof that your event or practice field matches.
+
+This course estimates pose with `estimateCoprocMultiTagPose`, then falls back to `estimateLowestAmbiguityPose` when MultiTag has no result. The pipeline must have 3D / MultiTag enabled for that fallback to be a real single-tag solve rather than an empty optional. See [MultiTag setup](https://docs.photonvision.org/en/latest/docs/apriltag-pipelines/multitag.html).
+
+### Robot-to-camera transform
+
+Measure the camera relative to the robot origin (center of the drivebase, at the floor). Supply that measurement in Java as a `Transform3d` passed to `PhotonPoseEstimator`.
+
+Do not treat a PhotonVision UI camera-offset field as a replacement for that constructor argument. The estimator uses the `Transform3d` you pass in code.
+
+Use meters for translation. Use radians in `Rotation3d(roll, pitch, yaw)`. WPILib robot space is +X forward, +Y left, +Z up.
+
+This example is a camera 0.32 m forward, 0.27 m up, pitched 15° toward the floor. Replace it with your measurements.
+
+```java
+import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.util.Units;
+
+public static final Transform3d kRobotToCamera =
+    new Transform3d(
+        new Translation3d(0.32, 0.0, 0.27),
+        new Rotation3d(0.0, Units.degreesToRadians(-15.0), 0.0));
+```
+
+### PhotonLib vendordep
+
+Add PhotonLib with the WPILib vendordep installer. This course was checked against PhotonLib **2026.3.4** and WPILib **2026.2.2**. See [Installing PhotonLib](https://docs.photonvision.org/en/latest/docs/programming/photonlib/adding-vendordep.html).
+
+Keep version checks enabled. The camera name in `PhotonCamera` must match the UI name exactly.
+
+API details for the Java in the next lesson: [PhotonPoseEstimator 2026.3.4](https://docs.photonvision.org/en/v2026.3.4/docs/programming/photonlib/robot-pose-estimator.html).
+
+### Three coordinate stories
+
+Keep these separate:
+
+- **Mount:** robot origin to camera (`Transform3d` in code).
+- **Camera to tag:** what this frame of video measured.
+- **Robot on the field:** the pose you fuse with odometry, in the WPILib blue-origin field frame for both alliances. Path mirroring is a later, separate step.
+
+### Stationary check
+
+With the robot at a tape-measured pose, look at a known tag. Confirm robot code is receiving fresh results (new timestamps each frame). Compare the vision pose to the tape measure before you tune fusion.
+
+<ExerciseBox title="PhotonVision setup" description="Check the configuration that robot code depends on." answers={[{"task":"The string passed to PhotonCamera must match the camera name in the PhotonVision UI. A mismatch looks like a disconnected camera."},{"task":"PhotonPoseEstimator uses the Transform3d you pass in Java. A wrong mount shifts every field pose by that error."},{"task":"Wheel odometry accumulates slip and encoder error. A correct AprilTag pose is an absolute field measurement that can correct that drift."}]}>
+
+- Why must the PhotonCamera name match the PhotonVision UI?
+- Why does the robot-to-camera transform belong in the PhotonPoseEstimator constructor?
+- Why use vision to correct wheel odometry?
+
+</ExerciseBox>
+
+<RulesBox title="After this page">
+
+Continue to [Vision Subsystem](/frc/vision-subsystem). Skip the Limelight setup lesson unless you are switching paths.
+
+</RulesBox>
+
+<LinkGrid links={[{"label":"Choose Your Vision System","id":"vision-system-choice"},{"label":"Vision Subsystem","id":"vision-subsystem"},{"label":"PhotonVision Quick Start","url":"https://docs.photonvision.org/en/latest/docs/quick-start/index.html"},{"label":"Camera calibration","url":"https://docs.photonvision.org/en/latest/docs/quick-start/camera-calibration.html"},{"label":"MultiTag setup","url":"https://docs.photonvision.org/en/latest/docs/apriltag-pipelines/multitag.html"},{"label":"Installing PhotonLib","url":"https://docs.photonvision.org/en/latest/docs/programming/photonlib/adding-vendordep.html"}]} title="Resources" section="frc" />

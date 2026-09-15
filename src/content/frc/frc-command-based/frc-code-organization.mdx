@@ -49,6 +49,7 @@ src/main/java/frc/robot/
 │   └── vision/
 │       ├── Vision.java
 │       ├── VisionIO.java
+│       ├── VisionIOPhotonVision.java
 │       └── VisionIOLimelight.java
 ├── commands/                  // Multi-subsystem commands only
 │   ├── DriveCommands.java
@@ -122,7 +123,7 @@ Not `Constants.IntakeConstants.INTAKE_PIVOT_MOTOR_PORT` on every line. The stati
     ["Fields", "Plain names, no prefix", "<code>pivot</code>, <code>conveyor</code>, <code>rightShooter</code>"],
     ["Subsystem classes", "The mechanism name", "<code>Intake</code>, <code>Shooter</code>, <code>Drive</code>"],
     ["IO interfaces", "Subsystem + <code>IO</code>", "<code>ModuleIO</code>, <code>GyroIO</code>, <code>VisionIO</code>"],
-    ["IO implementations", "Interface + hardware", "<code>ModuleIOTalonFX</code>, <code>VisionIOLimelight</code>"],
+    ["IO implementations", "Interface + hardware", "<code>ModuleIOTalonFX</code>, <code>VisionIOPhotonVision</code>, <code>VisionIOLimelight</code>"],
     ["Command factories", "Verb + <code>Command</code>", "<code>deployAndIntakeCommand()</code>"],
     ["Log keys", "Slash-separated paths", "<code>\"Intake/Position\"</code>, <code>\"Shooter/leftVelocity\"</code>"],
     ["Indentation", "2 spaces", "&mdash;"]

@@ -100,7 +100,7 @@ There are several methods for estimating robot pose in FRC:
 
 
 
-**Vision-Based (Camera-Based):** Uses cameras to observe field features (AprilTags, field elements, game pieces) and calculate pose from these observations. Vision provides absolute positioning (no drift) but requires visibility of field features. Vision updates are typically slower than odometry and depend on camera field of view and lighting conditions.
+**Vision-Based (Camera-Based):** Uses cameras to observe field features (AprilTags, field elements, game pieces) and calculate pose from these observations. A correct tag solve is an absolute field measurement, but it is not guaranteed: tags can be blocked, poorly calibrated, or ambiguous. Vision updates are typically slower than odometry.
 
 
 

@@ -20,6 +20,7 @@
     "preview": "astro preview",
     "check": "astro check",
     "test:physics": "vitest run",
+    "test:frc-vision": "vitest run src/lib/frc-vision && node tools/frc-vision-compile/compile.mjs",
     "migrate": "node scripts/migrate-json-to-mdx.mjs",
     "seed:resources": "node scripts/seed-resources-from-mdx.mjs"
   },

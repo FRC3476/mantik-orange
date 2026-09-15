@@ -1,0 +1,61 @@
+---
+import { withBasePath } from '@/lib/withBase';
+
+interface PathCard {
+  value: 'photonvision' | 'limelight';
+  label: string;
+  description: string;
+  href: string;
+}
+
+const cards: PathCard[] = [
+  {
+    value: 'photonvision',
+    label: 'PhotonVision',
+    description:
+      'Open-source software on a coprocessor. Continue to PhotonVision setup, then the Vision Subsystem lesson.',
+    href: withBasePath('/frc/photonvision'),
+  },
+  {
+    value: 'limelight',
+    label: 'Limelight',
+    description:
+      'Limelight OS on a Limelight camera. Continue to Limelight setup, then the Vision Subsystem lesson.',
+    href: withBasePath('/frc/limelight'),
+  },
+];
+---
+
+<div class="link-grid" data-vision-path-chooser>
+  {cards.map((card) => (
+    <a
+      href={card.href}
+      class="link-grid-button"
+      data-vision-path={card.value}
+    >
+      <span class="link-grid-accent" aria-hidden="true"></span>
+      <span class="link-grid-body">
+        <span class="link-grid-label">{card.label}</span>
+        <span class="link-grid-description">{card.description}</span>
+      </span>
+    </a>
+  ))}
+</div>
+
+<script>
+  import { applyExplicitVisionPath } from '@/lib/frc-vision/pathClient';
+
+  function initChooser() {
+    document.querySelectorAll<HTMLAnchorElement>('[data-vision-path-chooser] a[data-vision-path]').forEach((link) => {
+      if (link.dataset.initialized) return;
+      link.dataset.initialized = 'true';
+      link.addEventListener('click', () => {
+        const value = link.dataset.visionPath;
+        if (value) applyExplicitVisionPath(value, link);
+      });
+    });
+  }
+
+  initChooser();
+  document.addEventListener('astro:page-load', initChooser);
+</script>

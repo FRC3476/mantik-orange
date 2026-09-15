@@ -1,5 +1,12 @@
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
 
+/** Prefix a root-relative path with the site base (`/mantik-orange` in production). */
+export function withBasePath(path: string): string {
+  if (!path.startsWith('/')) return path;
+  if (!BASE) return path;
+  return `${BASE}${path}`;
+}
+
 /**
  * Rewrites href="/..." and src="/..." attributes inside a raw HTML string
  * so they include the site's base path (e.g. "/mantik-orange" on GitHub

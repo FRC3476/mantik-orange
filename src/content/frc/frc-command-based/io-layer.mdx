@@ -26,7 +26,7 @@ The **IO layer** puts one interface between the subsystem and the hardware. The 
 <RulesBox title="Three pieces, every time">
 
 - **`XxxIO`** — an interface holding an inputs class and a few methods.
-- **`XxxIOSomething`** — one implementation per hardware or environment: `ModuleIOTalonFX`, `ModuleIOSim`, `VisionIOLimelight`.
+- **`XxxIOSomething`** — one implementation per hardware or environment: `ModuleIOTalonFX`, `ModuleIOSim`, `VisionIOPhotonVision`, `VisionIOLimelight`.
 - **`Xxx`** — the subsystem, which holds an `XxxIO` and never names a motor class.
 
 </RulesBox>

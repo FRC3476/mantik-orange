@@ -1,0 +1,937 @@
+---
+title: Shooter Shot Table
+lessonId: shooter-shot-table
+section: frc
+group: frc-examples
+groupLabel: Mechanism Examples
+groupOrder: 7
+order: 3
+difficulty: intermediate
+duration: 45 min
+description: Aim a hooded Talon FX shooter from field pose. Horizontal distance to the alliance goal selects measured flywheel RPS and hood degrees from a paired interpolating table.
+---
+
+### Overview
+
+A tuned flywheel holds a speed. A tuned hood holds an angle. Distance still changes both targets.
+
+This lesson stores **measured** pairs — distance, flywheel speed, hood angle — and looks them up from the robot's field pose. It does not retune PID.
+
+All motors in the example are **Talon FX** (Phoenix 6): flywheel, hood, and feeder. The table and command are hardware-independent. Motor configuration excerpts are integration snippets, not a complete robot.
+
+API versions used for the Java in this lesson: **WPILib 2026.2.1** (javadoc 2026.2.2) and **Phoenix 6 26.3.0**.
+
+### Prerequisites
+
+Closed loops must already work, and odometry must already produce a field pose.
+
+<LinkGrid
+  title="Read first"
+  section="frc"
+  links={[
+    { "label": "Shooter Example", "id": "shooter-example" },
+    { "label": "PID Tuning Practice - Arm", "id": "pid-tuning-practice-arm" },
+    { "label": "Pose Estimation Intro", "id": "pose-estimation-intro" },
+    { "label": "Commands", "id": "commands" },
+    { "label": "Supplier", "url": "/java/java-fn-supplier" }
+  ]}
+/>
+
+The elevator example shows position control. Its gravity model is not a hood recipe.
+
+### What this shot is
+
+The table is for a **stationary robot already pointed at a fixed target**.
+
+Recomputing distance while the robot drives can spin the flywheel up for the next shot. It does not compensate for chassis speed, release delay, or flight time. Heading stays with the driver or a drivetrain command you already have.
+
+Automatic feeding requires all of the following at once:
+
+- a pose your estimator treats as trustworthy
+- a selected alliance goal
+- a calibrated hood
+- the robot stationary and aligned
+- a distance inside the measured table
+- both mechanisms settled
+- an explicit operator fire request
+
+`Pose2d` stores x, y, and heading only. It has no confidence field and no chassis velocity. This lesson does not invent a WPILib `isPoseValid()` method. Those checks come from **your** estimator, drivetrain, and controller, passed in as suppliers.
+
+The table is calibrated for one mechanism, one game piece, one target height, and one tested approach region. Target height is part of that calibration, not a second interpolation axis.
+
+<ContentTable
+  title="Units used everywhere below"
+  headers={["Quantity", "Name in code", "Meaning"]}
+  rows={[
+    ["Distance", "<code>distanceM</code>", "Horizontal meters, field frame"],
+    ["Flywheel speed", "<code>flywheelRps</code>", "Flywheel <em>output</em> rotations per second"],
+    ["Hood angle", "<code>hoodDeg</code>", "Measured hood mechanism degrees"],
+    ["Display only", "RPM", "RPM = RPS × 60"]
+  ]}
+/>
+
+G is motor rotations per mechanism rotation. The flywheel and hood each have their own G. Choose motor sign so increasing feedback is positive mechanism motion.
+
+### Distance from field pose
+
+Use one **blue-origin** field frame for pose and goals. +X points away from the blue alliance wall. Select the red or blue aim point from the current alliance. Do not also flip the pose.
+
+Seasons mirror or rotate their fields. There is no one flip formula that always works. See [WPILib coordinate systems](https://docs.wpilib.org/en/stable/docs/software/basic-programming/coordinate-system.html).
+
+```java norun
+Pose2d pose = poseSupplier.get();
+Optional<Translation2d> goal = goalSupplier.get();
+if (goal.isEmpty()) {
+    // No alliance/target this loop — do not feed.
+    return;
+}
+double distanceM = pose.getTranslation().getDistance(goal.get());
+```
+
+Read pose and the selected goal **once per command cycle**. Reject missing or non-finite values before looking up setpoints.
+
+**Goal** means the scoring aim point projected onto the floor. An AprilTag pose is not always that point.
+
+The numbers below are **fictional**. Replace them from the selected season's field geometry.
+
+```java norun
+package frc.robot.constants;
+
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import java.util.Optional;
+
+public final class FieldConstants {
+    private FieldConstants() {}
+
+    // Fictional placeholders — not a real field's scoring locations.
+    public static final Translation2d kBlueGoal = new Translation2d(0.30, 5.50);
+    public static final Translation2d kRedGoal = new Translation2d(16.50, 5.50);
+
+    /** Alliance can change after boot. Call this every loop, not once in a constructor. */
+    public static Optional<Translation2d> getGoal() {
+        Optional<Alliance> alliance = DriverStation.getAlliance();
+        if (alliance.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(alliance.get() == Alliance.Red ? kRedGoal : kBlueGoal);
+    }
+}
+```
+
+The core table measures from the **drivetrain pose origin**. Tape, logs, and lookup must use that same point — not the bumper face or a camera lens.
+
+If the shooter sits far from that origin, rotate the robot-relative offset into the field frame, then add it:
+
+```java norun
+Translation2d muzzle = pose.transformBy(robotToShooter).getTranslation();
+double distanceM = muzzle.getDistance(goal.get());
+```
+
+Calibrate and query with the same convention. Do not silently switch the core table to muzzle distance.
+
+Keep pose estimation and alliance selection **out of** `ShotTable` and the motor subsystems. The command consumes live suppliers.
+
+### Why a measured table
+
+Air drag, wheel compression, and hood geometry are not a clean formula. Park at a known distance, adjust speed and hood together until repeated shots score, and store that pair.
+
+Linear interpolation estimates the values **between** stored rows. It matches the stored pair at an exact key. It is not a physics proof that the midpoint will score. A fitted curve is a different model; it also needs shots to validate it. Neither should be trusted past the distances you tested.
+
+<ContentTable
+  title="What the WPILib map does versus what this lesson allows"
+  headers={["Input", "<code>InterpolatingDoubleTreeMap.get</code>", "<code>ShotTable.lookup</code>"]}
+  rows={[
+    ["Exact stored distance", "Stored value", "Stored pair"],
+    ["Between two keys", "Linear interpolation", "Same interpolation, as one pair"],
+    ["Below min or above max", "Nearest endpoint", "Empty — not a supported shot"],
+    ["Negative, NaN, or infinity", "Not a valid shot input", "Empty"],
+    ["Empty map", "<code>null</code>", "Construction rejected"]
+  ]}
+/>
+
+Endpoint clamping on the raw map bounds an output. It does not mean that distance will score. [WPILib `InterpolatingTreeMap`](https://github.wpilib.org/allwpilib/docs/release/java/src-html/edu/wpi/first/math/interpolation/InterpolatingTreeMap.html)
+
+### Measuring pairs
+
+<StepsBox title="Build the table on the real robot">
+
+1. Verify flywheel velocity, hood position, hood zero, and hood limits on their own. Do not start a table while either loop is still drifting.
+2. Park, align, and measure distance from the drivetrain origin — tape that matches logged pose, or logged pose itself.
+3. Adjust flywheel RPS and hood degrees **together**. Record a row only after repeated successful shots at that distance.
+4. Write down measured speed, angle, distance, outcome, and the setup that mattered (wheels, compression, battery). Keep one consistent shot trajectory. Do not mix unrelated launch styles in one table.
+5. Fill the intended range. Then test **between** rows. A good endpoint pair does not prove the interval.
+6. Recalibrate after wheel, compression, gearing, hood, game-piece, or target-height changes.
+
+</StepsBox>
+
+### Interpolation, arithmetic only
+
+Two stored rows:
+
+- 2.00 m → 50.0 RPS, 40.0°
+- 4.00 m → 70.0 RPS, 60.0°
+
+At 3.00 m the fraction along the segment is (3.00 − 2.00) / (4.00 − 2.00) = 0.5.
+
+- Flywheel: 50.0 + 0.5 × (70.0 − 50.0) = **60.0 RPS**
+- Hood: 40.0 + 0.5 × (60.0 − 40.0) = **50.0°**
+
+Both outputs come from the **same two rows**. Do not keep two independent distance lists that can drift apart.
+
+The walkthrough table below is fictional and internally consistent. It is not a recommended team table.
+
+### Paired `ShotTable`
+
+Build both maps once from the same rows. Reject bad calibration data in the constructor. After construction the table is immutable.
+
+```java norun
+package frc.robot.util;
+
+public record ShotSample(double distanceM, double flywheelRps, double hoodDeg) {}
+```
+
+```java norun
+package frc.robot.util;
+
+public record ShotSetpoint(double flywheelRps, double hoodDeg) {}
+```
+
+```java norun
+package frc.robot.util;
+
+import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
+import java.util.List;
+import java.util.Optional;
+
+public final class ShotTable {
+    private final InterpolatingDoubleTreeMap m_flywheelRps = new InterpolatingDoubleTreeMap();
+    private final InterpolatingDoubleTreeMap m_hoodDeg = new InterpolatingDoubleTreeMap();
+    private final double m_minDistanceM;
+    private final double m_maxDistanceM;
+
+    public ShotTable(List<ShotSample> samples, double minHoodDeg, double maxHoodDeg) {
+        if (samples == null || samples.size() < 2) {
+            throw new IllegalArgumentException("ShotTable needs at least two measured rows.");
+        }
+        if (!Double.isFinite(minHoodDeg) || !Double.isFinite(maxHoodDeg) || minHoodDeg >= maxHoodDeg) {
+            throw new IllegalArgumentException("Hood limits must be finite, with min < max.");
+        }
+
+        double previousDistance = Double.NEGATIVE_INFINITY;
+        for (ShotSample sample : samples) {
+            if (sample == null) {
+                throw new IllegalArgumentException("Shot sample is null.");
+            }
+            double distanceM = sample.distanceM();
+            double flywheelRps = sample.flywheelRps();
+            double hoodDeg = sample.hoodDeg();
+            if (!Double.isFinite(distanceM) || distanceM < 0.0) {
+                throw new IllegalArgumentException("Distance must be finite and >= 0 m.");
+            }
+            if (!(distanceM > previousDistance)) {
+                throw new IllegalArgumentException(
+                        "Distances must be strictly increasing (duplicates are rejected).");
+            }
+            if (!Double.isFinite(flywheelRps) || flywheelRps <= 0.0) {
+                throw new IllegalArgumentException("Flywheel RPS must be finite and > 0.");
+            }
+            if (!Double.isFinite(hoodDeg) || hoodDeg < minHoodDeg || hoodDeg > maxHoodDeg) {
+                throw new IllegalArgumentException("Hood angle is outside calibrated limits.");
+            }
+            m_flywheelRps.put(distanceM, flywheelRps);
+            m_hoodDeg.put(distanceM, hoodDeg);
+            previousDistance = distanceM;
+        }
+
+        m_minDistanceM = samples.get(0).distanceM();
+        m_maxDistanceM = samples.get(samples.size() - 1).distanceM();
+    }
+
+    public double minDistanceM() {
+        return m_minDistanceM;
+    }
+
+    public double maxDistanceM() {
+        return m_maxDistanceM;
+    }
+
+    /**
+     * Empty when distance is non-finite, negative, or outside the inclusive measured interval.
+     * Present values are interpolated only between stored keys.
+     */
+    public Optional<ShotSetpoint> lookup(double distanceM) {
+        if (!Double.isFinite(distanceM) || distanceM < 0.0) {
+            return Optional.empty();
+        }
+        if (distanceM < m_minDistanceM || distanceM > m_maxDistanceM) {
+            return Optional.empty();
+        }
+        Double flywheelRps = m_flywheelRps.get(distanceM);
+        Double hoodDeg = m_hoodDeg.get(distanceM);
+        if (flywheelRps == null || hoodDeg == null) {
+            return Optional.empty();
+        }
+        return Optional.of(new ShotSetpoint(flywheelRps, hoodDeg));
+    }
+
+    /** Fictional walkthrough data — replace with your measurements. */
+    public static ShotTable exampleTable() {
+        return new ShotTable(
+                List.of(
+                        new ShotSample(2.00, 50.0, 40.0),
+                        new ShotSample(4.00, 70.0, 60.0),
+                        new ShotSample(5.50, 82.0, 66.0)),
+                20.0,
+                70.0);
+    }
+}
+```
+
+`lookup` is empty at 1.50 m and at 6.00 m even though the raw WPILib map would return an endpoint.
+
+### Talon FX units
+
+This baseline uses **integrated rotor feedback** with `RotorToSensorRatio = 1` and `SensorToMechanismRatio = 1`. Convert in subsystem methods. If a robot already configures mechanism units on the Talon, do not apply G a second time, and keep the units the existing gains were tuned in. [Phoenix setpoint units](https://v6.docs.ctr-electronics.com/en/stable/docs/migration/migration-guide/closed-loop-guide.html)
+
+<ContentTable
+  title="Rotor conversions (ratios = 1)"
+  headers={["From", "To", "Formula"]}
+  rows={[
+    ["Flywheel output RPS", "Talon velocity request", "<code>flywheelRps × flywheelG</code> rotor RPS"],
+    ["Talon rotor velocity", "Flywheel output RPS", "<code>rotorRps / flywheelG</code>"],
+    ["Hood degrees", "Talon position request", "<code>(hoodDeg − zeroDeg) × hoodG / 360</code> rotor rotations"],
+    ["Talon rotor position", "Hood degrees", "<code>zeroDeg + motorRot × 360 / hoodG</code>"],
+    ["Talon rotor velocity", "Hood deg/s", "<code>rotorRps × 360 / hoodG</code>"]
+  ]}
+/>
+
+`zeroDeg` is the hood angle at which the motor encoder was set to zero. These hood formulas assume a constant gear ratio. A linkage needs its own measured angle conversion.
+
+Public methods:
+
+- Shooter: `setFlywheelRps`, `getFlywheelRps`, `stopFlywheel`, `isHealthy`
+- Hood: `setAngleDeg`, `getAngleDeg`, `getAngularVelocityDegPerSec`, `holdCurrentAngle`, `applyFaultPolicy`, `isCalibrated`, `isHealthy`
+- Feeder: `setDutyCycle`, `stop`
+- Drive (read only): `getPose`, `getChassisSpeeds`
+
+`ShotTable` stays out of those classes. The command passes selected values in.
+
+### Hood integration (already tuned)
+
+This is not a second position-PID tutorial. The hood must already have:
+
+- A calibrated zero from homing or a correctly configured absolute sensor. Startup encoder counts are not a zero.
+- Explicit min/max angle, correct direction, current limit, and Motion Magic cruise/accel in **rotor** rotations/second and rotations/second squared under the baseline ratio settings.
+- Table rows inside that physical range. A rejected or saturated command is not ready to shoot.
+- Readiness against **measured** angle, not the commanded position and not Motion Magic's in-flight profile target.
+
+Brake mode does not hold a loaded hood when the robot is disabled. While enabled, `holdCurrentAngle()` re-commands the **current measured** angle.
+
+Do not enable onboard `Arm_Cosine` against unscaled rotor rotations. If the hood needs an angle-dependent gravity term with this baseline, apply it on the request using the **calibrated hood angle**. An existing robot that already uses onboard `Arm_Cosine` needs mechanism-angle feedback, ratios, and zero configured for that mode, and must not also apply the rotor G conversion below. [Phoenix gravity feedforward](https://v6.docs.ctr-electronics.com/en/stable/docs/api-reference/device-specific/talonfx/closed-loop-requests.html#gravity-feedforward)
+
+CAN IDs, G, `zeroDeg`, Slot0, and Motion Magic numbers are **robot-specific**. Copy your tuned config. The snippet shows the conversion contract.
+
+```java norun
+package frc.robot.subsystems;
+
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.MotionMagicVoltage;
+import com.ctre.phoenix6.controls.NeutralOut;
+import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.signals.NeutralModeValue;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
+
+/**
+ * Integration snippet — not a complete deployable hood.
+ * Replace CAN ID, G, zero, limits, Slot0, and Motion Magic with your tuned mechanism.
+ */
+public class Hood extends SubsystemBase {
+    // Robot-specific placeholders.
+    private static final int kCanId = 8;
+    private static final double kHoodG = 20.0;
+    private static final double kZeroDeg = 15.0;
+    private static final double kMinHoodDeg = 20.0;
+    private static final double kMaxHoodDeg = 70.0;
+    private static final double kGVolts = 0.0; // Your angle-dependent hold term, or 0.
+
+    private final TalonFX m_motor = new TalonFX(kCanId);
+    private final MotionMagicVoltage m_request = new MotionMagicVoltage(0.0).withSlot(0);
+    private final NeutralOut m_neutral = new NeutralOut();
+    private boolean m_calibrated = false;
+
+    public Hood() {
+        TalonFXConfiguration config = new TalonFXConfiguration();
+        config.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+        config.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
+        config.Feedback.RotorToSensorRatio = 1.0;
+        config.Feedback.SensorToMechanismRatio = 1.0;
+        config.CurrentLimits.StatorCurrentLimitEnable = true;
+        config.CurrentLimits.StatorCurrentLimit = 40.0;
+        // Rotor units because ratios are 1. Replace with your profile.
+        config.MotionMagic.MotionMagicCruiseVelocity = 40.0;
+        config.MotionMagic.MotionMagicAcceleration = 80.0;
+        config.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
+        config.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
+        config.SoftwareLimitSwitch.ReverseSoftLimitThreshold = hoodDegToMotorRot(kMinHoodDeg);
+        config.SoftwareLimitSwitch.ForwardSoftLimitThreshold = hoodDegToMotorRot(kMaxHoodDeg);
+        // Slot0: copy your already tuned kP/kD/kS. Do not set GravityType = Arm_Cosine here.
+        m_motor.getConfigurator().apply(config);
+    }
+
+    /** Call after homing or absolute-sensor zero is verified. */
+    public void markCalibrated() {
+        m_calibrated = true;
+    }
+
+    public boolean isCalibrated() {
+        return m_calibrated;
+    }
+
+    public boolean isHealthy() {
+        return m_motor.isConnected()
+                && m_motor.getRotorPosition().getStatus().isOK()
+                && m_motor.getRotorVelocity().getStatus().isOK()
+                && !m_motor.getFault_Hardware().getValue();
+    }
+
+    public double getAngleDeg() {
+        return kZeroDeg + m_motor.getRotorPosition().getValueAsDouble() * 360.0 / kHoodG;
+    }
+
+    public double getAngularVelocityDegPerSec() {
+        return m_motor.getRotorVelocity().getValueAsDouble() * 360.0 / kHoodG;
+    }
+
+    /** @return false if the request is rejected (caller must not treat as ready). */
+    public boolean setAngleDeg(double hoodDeg) {
+        if (!isCalibrated() || !isHealthy()) {
+            applyFaultPolicy();
+            return false;
+        }
+        if (!Double.isFinite(hoodDeg) || hoodDeg < kMinHoodDeg || hoodDeg > kMaxHoodDeg) {
+            holdCurrentAngle();
+            return false;
+        }
+        double gravityFfVolts = kGVolts * Math.cos(Math.toRadians(hoodDeg));
+        m_motor.setControl(
+                m_request.withPosition(hoodDegToMotorRot(hoodDeg)).withFeedForward(gravityFfVolts));
+        return true;
+    }
+
+    public void holdCurrentAngle() {
+        if (!isCalibrated() || !isHealthy()) {
+            applyFaultPolicy();
+            return;
+        }
+        double currentDeg = getAngleDeg();
+        if (!Double.isFinite(currentDeg)) {
+            applyFaultPolicy();
+            return;
+        }
+        double gravityFfVolts = kGVolts * Math.cos(Math.toRadians(currentDeg));
+        m_motor.setControl(
+                m_request.withPosition(hoodDegToMotorRot(currentDeg)).withFeedForward(gravityFfVolts));
+    }
+
+    public void applyFaultPolicy() {
+        m_motor.setControl(m_neutral);
+    }
+
+    private static double hoodDegToMotorRot(double hoodDeg) {
+        return (hoodDeg - kZeroDeg) * kHoodG / 360.0;
+    }
+}
+```
+
+A servo hood uses the same table and a PWM `set(angle)` instead of Motion Magic. The command contract does not change.
+
+### Flywheel and feeder integration
+
+```java norun
+package frc.robot.subsystems;
+
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.NeutralOut;
+import com.ctre.phoenix6.controls.VelocityVoltage;
+import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.NeutralModeValue;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
+
+/** Integration snippet — copy your tuned Slot0. setFlywheelRps uses output RPS, not RPM. */
+public class Shooter extends SubsystemBase {
+    private static final int kCanId = 7;
+    private static final double kFlywheelG = 1.5;
+
+    private final TalonFX m_motor = new TalonFX(kCanId);
+    private final VelocityVoltage m_request = new VelocityVoltage(0.0).withSlot(0);
+    private final NeutralOut m_neutral = new NeutralOut();
+
+    public Shooter() {
+        TalonFXConfiguration config = new TalonFXConfiguration();
+        config.MotorOutput.NeutralMode = NeutralModeValue.Coast;
+        config.Feedback.RotorToSensorRatio = 1.0;
+        config.Feedback.SensorToMechanismRatio = 1.0;
+        m_motor.getConfigurator().apply(config);
+    }
+
+    public void setFlywheelRps(double flywheelRps) {
+        if (!Double.isFinite(flywheelRps) || flywheelRps <= 0.0) {
+            stopFlywheel();
+            return;
+        }
+        m_motor.setControl(m_request.withVelocity(flywheelRps * kFlywheelG));
+    }
+
+    public double getFlywheelRps() {
+        return m_motor.getRotorVelocity().getValueAsDouble() / kFlywheelG;
+    }
+
+    public void stopFlywheel() {
+        m_motor.setControl(m_neutral);
+    }
+
+    public boolean isHealthy() {
+        return m_motor.isConnected()
+                && m_motor.getRotorVelocity().getStatus().isOK()
+                && !m_motor.getFault_Hardware().getValue();
+    }
+}
+```
+
+```java norun
+package frc.robot.subsystems;
+
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.DutyCycleOut;
+import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.NeutralModeValue;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
+
+/** Integration snippet. stop() must write zero every time feed should be off. */
+public class Feeder extends SubsystemBase {
+    private static final int kCanId = 9;
+
+    private final TalonFX m_motor = new TalonFX(kCanId);
+    private final DutyCycleOut m_request = new DutyCycleOut(0.0);
+
+    public Feeder() {
+        TalonFXConfiguration config = new TalonFXConfiguration();
+        config.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+        m_motor.getConfigurator().apply(config);
+    }
+
+    public void setDutyCycle(double output) {
+        m_motor.setControl(m_request.withOutput(output));
+    }
+
+    public void stop() {
+        m_motor.setControl(m_request.withOutput(0.0));
+    }
+}
+```
+
+If your robot uses separate transfer and conveyor motors, require **both**, and stop both on every feed-off path.
+
+### Aim command
+
+One class coordinates shooter, hood, and feeder. Drive is read through suppliers and is **not** required, so joystick drive can keep running.
+
+Configure motors and build the table outside `execute()`. Sending a new velocity or position target every 20 ms is normal. Re-applying `TalonFXConfiguration` every 20 ms is not.
+
+Readiness is **not** "at or above speed." Excess speed changes the shot. Use absolute error, plus hood velocity below a named settling limit, plus the supplied pose/stationary/aligned flags.
+
+Conditions must hold for a named dwell (`kSettleSeconds`) before feeding. Any false condition clears readiness immediately. Reset the dwell on a **goal change** or a **material setpoint change**, not on every millimeter of pose noise.
+
+This feed gate stops requesting feed when speed drops after a shot. It cannot recall a game piece already committed to the flywheel. Beam-break sequencing is separate work.
+
+```java norun
+package frc.robot.commands;
+
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.Command;
+import frc.robot.subsystems.Feeder;
+import frc.robot.subsystems.Hood;
+import frc.robot.subsystems.Shooter;
+import frc.robot.util.ShotSetpoint;
+import frc.robot.util.ShotTable;
+import java.util.Optional;
+import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
+
+public class AimFromTableCommand extends Command {
+    private static final double kFlywheelTolRps = 1.0;
+    private static final double kHoodTolDeg = 1.5;
+    private static final double kHoodSettleDegPerSec = 8.0;
+    private static final double kSettleSeconds = 0.15;
+    private static final double kMaxStationaryMps = 0.15;
+    private static final double kMaxStationaryOmegaRadPerSec = 0.20;
+    private static final double kSetpointRpsReset = 0.50;
+    private static final double kSetpointHoodResetDeg = 0.75;
+    private static final double kFeedDutyCycle = 1.0;
+
+    private final ShotTable m_table;
+    private final Shooter m_shooter;
+    private final Hood m_hood;
+    private final Feeder m_feeder;
+    private final Supplier<Pose2d> m_pose;
+    private final Supplier<Optional<Translation2d>> m_goal;
+    private final Supplier<ChassisSpeeds> m_chassisSpeeds;
+    private final BooleanSupplier m_poseTrusted;
+    private final BooleanSupplier m_aligned;
+    private final BooleanSupplier m_fireRequested;
+
+    private final Timer m_settleTimer = new Timer();
+    private Optional<Translation2d> m_lastGoal = Optional.empty();
+    private Optional<ShotSetpoint> m_lastSetpoint = Optional.empty();
+    private boolean m_ready;
+    private boolean m_feedEnabled;
+
+    public AimFromTableCommand(
+            ShotTable table,
+            Shooter shooter,
+            Hood hood,
+            Feeder feeder,
+            Supplier<Pose2d> pose,
+            Supplier<Optional<Translation2d>> goal,
+            Supplier<ChassisSpeeds> chassisSpeeds,
+            BooleanSupplier poseTrusted,
+            BooleanSupplier aligned,
+            BooleanSupplier fireRequested) {
+        m_table = table;
+        m_shooter = shooter;
+        m_hood = hood;
+        m_feeder = feeder;
+        m_pose = pose;
+        m_goal = goal;
+        m_chassisSpeeds = chassisSpeeds;
+        m_poseTrusted = poseTrusted;
+        m_aligned = aligned;
+        m_fireRequested = fireRequested;
+        addRequirements(shooter, hood, feeder);
+    }
+
+    @Override
+    public void initialize() {
+        m_feeder.stop();
+        m_ready = false;
+        m_feedEnabled = false;
+        m_lastGoal = Optional.empty();
+        m_lastSetpoint = Optional.empty();
+        m_settleTimer.restart();
+    }
+
+    @Override
+    public void execute() {
+        Pose2d pose = m_pose.get();
+        Optional<Translation2d> goal = m_goal.get();
+        ChassisSpeeds speeds = m_chassisSpeeds.get();
+
+        boolean poseOk = isFinitePose(pose) && m_poseTrusted.getAsBoolean();
+        boolean goalOk = goal.isPresent() && isFiniteTranslation(goal.get());
+        boolean stationary = isStationary(speeds);
+        boolean aligned = m_aligned.getAsBoolean();
+
+        Optional<ShotSetpoint> shot = Optional.empty();
+        double distanceM = Double.NaN;
+        if (poseOk && goalOk) {
+            distanceM = pose.getTranslation().getDistance(goal.get());
+            shot = m_table.lookup(distanceM);
+        }
+
+        if (goalChanged(goal) || setpointChanged(shot)) {
+            m_settleTimer.restart();
+            m_ready = false;
+        }
+        m_lastGoal = goal.map(t -> new Translation2d(t.getX(), t.getY()));
+        m_lastSetpoint = shot;
+
+        boolean mechanismsOk = false;
+        if (shot.isPresent()) {
+            ShotSetpoint sp = shot.get();
+            boolean hoodAccepted = m_hood.setAngleDeg(sp.hoodDeg());
+            if (hoodAccepted) {
+                m_shooter.setFlywheelRps(sp.flywheelRps());
+                mechanismsOk = mechanismsSettled(sp);
+            } else {
+                invalidateAndSafe();
+            }
+        } else {
+            invalidateAndSafe();
+        }
+
+        boolean conditions =
+                shot.isPresent()
+                        && poseOk
+                        && goalOk
+                        && stationary
+                        && aligned
+                        && m_hood.isCalibrated()
+                        && m_hood.isHealthy()
+                        && m_shooter.isHealthy()
+                        && mechanismsOk;
+
+        if (!conditions) {
+            m_ready = false;
+            m_settleTimer.restart();
+            m_feeder.stop();
+            m_feedEnabled = false;
+        } else if (m_settleTimer.hasElapsed(kSettleSeconds)) {
+            m_ready = true;
+        } else {
+            m_ready = false;
+            m_feeder.stop();
+            m_feedEnabled = false;
+        }
+
+        boolean fire = m_fireRequested.getAsBoolean();
+        m_feedEnabled = m_ready && fire;
+        if (m_feedEnabled) {
+            m_feeder.setDutyCycle(kFeedDutyCycle);
+        } else {
+            m_feeder.stop();
+        }
+
+        log(distanceM, goalOk, shot, poseOk, stationary, aligned, fire);
+    }
+
+    @Override
+    public void end(boolean interrupted) {
+        m_feeder.stop();
+        m_shooter.stopFlywheel();
+        if (m_hood.isCalibrated() && m_hood.isHealthy()) {
+            m_hood.holdCurrentAngle();
+        } else {
+            m_hood.applyFaultPolicy();
+        }
+        m_ready = false;
+        m_feedEnabled = false;
+        m_lastGoal = Optional.empty();
+        m_lastSetpoint = Optional.empty();
+        m_settleTimer.stop();
+    }
+
+    @Override
+    public boolean isFinished() {
+        return false;
+    }
+
+    private void invalidateAndSafe() {
+        m_shooter.stopFlywheel();
+        if (m_hood.isCalibrated() && m_hood.isHealthy()) {
+            m_hood.holdCurrentAngle();
+        } else {
+            m_hood.applyFaultPolicy();
+        }
+        m_lastSetpoint = Optional.empty();
+    }
+
+    private boolean mechanismsSettled(ShotSetpoint sp) {
+        if (sp.flywheelRps() <= 0.0) {
+            return false;
+        }
+        double speedError = Math.abs(m_shooter.getFlywheelRps() - sp.flywheelRps());
+        double hoodError = Math.abs(m_hood.getAngleDeg() - sp.hoodDeg());
+        double hoodVel = Math.abs(m_hood.getAngularVelocityDegPerSec());
+        return Double.isFinite(speedError)
+                && Double.isFinite(hoodError)
+                && Double.isFinite(hoodVel)
+                && speedError <= kFlywheelTolRps
+                && hoodError <= kHoodTolDeg
+                && hoodVel <= kHoodSettleDegPerSec;
+    }
+
+    private boolean goalChanged(Optional<Translation2d> goal) {
+        if (goal.isEmpty() || m_lastGoal.isEmpty()) {
+            return goal.isPresent() != m_lastGoal.isPresent();
+        }
+        return !goal.get().equals(m_lastGoal.get());
+    }
+
+    private boolean setpointChanged(Optional<ShotSetpoint> shot) {
+        if (shot.isEmpty() || m_lastSetpoint.isEmpty()) {
+            return shot.isPresent() != m_lastSetpoint.isPresent();
+        }
+        ShotSetpoint now = shot.get();
+        ShotSetpoint last = m_lastSetpoint.get();
+        return Math.abs(now.flywheelRps() - last.flywheelRps()) > kSetpointRpsReset
+                || Math.abs(now.hoodDeg() - last.hoodDeg()) > kSetpointHoodResetDeg;
+    }
+
+    private static boolean isStationary(ChassisSpeeds speeds) {
+        if (speeds == null) {
+            return false;
+        }
+        double translationMps = Math.hypot(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond);
+        return Double.isFinite(translationMps)
+                && Double.isFinite(speeds.omegaRadiansPerSecond)
+                && translationMps < kMaxStationaryMps
+                && Math.abs(speeds.omegaRadiansPerSecond) < kMaxStationaryOmegaRadPerSec;
+    }
+
+    private static boolean isFinitePose(Pose2d pose) {
+        return pose != null
+                && isFiniteTranslation(pose.getTranslation())
+                && Double.isFinite(pose.getRotation().getRadians());
+    }
+
+    private static boolean isFiniteTranslation(Translation2d t) {
+        return t != null && Double.isFinite(t.getX()) && Double.isFinite(t.getY());
+    }
+
+    private void log(
+            double distanceM,
+            boolean goalOk,
+            Optional<ShotSetpoint> shot,
+            boolean poseOk,
+            boolean stationary,
+            boolean aligned,
+            boolean fire) {
+        SmartDashboard.putBoolean("AimFromTable/goalValid", goalOk);
+        SmartDashboard.putBoolean("AimFromTable/poseTrusted", poseOk);
+        SmartDashboard.putBoolean("AimFromTable/stationary", stationary);
+        SmartDashboard.putBoolean("AimFromTable/aligned", aligned);
+        SmartDashboard.putBoolean("AimFromTable/tableHit", shot.isPresent());
+        SmartDashboard.putBoolean("AimFromTable/hoodCalibrated", m_hood.isCalibrated());
+        SmartDashboard.putBoolean("AimFromTable/ready", m_ready);
+        SmartDashboard.putBoolean("AimFromTable/fireRequested", fire);
+        SmartDashboard.putBoolean("AimFromTable/feedEnabled", m_feedEnabled);
+        SmartDashboard.putNumber("AimFromTable/distanceM", distanceM);
+        SmartDashboard.putNumber(
+                "AimFromTable/requestedRps", shot.map(ShotSetpoint::flywheelRps).orElse(Double.NaN));
+        SmartDashboard.putNumber("AimFromTable/measuredRps", m_shooter.getFlywheelRps());
+        SmartDashboard.putNumber(
+                "AimFromTable/requestedHoodDeg", shot.map(ShotSetpoint::hoodDeg).orElse(Double.NaN));
+        SmartDashboard.putNumber("AimFromTable/measuredHoodDeg", m_hood.getAngleDeg());
+    }
+}
+```
+
+Releasing fire stops the feeder. The aiming command can keep tracking. Releasing the aim binding runs `end()`: feeder off, flywheel off, hood hold or fault. Talon FX keeps the last `setControl` until something else replaces it, which is why `end()` must write those requests.
+
+### RobotContainer wiring
+
+`poseTrusted` and `aligned` are **your** robot's signals. Replace the bodies. `FieldConstants.getGoal` is called every loop through the supplier, not captured at startup.
+
+```java norun
+package frc.robot;
+
+import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import frc.robot.commands.AimFromTableCommand;
+import frc.robot.constants.FieldConstants;
+import frc.robot.subsystems.Drive;
+import frc.robot.subsystems.Feeder;
+import frc.robot.subsystems.Hood;
+import frc.robot.subsystems.Shooter;
+import frc.robot.util.ShotTable;
+import java.util.function.BooleanSupplier;
+
+public class RobotContainer {
+    private final Drive m_drive = new Drive();
+    private final Shooter m_shooter = new Shooter();
+    private final Hood m_hood = new Hood();
+    private final Feeder m_feeder = new Feeder();
+    private final ShotTable m_shotTable = ShotTable.exampleTable();
+    private final CommandXboxController m_driver = new CommandXboxController(0);
+
+    public RobotContainer() {
+        // Pose2d has no confidence field. Replace with your estimator's trust signal.
+        BooleanSupplier poseTrusted = () -> m_drive.visionAgeSeconds() < 0.3;
+        // Replace with your heading controller's on-target check.
+        BooleanSupplier aligned = () -> Math.abs(m_drive.getHeadingErrorRad()) < 0.05;
+
+        m_driver.leftBumper()
+                .whileTrue(
+                        new AimFromTableCommand(
+                                m_shotTable,
+                                m_shooter,
+                                m_hood,
+                                m_feeder,
+                                m_drive::getPose,
+                                FieldConstants::getGoal,
+                                m_drive::getChassisSpeeds,
+                                poseTrusted,
+                                aligned,
+                                () -> m_driver.rightTrigger().getAsBoolean()));
+    }
+}
+```
+
+`Drive` in that snippet is the drivetrain you already have. This lesson needs only:
+
+<ContentTable
+  title="Drive methods this command reads"
+  headers={["Method", "Units / meaning"]}
+  rows={[
+    ["<code>getPose()</code>", "<code>Pose2d</code> in the same blue-origin frame as <code>FieldConstants</code>"],
+    ["<code>getChassisSpeeds()</code>", "Field- or robot-relative <code>ChassisSpeeds</code> used only for the stationary gate"],
+    ["Trust / align (your code)", "Boolean suppliers you provide. Not WPILib APIs."]
+  ]}
+/>
+
+### Logs and checks
+
+When a shot misses, compare `distanceM`, requested vs measured RPS, requested vs measured hood, `poseTrusted`, and `stationary`. Those five tell you whether the miss was pose, table, or mechanism tracking.
+
+<ExerciseBox
+  title="Check your reading"
+  answers={[
+    {
+      "task": "Midpoint 3.00 m",
+      "content": "60.0 RPS and 50.0°. Fraction = (3.00 − 2.00) / (4.00 − 2.00) = 0.5. Both outputs use that same fraction."
+    },
+    {
+      "task": "1.50 m rejected",
+      "content": "1.50 m is below the inclusive measured interval [2.00, 5.50]. Endpoint clamp is not a scored distance, so lookup is empty and the command must not feed."
+    },
+    {
+      "task": "Miss left-right",
+      "content": "AimFromTable/aligned and AimFromTable/poseTrusted. Matching requested vs measured RPS means the flywheel tracked; heading/pose is the first split."
+    }
+  ]}
+>
+
+1. Using only the 2.00 m and 4.00 m rows, what flywheel RPS and hood angle does linear interpolation give at 3.00 m?
+2. The raw WPILib map returns the 2.00 m pair at 1.50 m. Why does `ShotTable.lookup(1.50)` return empty, and why must the command refuse to feed?
+3. Requested RPS matches the table, but the shot still misses left-right. Which logged flag would you look at first to separate a pose/heading problem from a speed problem?
+
+</ExerciseBox>
+
+### Common mistakes
+
+<RulesBox title="Shot table mistakes">
+
+- Keying the table in inches while pose distance is meters, or the reverse.
+- Measuring from the bumper, then querying from the pose origin.
+- Capturing alliance color once in a constructor.
+- Treating endpoint clamp as a valid shot.
+- Commanding table values before the loops hold, or using Motion Magic's profile target as "hood is there."
+- Requiring Drive, which cancels teleop drive.
+- Feeding on `atOrAboveSpeed()` with no feed-off branch.
+- Leaving an old table target running after the pose or goal becomes invalid.
+- Enabling `Arm_Cosine` on raw rotor rotations.
+
+</RulesBox>
+
+### What you still have to fill in
+
+Replace fictional field coordinates, `ShotTable.exampleTable()` rows, CAN IDs, gear ratios, `zeroDeg`, Slot0, Motion Magic limits, current limits, and the pose-trust / heading-align suppliers. Homing, vision fusion, and a per-piece feed state machine are outside this page.
+
+<LinkGrid
+  title="Related"
+  section="frc"
+  links={[
+    { "label": "Shooter Example", "id": "shooter-example" },
+    { "label": "Tunable Constants", "id": "tunable-constants" },
+    { "label": "Commands", "id": "commands" },
+    { "label": "PID Tuning Practice - Shooter", "id": "pid-tuning-practice-shooter" },
+    { "label": "Pose Estimation Intro", "id": "pose-estimation-intro" },
+    { "label": "WPILib InterpolatingDoubleTreeMap", "url": "https://github.wpilib.org/allwpilib/docs/release/java/edu/wpi/first/math/interpolation/InterpolatingDoubleTreeMap.html" }
+  ]}
+/>

@@ -1,12 +1,14 @@
 ---
 interface Props {
   label: string;
+  value?: string;
 }
 
-const { label } = Astro.props;
+const { label, value } = Astro.props;
 ---
 
-<div class="code-tab-content" data-tab-label={label}>
+<div class="code-tab-content" data-tab-label={label} data-tab-value={value}>
+  <p class="code-tab-fallback-label">{label}</p>
   <div class="code-block">
     <slot />
   </div>

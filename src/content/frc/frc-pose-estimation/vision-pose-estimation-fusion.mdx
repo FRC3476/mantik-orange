@@ -161,7 +161,7 @@ Keep three separate signals:
 - **Last accepted vision age** — `getVisionAgeSeconds()`
 - **Application pose trust** — `isPoseTrusted()`
 
-Do not implement trust as `getState().Pose != null`. Aim and the shot table use `VisionFusion::isPoseTrusted`.
+Do not implement trust as `getState().Pose != null`. The shot table uses `VisionFusion::isPoseTrusted`.
 
 ### Reset
 

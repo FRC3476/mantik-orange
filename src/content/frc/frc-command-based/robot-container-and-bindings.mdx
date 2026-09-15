@@ -93,20 +93,14 @@ controller.R2().and(controller.R1().negate()).and(controller.triangle().negate()
 
 R2 alone intakes; R2 with R1 held does something else entirely. No `if` statement in any periodic method.
 
-You can also bind several commands to one trigger, each requiring different subsystems. The heading factory returns `AimAtGoalCommand` so you can keep the instance and pass `aim::isAligned`. Translation suppliers are already **blue-frame m/s**, not raw joystick axes. There is no shooter argument — chassis heading does not require the shooter.
+You can also bind several commands to one trigger, each requiring different subsystems. Keep the `AimAtGoalCommand` instance so you can pass `aim::isAligned`. Translation speeds passed into aim must already be **blue-frame m/s**, not raw joystick axes. There is no shooter argument — chassis heading does not require the shooter.
 
 `SmartShootCommand` here is only the parallel-binding shape. It must not require the drivetrain. It does not implement the shot table's feed gates. The complete composition is in [Swerve Aim at Goal](/frc/swerve-aim-at-goal). Right bumper holds aim. Left bumper is heading seed. Right trigger is explicit feed.
 
 ```java
 controller.leftBumper().onTrue(drivetrain.runOnce(m_fusion::seedFieldCentric));
 
-AimAtGoalCommand aim =
-    AimAtGoalCommand.aimAtTargetCommand(
-        drivetrain,
-        FieldConstants::getGoal,
-        m_fusion::isPoseTrusted,
-        () -> teleopTranslation().getX(),
-        () -> teleopTranslation().getY());
+AimAtGoalCommand aim = new AimAtGoalCommand(drivetrain, this::teleopFieldSpeeds);
 controller.rightBumper().and(RobotModeTriggers.teleop()).whileTrue(aim)
     .whileTrue(new SmartShootCommand(
         () -> drivetrain.getStateCopy().Pose, shooter, transfer, conveyor, table));

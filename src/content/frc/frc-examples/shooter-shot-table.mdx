@@ -824,12 +824,12 @@ The heading command requires the drivetrain. `AimFromTableCommand` still only re
 ```java norun
 package frc.robot;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import frc.robot.commands.AimAtGoalCommand;
 import frc.robot.commands.AimFromTableCommand;
-import frc.robot.commands.DriverFieldSpeeds;
 import frc.robot.constants.FieldConstants;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
@@ -841,6 +841,8 @@ import frc.robot.util.ShotTable;
 import java.util.function.BooleanSupplier;
 
 public class RobotContainer {
+    private static final double kAimMaxSpeed = 1.5;
+
     public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
     private final VisionFusion m_fusion;
     private final Shooter m_shooter = new Shooter();
@@ -853,13 +855,7 @@ public class RobotContainer {
         m_fusion = new VisionFusion(drivetrain, new VisionSubsystem());
         BooleanSupplier poseTrusted = m_fusion::isPoseTrusted;
 
-        AimAtGoalCommand aim =
-                AimAtGoalCommand.aimAtTargetCommand(
-                        drivetrain,
-                        FieldConstants::getGoal,
-                        poseTrusted,
-                        () -> teleopTranslation().getX(),
-                        () -> teleopTranslation().getY());
+        AimAtGoalCommand aim = new AimAtGoalCommand(drivetrain, this::teleopFieldSpeeds);
 
         m_driver.rightBumper().and(RobotModeTriggers.teleop()).whileTrue(aim)
                 .whileTrue(
@@ -876,12 +872,10 @@ public class RobotContainer {
                                 () -> m_driver.rightTrigger().getAsBoolean()));
     }
 
-    private Translation2d teleopTranslation() {
-        return DriverFieldSpeeds.fromAllianceRelativeAxes(
-                drivetrain,
-                -m_driver.getLeftY(),
-                -m_driver.getLeftX(),
-                AimAtGoalCommand.kDefaultMaxTranslationMps);
+    private Translation2d teleopFieldSpeeds() {
+        double x = MathUtil.applyDeadband(-m_driver.getLeftY(), 0.1) * kAimMaxSpeed;
+        double y = MathUtil.applyDeadband(-m_driver.getLeftX(), 0.1) * kAimMaxSpeed;
+        return new Translation2d(x, y).rotateBy(drivetrain.getOperatorForwardDirection());
     }
 }
 ```

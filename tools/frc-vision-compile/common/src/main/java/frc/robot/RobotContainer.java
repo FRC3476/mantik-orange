@@ -6,6 +6,7 @@ import static edu.wpi.first.units.Units.RotationsPerSecond;
 
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -16,8 +17,6 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import frc.robot.autos.BLineAutos;
 import frc.robot.commands.AimAtGoalCommand;
-import frc.robot.commands.DriverFieldSpeeds;
-import frc.robot.constants.FieldConstants;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
 import frc.robot.subsystems.VisionFusion;
@@ -28,6 +27,8 @@ import frc.robot.vision.VisionSubsystem;
  * Left bumper seeds heading. Right bumper holds aim. Joystick default is Idle outside teleop.
  */
 public class RobotContainer {
+  private static final double kAimMaxSpeed = 1.5;
+
   private final double MaxSpeed = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond);
   private final double MaxAngularRate = RotationsPerSecond.of(0.75).in(RadiansPerSecond);
 
@@ -72,14 +73,7 @@ public class RobotContainer {
   private void configureBindings() {
     m_joystick.leftBumper().onTrue(drivetrain.runOnce(m_fusion::seedFieldCentric));
 
-    AimAtGoalCommand aim =
-        AimAtGoalCommand.aimAtTargetCommand(
-            drivetrain,
-            FieldConstants::getGoal,
-            m_fusion::isPoseTrusted,
-            () -> teleopTranslation().getX(),
-            () -> teleopTranslation().getY());
-
+    AimAtGoalCommand aim = new AimAtGoalCommand(drivetrain, this::teleopFieldSpeeds);
     m_joystick.rightBumper().and(RobotModeTriggers.teleop()).whileTrue(aim);
   }
 
@@ -96,11 +90,9 @@ public class RobotContainer {
     return selected;
   }
 
-  private Translation2d teleopTranslation() {
-    return DriverFieldSpeeds.fromAllianceRelativeAxes(
-        drivetrain,
-        -m_joystick.getLeftY(),
-        -m_joystick.getLeftX(),
-        AimAtGoalCommand.kDefaultMaxTranslationMps);
+  private Translation2d teleopFieldSpeeds() {
+    double x = MathUtil.applyDeadband(-m_joystick.getLeftY(), 0.1) * kAimMaxSpeed;
+    double y = MathUtil.applyDeadband(-m_joystick.getLeftX(), 0.1) * kAimMaxSpeed;
+    return new Translation2d(x, y).rotateBy(drivetrain.getOperatorForwardDirection());
   }
 }

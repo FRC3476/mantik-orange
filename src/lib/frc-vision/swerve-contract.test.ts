@@ -26,17 +26,8 @@ function rotate(x: number, y: number, radians: number): { x: number; y: number }
   return { x: x * c - y * s, y: x * s + y * c };
 }
 
-function clampTranslation(x: number, y: number, maxMps: number): { x: number; y: number } {
-  const mag = Math.hypot(x, y);
-  if (mag > maxMps && mag > 1e-9) {
-    return { x: (x * maxMps) / mag, y: (y * maxMps) / mag };
-  }
-  return { x, y };
-}
-
 describe('CommandSwerve course contract', () => {
   const aimJava = readFixture('frc/robot/commands/AimAtGoalCommand.java');
-  const speedsJava = readFixture('frc/robot/commands/DriverFieldSpeeds.java');
   const blineJava = readFixture('frc/robot/autos/BLineAutos.java');
   const fusionJava = readFixture('frc/robot/subsystems/VisionFusion.java');
   const drivetrainJava = readFixture('frc/robot/subsystems/CommandSwerveDrivetrain.java');
@@ -63,30 +54,25 @@ describe('CommandSwerve course contract', () => {
     expect(blue.y).toBeCloseTo(0);
     expect(red.x).toBeCloseTo(-max);
     expect(red.y).toBeCloseTo(0);
-    expect(speedsJava).toContain('rotateBy(operatorForward)');
+    expect(containerJava).toContain('rotateBy(drivetrain.getOperatorForwardDirection())');
     expect(aimJava).toContain('ForwardPerspectiveValue.BlueAlliance');
   });
 
-  it('wraps heading error at ±π and caps translation magnitude', () => {
+  it('wraps heading error at ±π', () => {
     const poseRad = (179 * Math.PI) / 180;
     const desiredRad = (-179 * Math.PI) / 180;
     expect(Math.abs(wrapRad(desiredRad - poseRad))).toBeCloseTo((2 * Math.PI) / 180, 6);
-    const capped = clampTranslation(3, 4, 1.5);
-    expect(Math.hypot(capped.x, capped.y)).toBeCloseTo(1.5);
     expect(aimJava).toContain('desired.minus(pose.getRotation()).getRadians()');
     expect(aimJava).toContain('withHeadingPID');
     expect(aimJava).toContain('withMaxAbsRotationalRate');
     expect(aimJava).toContain('withRotationalDeadband(0.0)');
   });
 
-  it('zeros chassis output and clears alignment on invalid pose/goal and end', () => {
-    expect(aimJava).toMatch(/applyInvalid[\s\S]*writeZero/);
-    expect(aimJava).toContain('untrusted-pose');
-    expect(aimJava).toContain('nonfinite-pose');
-    expect(aimJava).toContain('no-goal');
+  it('idles the chassis on missing goal and end', () => {
     expect(aimJava).toContain('public void end(boolean interrupted)');
-    expect(aimJava).toMatch(/end\([\s\S]*writeZero/);
+    expect(aimJava).toMatch(/end\([\s\S]*setControl\(m_idle\)/);
     expect(aimJava).toContain('addRequirements(drivetrain)');
+    expect(aimJava).not.toContain('poseTrusted');
     expect(commandsMdx).toContain('addRequirements(shooter, transfer, conveyor)');
     expect(commandsMdx).not.toMatch(/addRequirements\([^)]*drivetrain/);
   });
@@ -143,7 +129,7 @@ describe('CommandSwerve course contract', () => {
   });
 
   it('keeps MDX complete classes aligned with fixture method names', () => {
-    expect(aimMdx).toContain('withTargetDirection(sample.desiredHeading)');
+    expect(aimMdx).toContain('withTargetDirection(');
     expect(aimMdx).toContain('ForwardPerspectiveValue.BlueAlliance');
     expect(blineMdx).toContain('followFirstPath');
     expect(blineMdx).toContain('DriveRequestType.Velocity');

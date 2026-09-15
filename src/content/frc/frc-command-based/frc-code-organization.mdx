@@ -236,13 +236,7 @@ public class RobotContainer {
     private void configureButtonBindings() {
         joystick.leftBumper().onTrue(drivetrain.runOnce(fusion::seedFieldCentric));
 
-        AimAtGoalCommand aim =
-                AimAtGoalCommand.aimAtTargetCommand(
-                        drivetrain,
-                        FieldConstants::getGoal,
-                        fusion::isPoseTrusted,
-                        () -> teleopTranslation().getX(),
-                        () -> teleopTranslation().getY());
+        AimAtGoalCommand aim = new AimAtGoalCommand(drivetrain, this::teleopFieldSpeeds);
         joystick.rightBumper().and(RobotModeTriggers.teleop()).whileTrue(aim);
 
         intake.setDefaultCommand(intake.intakeDefaultCommand());
